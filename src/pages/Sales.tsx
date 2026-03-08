@@ -10,11 +10,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, TrendingUp, BarChart3, Loader2, ArrowUpRight, ArrowDownRight, Download, FileText } from "lucide-react";
+import { Plus, TrendingUp, BarChart3, Loader2, ArrowUpRight, ArrowDownRight, Download, FileText, Printer } from "lucide-react";
 import { KshIcon } from "@/components/KshIcon";
 import { downloadCSV, downloadPDF } from "@/lib/export";
 import { DateRangeFilter, DateRange } from "@/components/DateRangeFilter";
 import { toast } from "sonner";
+import { downloadSaleReceipt, printSaleReceipt } from "@/lib/saleReceipt";
 import { motion } from "framer-motion";
 import { formatKES } from "@/lib/currency";
 import { format, subDays, startOfMonth } from "date-fns";
@@ -333,6 +334,7 @@ export default function Sales() {
                           <TableHead>Description</TableHead>
                           <TableHead>Payment</TableHead>
                           <TableHead className="text-right">Amount</TableHead>
+                          <TableHead className="text-right">Receipt</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -344,6 +346,16 @@ export default function Sales() {
                             <TableCell className="text-sm text-muted-foreground">{s.description || "—"}</TableCell>
                             <TableCell><Badge variant="secondary" className="capitalize text-xs">{s.payment_method.replace("_", " ")}</Badge></TableCell>
                             <TableCell className="text-right font-medium">{formatKES(Number(s.amount))}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" title="Download Receipt" onClick={() => { downloadSaleReceipt(s, currentCompany); toast.success("Receipt downloaded!"); }}>
+                                  <Download className="h-3 w-3" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" title="Print Receipt" onClick={() => printSaleReceipt(s, currentCompany)}>
+                                  <Printer className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

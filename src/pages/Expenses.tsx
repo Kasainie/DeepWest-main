@@ -12,10 +12,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Receipt, TrendingDown, PieChart, Loader2, FolderPlus, Download, FileText } from "lucide-react";
+import { Plus, Receipt, TrendingDown, PieChart, Loader2, FolderPlus, Download, FileText, Printer } from "lucide-react";
 import { downloadCSV, downloadPDF } from "@/lib/export";
 import { DateRangeFilter, DateRange } from "@/components/DateRangeFilter";
 import { toast } from "sonner";
+import { downloadExpenseReceipt, printExpenseReceipt } from "@/lib/expenseReceipt";
 import { motion } from "framer-motion";
 import { formatKES } from "@/lib/currency";
 import { format, subDays, startOfMonth } from "date-fns";
@@ -358,6 +359,7 @@ export default function Expenses() {
                           <TableHead>Category</TableHead>
                           <TableHead>Payment</TableHead>
                           <TableHead className="text-right">Amount</TableHead>
+                          <TableHead className="text-right">Receipt</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -370,6 +372,19 @@ export default function Expenses() {
                               <TableCell><Badge variant="outline" className="text-xs">{cat?.name || "Uncategorized"}</Badge></TableCell>
                               <TableCell><Badge variant="secondary" className="capitalize text-xs">{exp.payment_method.replace("_", " ")}</Badge></TableCell>
                               <TableCell className="text-right font-medium text-destructive">{formatKES(Number(exp.amount))}</TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" title="Download Receipt" onClick={() => {
+                                    downloadExpenseReceipt({ ...exp, category_name: cat?.name || "Uncategorized" }, currentCompany);
+                                    toast.success("Receipt downloaded!");
+                                  }}>
+                                    <Download className="h-3 w-3" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" title="Print Receipt" onClick={() => printExpenseReceipt({ ...exp, category_name: cat?.name || "Uncategorized" }, currentCompany)}>
+                                    <Printer className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
                             </TableRow>
                           );
                         })}
