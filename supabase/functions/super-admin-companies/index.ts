@@ -60,6 +60,42 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Delete company
+    if (req.method === "POST" && action === "delete_company") {
+      const { company_id } = await req.json();
+      // Delete related data first (cascading order)
+      await Promise.all([
+        admin.from("conference_bookings").delete().eq("company_id", company_id),
+        admin.from("conference_rooms").delete().eq("company_id", company_id),
+        admin.from("order_items").delete().in("order_id",
+          (await admin.from("orders").select("id").eq("company_id", company_id)).data?.map((o: any) => o.id) || []
+        ),
+        admin.from("orders").delete().eq("company_id", company_id),
+        admin.from("menu_items").delete().eq("company_id", company_id),
+        admin.from("bookings").delete().eq("company_id", company_id),
+        admin.from("rooms").delete().eq("company_id", company_id),
+        admin.from("guests").delete().eq("company_id", company_id),
+        admin.from("bar_inventory").delete().eq("company_id", company_id),
+        admin.from("sales").delete().eq("company_id", company_id),
+        admin.from("expenses").delete().eq("company_id", company_id),
+        admin.from("expense_categories").delete().eq("company_id", company_id),
+        admin.from("payment_tenders").delete().eq("company_id", company_id),
+        admin.from("notifications").delete().eq("company_id", company_id),
+        admin.from("company_invitations").delete().eq("company_id", company_id),
+        admin.from("company_branding").delete().eq("company_id", company_id),
+        admin.from("website_pages").delete().eq("company_id", company_id),
+        admin.from("support_tickets").delete().eq("company_id", company_id),
+        admin.from("company_staff").delete().eq("company_id", company_id),
+      ]);
+      await admin.from("company_members").delete().eq("company_id", company_id);
+      const { error } = await admin.from("companies").delete().eq("id", company_id);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Default: list all data
     const [companiesRes, staffRes, membersRes, pendingRes] = await Promise.all([
       admin.from("companies").select("*").order("created_at", { ascending: false }),
