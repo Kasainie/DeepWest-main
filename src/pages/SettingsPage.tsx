@@ -66,6 +66,34 @@ export default function SettingsPage() {
     setStaffCode(data?.staff_code || null);
   };
 
+  const createAdminCode = async () => {
+    if (!currentCompany || !user) return;
+    setRegenerating(true);
+    try {
+      const newCode = "ADM-" + String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+      const userName = user.user_metadata?.full_name || user.email || "Admin";
+      const { error } = await supabase
+        .from("company_staff")
+        .insert({
+          company_id: currentCompany.id,
+          user_id: user.id,
+          full_name: userName,
+          role: "admin",
+          department: ["hotel", "restaurant", "bar", "kitchen", "accountant"],
+          staff_code: newCode,
+          is_active: true,
+        });
+      if (error) throw error;
+      setStaffCode(newCode);
+      setCodeRevealed(true);
+      toast.success("Admin access code created!", { description: `Your code: ${newCode}` });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create code");
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   const regenerateCode = async () => {
     if (!currentCompany || !user) return;
     setRegenerating(true);
