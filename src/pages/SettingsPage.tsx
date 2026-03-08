@@ -19,12 +19,16 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
 export default function SettingsPage() {
   const { currentCompany, companyRole, refreshCompanies } = useCompany();
+  const { user } = useAuth();
   const canEdit = companyRole === "owner" || companyRole === "admin";
 
   const [saving, setSaving] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [removeLogo, setRemoveLogo] = useState(false);
+  const [staffCode, setStaffCode] = useState<string | null>(null);
+  const [codeRevealed, setCodeRevealed] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   const [form, setForm] = useState({
     name: "",
     slug: "",
