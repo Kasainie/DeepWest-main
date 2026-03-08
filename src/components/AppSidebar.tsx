@@ -10,6 +10,7 @@ import {
   Users,
   Building2,
   ShieldCheck,
+  ChefHat,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -32,6 +33,7 @@ const mainItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Rooms", url: "/rooms", icon: BedDouble },
   { title: "Restaurant", url: "/restaurant", icon: UtensilsCrossed },
+  { title: "Kitchen", url: "/kitchen", icon: ChefHat },
   { title: "Bar", url: "/bar", icon: Wine },
   { title: "Conference", url: "/conference", icon: Presentation },
 ];
