@@ -125,7 +125,7 @@ export function NotificationDropdown() {
                   <button
                     key={notif.id}
                     onClick={() => !notif.is_read && markAsRead(notif.id)}
-                    className={`w-full text-left flex gap-3 px-4 py-3 hover:bg-secondary/50 transition-colors ${
+                    className={`group w-full text-left flex gap-3 px-4 py-3 hover:bg-secondary/50 transition-colors ${
                       !notif.is_read ? "bg-primary/5" : ""
                     }`}
                   >
