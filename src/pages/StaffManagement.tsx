@@ -164,6 +164,30 @@ export default function StaffManagement() {
     setDeleting(null);
   };
 
+  const handleResetAccess = async (staffId: string, staffName: string) => {
+    setResetting(staffId);
+    const newCode = generateStaffCode();
+    try {
+      const { data, error } = await supabase.functions.invoke("reset-staff-access", {
+        body: { staff_id: staffId, new_staff_code: newCode },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setStaffList((prev) =>
+        prev.map((s) => (s.id === staffId ? { ...s, staff_code: data.new_staff_code } : s))
+      );
+      toast.success(`Access code reset for ${staffName}`, {
+        description: `New code: ${data.new_staff_code}`,
+        duration: 8000,
+      });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reset access");
+    }
+    setResetting(null);
+  };
+
   if (!isAdmin && currentUserRole !== "manager" && companyRole !== "owner") {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
