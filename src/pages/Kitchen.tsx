@@ -352,7 +352,8 @@ export default function Kitchen() {
             </motion.div>
           )}
         </motion.div>
-          </>)}
+          </>
+          )}
       ) : (
         <OrderHistory />
       )}

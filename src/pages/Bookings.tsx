@@ -400,6 +400,7 @@ export default function Bookings() {
           </Card>
         </motion.div>
       )}
-    </motion.div>
+      </>
+      )}
   );
 }
