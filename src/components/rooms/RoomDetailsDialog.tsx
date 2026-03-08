@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Loader2, Pencil, Trash2, BedDouble, CalendarDays, History } from "lucide-react";
+import { Loader2, Pencil, Trash2, BedDouble, CalendarDays, History, UserCheck } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
@@ -46,9 +46,10 @@ interface RoomDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdated: () => void;
+  onAssignRoom?: (room: Room) => void;
 }
 
-export function RoomDetailsDialog({ room, open, onOpenChange, onUpdated }: RoomDetailsDialogProps) {
+export function RoomDetailsDialog({ room, open, onOpenChange, onUpdated, onAssignRoom }: RoomDetailsDialogProps) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -261,10 +262,16 @@ export function RoomDetailsDialog({ room, open, onOpenChange, onUpdated }: RoomD
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
-              <Button size="sm" onClick={startEdit}>
+              <Button size="sm" variant="outline" onClick={startEdit}>
                 <Pencil className="h-3.5 w-3.5 mr-1" />
                 Edit
               </Button>
+              {room.status === "available" && onAssignRoom && (
+                <Button size="sm" onClick={() => { onOpenChange(false); onAssignRoom(room); }}>
+                  <UserCheck className="h-3.5 w-3.5 mr-1" />
+                  Assign Client
+                </Button>
+              )}
             </DialogFooter>
           </div>
           </ScrollArea>
