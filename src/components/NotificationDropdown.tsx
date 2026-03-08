@@ -66,7 +66,7 @@ export function NotificationDropdown() {
   const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
   const [soundSettings, setSoundSettings] = useState(loadSoundSettings);
 
   const isFullAccess = !companyRole || ["owner", "admin", "manager"].includes(companyRole);
