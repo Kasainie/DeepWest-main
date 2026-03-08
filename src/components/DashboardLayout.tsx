@@ -39,8 +39,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Bell className="h-4 w-4" />
                 <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
               </Button>
-              <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-primary-foreground">
-                {initials}
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-primary-foreground">
+                  {initials}
+                </div>
+                {role && (
+                  <Badge variant="secondary" className="text-[10px] capitalize hidden sm:inline-flex">
+                    {role}
+                  </Badge>
+                )}
               </div>
               <Button variant="ghost" size="icon" onClick={signOut} title="Sign out">
                 <LogOut className="h-4 w-4" />
