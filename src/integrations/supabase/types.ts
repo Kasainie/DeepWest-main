@@ -135,6 +135,7 @@ export type Database = {
           description: string | null
           email: string | null
           id: string
+          is_paused: boolean
           logo_url: string | null
           name: string
           owner_id: string
@@ -148,6 +149,7 @@ export type Database = {
           description?: string | null
           email?: string | null
           id?: string
+          is_paused?: boolean
           logo_url?: string | null
           name: string
           owner_id: string
@@ -161,6 +163,7 @@ export type Database = {
           description?: string | null
           email?: string | null
           id?: string
+          is_paused?: boolean
           logo_url?: string | null
           name?: string
           owner_id?: string
@@ -1147,6 +1150,7 @@ export type Database = {
           description: string | null
           email: string | null
           id: string
+          is_paused: boolean
           logo_url: string | null
           name: string
           owner_id: string
