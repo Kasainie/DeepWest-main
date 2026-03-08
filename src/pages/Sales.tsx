@@ -50,6 +50,7 @@ export default function Sales() {
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>({ from: new Date(), to: new Date() });
+  const [deptFilter, setDeptFilter] = useState<string>("all");
   const [form, setForm] = useState({
     sale_date: format(new Date(), "yyyy-MM-dd"),
     department: "restaurant",
