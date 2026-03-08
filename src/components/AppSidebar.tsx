@@ -138,7 +138,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 space-y-2">
         {!collapsed && (
           <div className="rounded-lg bg-sidebar-accent p-3">
             <p className="text-xs text-sidebar-foreground">
@@ -150,6 +150,14 @@ export function AppSidebar() {
             </div>
           </div>
         )}
+        <div className={`flex items-center ${collapsed ? "justify-center" : "justify-center gap-1.5"}`}>
+          <Building2 className="h-3 w-3 text-sidebar-foreground opacity-60" />
+          {!collapsed && (
+            <span className="text-[10px] text-sidebar-foreground opacity-60">
+              Powered by <span className="font-semibold">LKTECH</span>
+            </span>
+          )}
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
