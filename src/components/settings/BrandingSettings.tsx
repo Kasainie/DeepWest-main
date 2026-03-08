@@ -14,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Palette, RotateCcw } from "lucide-react";
+import { Loader2, Palette, RotateCcw, Sun, Moon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -44,6 +45,7 @@ const DEFAULTS = {
   font_heading: "Playfair Display",
   font_body: "DM Sans",
   welcome_message: "",
+  theme_mode: "light" as "light" | "dark",
 };
 
 function hslStringToHex(hslStr: string): string {
@@ -110,6 +112,7 @@ export default function BrandingSettings() {
     font_heading: DEFAULTS.font_heading,
     font_body: DEFAULTS.font_body,
     welcome_message: "",
+    theme_mode: DEFAULTS.theme_mode as "light" | "dark",
   });
 
   useEffect(() => {
@@ -121,6 +124,7 @@ export default function BrandingSettings() {
         font_heading: branding.font_heading || DEFAULTS.font_heading,
         font_body: branding.font_body || DEFAULTS.font_body,
         welcome_message: branding.welcome_message || "",
+        theme_mode: branding.theme_mode || "light",
       });
     }
   }, [branding]);
@@ -147,6 +151,7 @@ export default function BrandingSettings() {
         font_heading: form.font_heading,
         font_body: form.font_body,
         welcome_message: form.welcome_message.trim() || null,
+        theme_mode: form.theme_mode,
       };
 
       if (branding) {
@@ -196,6 +201,30 @@ export default function BrandingSettings() {
           )}
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Theme Mode */}
+          <div className="flex items-center justify-between rounded-lg bg-muted/40 p-4">
+            <div className="flex items-center gap-3">
+              {form.theme_mode === "dark" ? (
+                <Moon className="h-5 w-5 text-primary" />
+              ) : (
+                <Sun className="h-5 w-5 text-primary" />
+              )}
+              <div>
+                <p className="text-sm font-semibold">Dark Mode</p>
+                <p className="text-xs text-muted-foreground">
+                  {form.theme_mode === "dark" ? "Dark theme is active" : "Light theme is active"}
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={form.theme_mode === "dark"}
+              onCheckedChange={(checked) =>
+                setForm((f) => ({ ...f, theme_mode: checked ? "dark" : "light" }))
+              }
+              disabled={!canEdit}
+            />
+          </div>
+
           {/* Colors */}
           <div className="space-y-3">
             <Label className="text-sm font-semibold">Brand Colors</Label>
