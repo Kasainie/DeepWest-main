@@ -38,6 +38,7 @@ interface ConferenceBooking {
   end_time: string | null;
   status: string;
   amount: number;
+  notes: string | null;
   room_id: string;
   room_name?: string;
 }
