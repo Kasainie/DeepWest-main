@@ -494,6 +494,7 @@ export default function StaffManagement() {
                       {dept.value === "hotel" && "Front desk, housekeeping, reception"}
                       {dept.value === "restaurant" && "Serving, hosting, waitstaff"}
                       {dept.value === "bar" && "Bartenders, lounge staff"}
+                      {dept.value === "bar_admin" && "Bar management, menu & inventory"}
                       {dept.value === "kitchen" && "Chefs, sous chefs, prep cooks"}
                       {dept.value === "accountant" && "Finance, billing, payroll"}
                     </p>
