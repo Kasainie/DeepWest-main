@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
-import { Bell, Check, CheckCheck, Info, AlertTriangle, UserPlus, ShoppingCart, CalendarDays, X } from "lucide-react";
+import { Bell, Check, CheckCheck, Info, AlertTriangle, UserPlus, ShoppingCart, CalendarDays, X, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { formatDistanceToNow } from "date-fns";
 
 interface Notification {
@@ -35,24 +37,44 @@ const typeColors: Record<string, string> = {
 
 const NOTIFICATION_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
 
+function loadSoundSettings() {
+  try {
+    const stored = localStorage.getItem("notification_sound_settings");
+    if (stored) return JSON.parse(stored) as { enabled: boolean; volume: number };
+  } catch {}
+  return { enabled: true, volume: 0.5 };
+}
+
 export function NotificationDropdown() {
   const { currentCompany } = useCompany();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [soundSettings, setSoundSettings] = useState(loadSoundSettings);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
+  const updateSoundSettings = useCallback((update: Partial<{ enabled: boolean; volume: number }>) => {
+    setSoundSettings((prev) => {
+      const next = { ...prev, ...update };
+      localStorage.setItem("notification_sound_settings", JSON.stringify(next));
+      if (audioRef.current) audioRef.current.volume = next.volume;
+      return next;
+    });
+  }, []);
+
   const playNotificationSound = useCallback(() => {
+    if (!soundSettings.enabled) return;
     try {
       if (!audioRef.current) {
         audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
-        audioRef.current.volume = 0.5;
       }
+      audioRef.current.volume = soundSettings.volume;
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(() => {});
     } catch {}
-  }, []);
+  }, [soundSettings.enabled, soundSettings.volume]);
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -119,13 +141,51 @@ export function NotificationDropdown() {
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h3 className="text-sm font-semibold font-display">Notifications</h3>
-          {unreadCount > 0 && (
-            <Button variant="ghost" size="sm" className="text-xs h-7 gap-1" onClick={markAllRead}>
-              <CheckCheck className="h-3 w-3" />
-              Mark all read
+          <div className="flex items-center gap-1">
+            {unreadCount > 0 && (
+              <Button variant="ghost" size="sm" className="text-xs h-7 gap-1" onClick={markAllRead}>
+                <CheckCheck className="h-3 w-3" />
+                Mark all read
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setShowSettings((s) => !s)}
+              title="Sound settings"
+            >
+              {soundSettings.enabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5 text-muted-foreground" />}
             </Button>
-          )}
+          </div>
         </div>
+        {showSettings && (
+          <div className="px-4 py-3 border-b bg-muted/30 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium">Notification Sound</label>
+              <Switch
+                checked={soundSettings.enabled}
+                onCheckedChange={(checked) => updateSoundSettings({ enabled: checked })}
+              />
+            </div>
+            {soundSettings.enabled && (
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground">Volume</label>
+                <div className="flex items-center gap-2">
+                  <VolumeX className="h-3 w-3 text-muted-foreground shrink-0" />
+                  <Slider
+                    value={[soundSettings.volume * 100]}
+                    onValueChange={([v]) => updateSoundSettings({ volume: v / 100 })}
+                    max={100}
+                    step={5}
+                    className="flex-1"
+                  />
+                  <Volume2 className="h-3 w-3 text-muted-foreground shrink-0" />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         <ScrollArea className="max-h-80">
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
