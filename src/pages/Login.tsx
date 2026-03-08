@@ -44,14 +44,17 @@ export default function Login() {
   useEffect(() => {
     if (!slug) return;
     setCompanyLoading(true);
-    supabase
-      .rpc("get_company_by_slug", { _slug: slug })
-      .then(({ data }) => {
-        if (data && data.length > 0) {
+    const fetchCompany = async () => {
+      try {
+        const { data } = await supabase.rpc("get_company_by_slug", { _slug: slug });
+        if (data && Array.isArray(data) && data.length > 0) {
           setCompany(data[0] as CompanyInfo);
         }
-      })
-      .finally(() => setCompanyLoading(false));
+      } finally {
+        setCompanyLoading(false);
+      }
+    };
+    fetchCompany();
   }, [slug]);
 
   if (session) {
