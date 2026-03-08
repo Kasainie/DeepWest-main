@@ -1,109 +1,169 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole, AppRole } from "@/hooks/useUserRole";
+import { useCompany } from "@/contexts/CompanyContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, ShieldCheck, User, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Shield, ShieldCheck, User, Loader2, Plus, Copy, Trash2, KeyRound, Building2, UtensilsCrossed, Wine, ChefHat, Calculator } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { useCompany } from "@/contexts/CompanyContext";
 import { InviteStaffDialog } from "@/components/InviteStaffDialog";
 import { PendingInvitations } from "@/components/PendingInvitations";
 
-interface StaffMember {
-  user_id: string;
-  role: AppRole;
-  full_name: string | null;
-  email: string;
+interface StaffRecord {
+  id: string;
+  full_name: string;
+  staff_code: string;
+  department: string;
+  role: string;
+  phone: string | null;
+  is_active: boolean;
+  created_at: string;
 }
 
-const roleIcons: Record<AppRole, typeof Shield> = {
-  admin: ShieldCheck,
-  manager: Shield,
-  staff: User,
+const departments = [
+  { value: "hotel", label: "Hotel", icon: Building2 },
+  { value: "restaurant", label: "Restaurant", icon: UtensilsCrossed },
+  { value: "bar", label: "Bar", icon: Wine },
+  { value: "kitchen", label: "Kitchen", icon: ChefHat },
+  { value: "accountant", label: "Accountant", icon: Calculator },
+];
+
+const roles = [
+  { value: "staff", label: "Staff" },
+  { value: "manager", label: "Manager" },
+  { value: "admin", label: "Admin" },
+];
+
+const deptIcons: Record<string, typeof Building2> = {
+  hotel: Building2,
+  restaurant: UtensilsCrossed,
+  bar: Wine,
+  kitchen: ChefHat,
+  accountant: Calculator,
 };
 
-const roleBadgeStyles: Record<AppRole, string> = {
-  admin: "bg-destructive/10 text-destructive",
-  manager: "bg-primary/10 text-primary",
-  staff: "bg-muted text-muted-foreground",
+const deptColors: Record<string, string> = {
+  hotel: "bg-primary/10 text-primary",
+  restaurant: "bg-warning/10 text-warning",
+  bar: "bg-accent/10 text-accent",
+  kitchen: "bg-destructive/10 text-destructive",
+  accountant: "bg-success/10 text-success",
 };
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
+function generateStaffCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "STF-";
+  for (let i = 0; i < 4; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
 export default function StaffManagement() {
   const { isAdmin, role: currentUserRole } = useUserRole();
-  const { companyRole } = useCompany();
-  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const { currentCompany, companyRole } = useCompany();
+  const [staffList, setStaffList] = useState<StaffRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [inviteRefreshKey, setInviteRefreshKey] = useState(0);
-  const canInvite = companyRole === "owner" || companyRole === "admin";
+  const canManage = companyRole === "owner" || companyRole === "admin";
+
+  const [form, setForm] = useState({
+    full_name: "",
+    department: "hotel",
+    role: "staff",
+    phone: "",
+    staff_code: generateStaffCode(),
+  });
+
+  useEffect(() => {
+    if (currentCompany) fetchStaff();
+  }, [currentCompany?.id]);
 
   const fetchStaff = async () => {
+    if (!currentCompany) return;
     setLoading(true);
+    const { data, error } = await supabase
+      .from("company_staff")
+      .select("*")
+      .eq("company_id", currentCompany.id)
+      .order("department", { ascending: true });
 
-    // Fetch roles
-    const { data: roles, error: rolesError } = await supabase
-      .from("user_roles")
-      .select("user_id, role");
-
-    if (rolesError) {
-      toast.error("Failed to load staff");
-      setLoading(false);
-      return;
-    }
-
-    // Fetch profiles
-    const { data: profiles, error: profilesError } = await supabase
-      .from("profiles")
-      .select("user_id, full_name");
-
-    const staffList: StaffMember[] = (roles || []).map((r) => {
-      const profile = profiles?.find((p) => p.user_id === r.user_id);
-      return {
-        user_id: r.user_id,
-        role: r.role as AppRole,
-        full_name: profile?.full_name || null,
-        email: profile?.full_name || r.user_id.slice(0, 8),
-      };
-    });
-
-    setStaff(staffList);
+    if (!error) setStaffList((data || []) as StaffRecord[]);
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchStaff();
-  }, []);
+  const handleAddStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCompany) return;
+    setSaving(true);
 
-  const handleRoleChange = async (userId: string, newRole: AppRole) => {
-    if (!isAdmin) {
-      toast.error("Only admins can change roles");
-      return;
-    }
-
-    setUpdating(userId);
-    const { error } = await supabase
-      .from("user_roles")
-      .update({ role: newRole })
-      .eq("user_id", userId);
+    const { error } = await supabase.from("company_staff").insert({
+      company_id: currentCompany.id,
+      full_name: form.full_name.trim(),
+      staff_code: form.staff_code.trim().toUpperCase(),
+      department: form.department,
+      role: form.role,
+      phone: form.phone.trim() || null,
+    });
 
     if (error) {
-      toast.error(error.message || "Failed to update role");
+      if (error.code === "23505") toast.error("Staff code already exists in this company");
+      else toast.error(error.message);
     } else {
-      toast.success("Role updated successfully");
-      setStaff((prev) =>
-        prev.map((s) => (s.user_id === userId ? { ...s, role: newRole } : s))
-      );
+      toast.success("Staff member added!", {
+        description: `Code: ${form.staff_code}`,
+        duration: 5000,
+      });
+      setForm({ full_name: "", department: "hotel", role: "staff", phone: "", staff_code: generateStaffCode() });
+      setAddOpen(false);
+      fetchStaff();
     }
-    setUpdating(null);
+    setSaving(false);
   };
 
-  if (!isAdmin && currentUserRole !== "manager") {
+  const handleCopyCode = async (code: string) => {
+    await navigator.clipboard.writeText(code);
+    toast.success("Staff code copied!");
+  };
+
+  const handleToggleActive = async (staffId: string, isActive: boolean) => {
+    const { error } = await supabase
+      .from("company_staff")
+      .update({ is_active: !isActive })
+      .eq("id", staffId);
+
+    if (!error) {
+      setStaffList((prev) => prev.map((s) => (s.id === staffId ? { ...s, is_active: !isActive } : s)));
+      toast.success(isActive ? "Staff deactivated" : "Staff activated");
+    }
+  };
+
+  const handleDelete = async (staffId: string) => {
+    setDeleting(staffId);
+    const { error } = await supabase.from("company_staff").delete().eq("id", staffId);
+    if (!error) {
+      setStaffList((prev) => prev.filter((s) => s.id !== staffId));
+      toast.success("Staff member removed");
+    } else {
+      toast.error("Failed to remove staff");
+    }
+    setDeleting(null);
+  };
+
+  if (!isAdmin && currentUserRole !== "manager" && companyRole !== "owner") {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Card className="shadow-card border-0 max-w-md w-full text-center">
@@ -125,31 +185,118 @@ export default function StaffManagement() {
         <div>
           <h1 className="text-2xl font-bold font-display">Staff Management</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage staff roles and permissions
+            Manage staff members, departments & access codes
           </p>
         </div>
-        {canInvite && (
-          <InviteStaffDialog onInviteSent={() => setInviteRefreshKey((k) => k + 1)} />
-        )}
+        <div className="flex gap-2">
+          {canManage && (
+            <>
+              <InviteStaffDialog onInviteSent={() => setInviteRefreshKey((k) => k + 1)} />
+              <Dialog open={addOpen} onOpenChange={setAddOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Staff
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="font-display">Add Staff Member</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleAddStaff} className="space-y-4 mt-2">
+                    <div className="space-y-2">
+                      <Label>Full Name</Label>
+                      <Input
+                        value={form.full_name}
+                        onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
+                        placeholder="John Smith"
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Department</Label>
+                        <Select value={form.department} onValueChange={(v) => setForm((f) => ({ ...f, department: v }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {departments.map((d) => (
+                              <SelectItem key={d.value} value={d.value}>
+                                <div className="flex items-center gap-2">
+                                  <d.icon className="h-3.5 w-3.5" />
+                                  {d.label}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Role</Label>
+                        <Select value={form.role} onValueChange={(v) => setForm((f) => ({ ...f, role: v }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {roles.map((r) => (
+                              <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Phone</Label>
+                      <Input
+                        value={form.phone}
+                        onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                        placeholder="+1 555-0123"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Staff Code</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          value={form.staff_code}
+                          onChange={(e) => setForm((f) => ({ ...f, staff_code: e.target.value.toUpperCase() }))}
+                          className="font-mono tracking-widest text-center"
+                          required
+                        />
+                        <Button type="button" variant="outline" size="icon" onClick={() => setForm((f) => ({ ...f, staff_code: generateStaffCode() }))}>
+                          <KeyRound className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Staff will use this code to log in
+                      </p>
+                    </div>
+                    <Button type="submit" className="w-full" disabled={saving}>
+                      {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Add Staff Member
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </>
+          )}
+        </div>
       </motion.div>
 
       <motion.div variants={item}>
         <PendingInvitations refreshKey={inviteRefreshKey} />
       </motion.div>
 
-      <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {(["admin", "manager", "staff"] as AppRole[]).map((r) => {
-          const count = staff.filter((s) => s.role === r).length;
-          const Icon = roleIcons[r];
+      {/* Department summary cards */}
+      <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        {departments.map((dept) => {
+          const count = staffList.filter((s) => s.department === dept.value).length;
+          const DeptIcon = dept.icon;
           return (
-            <Card key={r} className="shadow-card border-0">
-              <CardContent className="p-5 flex items-center gap-4">
-                <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center">
-                  <Icon className="h-5 w-5 text-primary" />
+            <Card key={dept.value} className="shadow-card border-0">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className={`h-9 w-9 rounded-lg flex items-center justify-center ${deptColors[dept.value] || "bg-secondary"}`}>
+                  <DeptIcon className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold font-display">{count}</p>
-                  <p className="text-sm text-muted-foreground capitalize">{r}s</p>
+                  <p className="text-xl font-bold font-display">{count}</p>
+                  <p className="text-[11px] text-muted-foreground">{dept.label}</p>
                 </div>
               </CardContent>
             </Card>
@@ -157,6 +304,7 @@ export default function StaffManagement() {
         })}
       </motion.div>
 
+      {/* Staff list */}
       <motion.div variants={item}>
         <Card className="shadow-card border-0">
           <CardHeader>
@@ -167,116 +315,107 @@ export default function StaffManagement() {
               <div className="flex justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
+            ) : staffList.length === 0 ? (
+              <div className="text-center py-8">
+                <User className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                <p className="text-sm text-muted-foreground">No staff members yet. Add your first staff member above.</p>
+              </div>
             ) : (
               <div className="space-y-1">
-                {staff.map((member) => {
-                  const Icon = roleIcons[member.role];
+                {staffList.map((member) => {
+                  const DeptIcon = deptIcons[member.department] || User;
                   return (
                     <div
-                      key={member.user_id}
-                      className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-secondary/50 transition-colors"
+                      key={member.id}
+                      className={`flex items-center justify-between py-3 px-3 rounded-lg hover:bg-secondary/50 transition-colors ${!member.is_active ? "opacity-50" : ""}`}
                     >
                       <div className="flex items-center gap-3">
                         <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-primary-foreground">
-                          {(member.full_name || "?")
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")
-                            .slice(0, 2)
-                            .toUpperCase()}
+                          {member.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-sm font-medium">
-                            {member.full_name || "Unknown"}
-                          </p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <Badge
-                              className={`${roleBadgeStyles[member.role]} text-[10px] border-0 capitalize`}
-                            >
-                              <Icon className="h-2.5 w-2.5 mr-0.5" />
+                          <p className="text-sm font-medium">{member.full_name}</p>
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            <Badge className={`${deptColors[member.department] || "bg-muted text-muted-foreground"} text-[10px] border-0`}>
+                              <DeptIcon className="h-2.5 w-2.5 mr-0.5" />
+                              {member.department}
+                            </Badge>
+                            <Badge variant="secondary" className="text-[10px] capitalize">
                               {member.role}
                             </Badge>
+                            {!member.is_active && (
+                              <Badge variant="destructive" className="text-[10px]">Inactive</Badge>
+                            )}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {isAdmin ? (
-                          <Select
-                            value={member.role}
-                            onValueChange={(val) =>
-                              handleRoleChange(member.user_id, val as AppRole)
-                            }
-                            disabled={updating === member.user_id}
-                          >
-                            <SelectTrigger className="w-32 h-8 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="admin">Admin</SelectItem>
-                              <SelectItem value="manager">Manager</SelectItem>
-                              <SelectItem value="staff">Staff</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <span className="text-xs text-muted-foreground capitalize">
-                            {member.role}
-                          </span>
-                        )}
-                        {updating === member.user_id && (
-                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        <code className="text-xs font-mono bg-secondary px-2 py-1 rounded hidden sm:inline-block">
+                          {member.staff_code}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => handleCopyCode(member.staff_code)}
+                          title="Copy code"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                        {canManage && (
+                          <>
+                            <Switch
+                              checked={member.is_active}
+                              onCheckedChange={() => handleToggleActive(member.id, member.is_active)}
+                              className="scale-75"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(member.id)}
+                              disabled={deleting === member.id}
+                            >
+                              {deleting === member.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </>
                         )}
                       </div>
                     </div>
                   );
                 })}
-                {staff.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No staff members found
-                  </p>
-                )}
               </div>
             )}
           </CardContent>
         </Card>
       </motion.div>
 
+      {/* Role Permissions */}
       <motion.div variants={item}>
         <Card className="shadow-card border-0">
           <CardHeader>
-            <CardTitle className="text-lg font-display">Role Permissions</CardTitle>
+            <CardTitle className="text-lg font-display">Departments & Roles</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {[
-                {
-                  role: "Admin",
-                  icon: ShieldCheck,
-                  perms: ["Full system access", "Manage staff roles", "View all bookings & data", "Edit settings & website"],
-                },
-                {
-                  role: "Manager",
-                  icon: Shield,
-                  perms: ["View all bookings & guests", "Manage rooms & tables", "View reports", "Cannot manage staff roles"],
-                },
-                {
-                  role: "Staff",
-                  icon: User,
-                  perms: ["View dashboard", "View assigned bookings", "Basic room operations", "Cannot access settings"],
-                },
-              ].map(({ role, icon: RoleIcon, perms }) => (
-                <div key={role} className="flex gap-4 p-3 rounded-lg bg-secondary/30">
-                  <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                    <RoleIcon className="h-4 w-4 text-primary" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {departments.map((dept) => (
+                <div key={dept.value} className="flex gap-3 p-3 rounded-lg bg-secondary/30">
+                  <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${deptColors[dept.value]}`}>
+                    <dept.icon className="h-4 w-4" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold">{role}</p>
-                    <ul className="mt-1 space-y-0.5">
-                      {perms.map((p) => (
-                        <li key={p} className="text-xs text-muted-foreground">
-                          • {p}
-                        </li>
-                      ))}
-                    </ul>
+                    <p className="text-sm font-semibold">{dept.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {dept.value === "hotel" && "Front desk, housekeeping, reception"}
+                      {dept.value === "restaurant" && "Serving, hosting, waitstaff"}
+                      {dept.value === "bar" && "Bartenders, lounge staff"}
+                      {dept.value === "kitchen" && "Chefs, sous chefs, prep cooks"}
+                      {dept.value === "accountant" && "Finance, billing, payroll"}
+                    </p>
                   </div>
                 </div>
               ))}

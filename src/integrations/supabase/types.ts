@@ -199,6 +199,56 @@ export type Database = {
           },
         ]
       }
+      company_staff: {
+        Row: {
+          company_id: string
+          created_at: string
+          department: string
+          full_name: string
+          id: string
+          is_active: boolean
+          phone: string | null
+          role: string
+          staff_code: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          department?: string
+          full_name: string
+          id?: string
+          is_active?: boolean
+          phone?: string | null
+          role?: string
+          staff_code: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          department?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          phone?: string | null
+          role?: string
+          staff_code?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_staff_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guests: {
         Row: {
           company_id: string
@@ -384,6 +434,18 @@ export type Database = {
       is_company_member: {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
+      }
+      lookup_staff_by_code: {
+        Args: { _staff_code: string }
+        Returns: {
+          company_id: string
+          company_name: string
+          department: string
+          full_name: string
+          is_active: boolean
+          role: string
+          staff_id: string
+        }[]
       }
     }
     Enums: {
