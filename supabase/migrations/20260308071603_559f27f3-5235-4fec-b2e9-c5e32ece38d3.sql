@@ -1,0 +1,1 @@
+ALTER TABLE public.company_branding ADD COLUMN theme_mode text NOT NULL DEFAULT 'light';

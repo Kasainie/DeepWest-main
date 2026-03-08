@@ -133,6 +133,7 @@ export type Database = {
           id: string
           primary_color: string | null
           sidebar_color: string | null
+          theme_mode: string
           updated_at: string
           welcome_message: string | null
         }
@@ -145,6 +146,7 @@ export type Database = {
           id?: string
           primary_color?: string | null
           sidebar_color?: string | null
+          theme_mode?: string
           updated_at?: string
           welcome_message?: string | null
         }
@@ -157,6 +159,7 @@ export type Database = {
           id?: string
           primary_color?: string | null
           sidebar_color?: string | null
+          theme_mode?: string
           updated_at?: string
           welcome_message?: string | null
         }

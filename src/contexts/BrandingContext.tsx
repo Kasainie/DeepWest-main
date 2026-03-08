@@ -11,6 +11,7 @@ interface Branding {
   font_heading: string;
   font_body: string;
   welcome_message: string | null;
+  theme_mode: "light" | "dark";
 }
 
 interface BrandingContextType {
