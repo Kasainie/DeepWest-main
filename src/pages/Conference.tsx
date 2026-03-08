@@ -223,6 +223,7 @@ export default function Conference() {
                           {event.status}
                         </Badge>
                       </div>
+                      <EditBookingDialog booking={event} rooms={rooms} onUpdated={fetchData} />
                       <Button variant="ghost" size="sm" className="text-xs text-destructive h-7" onClick={() => handleCancelBooking(event.id)}>
                         Cancel
                       </Button>
