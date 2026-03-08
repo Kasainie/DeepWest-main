@@ -21,8 +21,8 @@ const companySchema = z.object({
     .min(2)
     .max(50)
     .regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens"),
-  email: z.string().trim().email("Invalid email").max(255).optional().or(z.literal("")),
-  phone: z.string().trim().max(30).optional().or(z.literal("")),
+  email: z.string().trim().email("Invalid email address").max(255, "Email too long"),
+  phone: z.string().trim().min(7, "Phone number must be at least 7 digits").max(30, "Phone number too long"),
   address: z.string().trim().max(255).optional().or(z.literal("")),
   description: z.string().trim().max(500).optional().or(z.literal("")),
 });
@@ -118,8 +118,32 @@ export default function RegisterCompany() {
         return;
       }
 
+      // Fetch the generated admin staff code
+      let adminCode = "";
+      const { data: staffRecord } = await supabase
+        .from("company_staff")
+        .select("staff_code")
+        .eq("company_id", company.id)
+        .eq("user_id", user.id)
+        .single();
+      if (staffRecord) {
+        adminCode = staffRecord.staff_code;
+      }
+
+      // Send admin access code email via edge function
+      if (adminCode && parsed.email) {
+        supabase.functions.invoke("send-admin-code", {
+          body: {
+            email: parsed.email,
+            admin_code: adminCode,
+            company_name: parsed.name,
+            full_name: user.user_metadata?.full_name || parsed.name,
+          },
+        }).catch((err) => console.warn("Failed to send admin code email:", err));
+      }
+
       await refreshCompanies();
-      navigate("/register-success", { state: { slug: company.slug } });
+      navigate("/register-success", { state: { slug: company.slug, adminCode } });
     } catch (err: any) {
       if (err instanceof z.ZodError) {
         toast.error(err.errors[0].message);
@@ -222,22 +246,24 @@ export default function RegisterCompany() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Email *</Label>
                   <Input
                     id="email"
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                     placeholder="info@restaurant.com"
+                    required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">Phone *</Label>
                   <Input
                     id="phone"
                     value={form.phone}
                     onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                     placeholder="+1 555-0123"
+                    required
                   />
                 </div>
               </div>
