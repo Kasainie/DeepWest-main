@@ -65,7 +65,6 @@ export default function SuperAdmin() {
   const [togglingPause, setTogglingPause] = useState<Set<string>>(new Set());
   const [approvingUsers, setApprovingUsers] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
-  const [approvingUsers, setApprovingUsers] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchData();
