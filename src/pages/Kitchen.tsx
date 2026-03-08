@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { subDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { generateReceipt, printReceipt } from "@/lib/receipt";
 import { getLocalDayBoundsUTC } from "@/lib/dateUtils";
+import { DateRangeFilter, DateRange } from "@/components/DateRangeFilter";
 
 interface OrderWithItems {
   id: string;
@@ -65,6 +67,7 @@ export default function Kitchen() {
   const [bottomTab, setBottomTab] = useState<"home" | "history">("home");
   const [completedToday, setCompletedToday] = useState(0);
   const [totalItemsToday, setTotalItemsToday] = useState(0);
+  const [dateRange, setDateRange] = useState<DateRange>({ from: new Date(), to: new Date() });
   const newOrderAudioRef = useRef<HTMLAudioElement | null>(null);
   const statusAudioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -118,12 +121,13 @@ export default function Kitchen() {
 
       return () => { supabase.removeChannel(channel); };
     }
-  }, [currentCompany?.id, playSound]);
+  }, [currentCompany?.id, playSound, dateRange]);
 
   const fetchOrders = async () => {
     if (!currentCompany) return;
     setLoading(true);
-    const { start, end } = getLocalDayBoundsUTC(new Date());
+    const { start } = getLocalDayBoundsUTC(dateRange.from);
+    const { end } = getLocalDayBoundsUTC(dateRange.to);
 
     const [activeRes, completedRes] = await Promise.all([
       supabase
@@ -306,17 +310,20 @@ export default function Kitchen() {
     <div className="pb-16">
       {bottomTab === "home" ? (
         <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-          <motion.div variants={itemVariant} className="flex items-center justify-between">
+          <motion.div variants={itemVariant} className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <h1 className="text-2xl font-bold font-display">Kitchen Display</h1>
               <p className="text-sm text-muted-foreground mt-1">
                 {orders.length} active order{orders.length !== 1 ? "s" : ""} · Live updates
               </p>
             </div>
-            <div className="flex gap-2">
-              <Badge className="bg-warning/10 text-warning border-warning/30 border">{pendingOrders.length} pending</Badge>
-              <Badge className="bg-primary/10 text-primary border-primary/30 border">{preparingOrders.length} cooking</Badge>
-              <Badge className="bg-success/10 text-success border-success/30 border">{readyOrders.length} ready</Badge>
+            <div className="flex items-center gap-3 flex-wrap">
+              <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+              <div className="flex gap-2">
+                <Badge className="bg-warning/10 text-warning border-warning/30 border">{pendingOrders.length} pending</Badge>
+                <Badge className="bg-primary/10 text-primary border-primary/30 border">{preparingOrders.length} cooking</Badge>
+                <Badge className="bg-success/10 text-success border-success/30 border">{readyOrders.length} ready</Badge>
+              </div>
             </div>
           </motion.div>
 
@@ -324,8 +331,8 @@ export default function Kitchen() {
             <StatCard title="Pending" value={pendingOrders.length} change="Waiting" changeType="neutral" icon={Clock} />
             <StatCard title="Preparing" value={preparingOrders.length} change="Cooking now" changeType="neutral" icon={Flame} />
             <StatCard title="Ready" value={readyOrders.length} change="To serve" changeType="positive" icon={Check} />
-            <StatCard title="Completed Today" value={completedToday} change="Served" changeType="positive" icon={CheckCircle} />
-            <StatCard title="Items Today" value={totalItemsToday} change={`${activeItems} active`} changeType="neutral" icon={ClipboardList} />
+            <StatCard title="Completed" value={completedToday} change="Selected period" changeType="positive" icon={CheckCircle} />
+            <StatCard title="Total Items" value={totalItemsToday} change={`${activeItems} active`} changeType="neutral" icon={ClipboardList} />
           </motion.div>
 
           {orders.length === 0 ? (
