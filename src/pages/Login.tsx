@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Navigate, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Navigate, Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Hotel, Loader2, KeyRound, Mail } from "lucide-react";
+import { Hotel, Loader2, KeyRound, Mail, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -21,8 +21,16 @@ const signupSchema = loginSchema.extend({
   fullName: z.string().trim().min(1, "Name is required").max(100),
 });
 
+interface CompanyInfo {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  slug: string;
+}
+
 export default function Login() {
   const { session } = useAuth();
+  const { slug } = useParams<{ slug?: string }>();
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -30,6 +38,21 @@ export default function Login() {
   const [fullName, setFullName] = useState("");
   const [staffCode, setStaffCode] = useState("");
   const [staffLoading, setStaffLoading] = useState(false);
+  const [company, setCompany] = useState<CompanyInfo | null>(null);
+  const [companyLoading, setCompanyLoading] = useState(!!slug);
+
+  useEffect(() => {
+    if (!slug) return;
+    setCompanyLoading(true);
+    supabase
+      .rpc("get_company_by_slug", { _slug: slug })
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setCompany(data[0] as CompanyInfo);
+        }
+      })
+      .finally(() => setCompanyLoading(false));
+  }, [slug]);
 
   if (session) {
     return <Navigate to="/" replace />;
@@ -89,7 +112,6 @@ export default function Login() {
       if (data?.error) throw new Error(data.error);
 
       if (data?.session) {
-        // Store the target company so CompanyContext picks the right one
         if (data.staff?.company_id) {
           sessionStorage.setItem("staff_login_company_id", data.staff.company_id);
         }
@@ -112,11 +134,35 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-elevated border-0">
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary">
-            <Hotel className="h-7 w-7 text-primary-foreground" />
-          </div>
-          <h1 className="text-2xl font-bold font-display">LKTECH</h1>
-          <p className="text-sm text-muted-foreground mt-1">Sign in to your dashboard</p>
+          {companyLoading ? (
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : company ? (
+            <>
+              {company.logo_url ? (
+                <img
+                  src={company.logo_url}
+                  alt={company.name}
+                  className="mx-auto mb-4 h-16 w-16 rounded-2xl object-cover border border-border"
+                />
+              ) : (
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary">
+                  <Building2 className="h-7 w-7 text-primary-foreground" />
+                </div>
+              )}
+              <h1 className="text-2xl font-bold font-display">{company.name}</h1>
+              <p className="text-sm text-muted-foreground mt-1">Sign in to your dashboard</p>
+            </>
+          ) : (
+            <>
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary">
+                <Hotel className="h-7 w-7 text-primary-foreground" />
+              </div>
+              <h1 className="text-2xl font-bold font-display">LKTECH</h1>
+              <p className="text-sm text-muted-foreground mt-1">Sign in to your dashboard</p>
+            </>
+          )}
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="owner" className="w-full">
@@ -152,7 +198,7 @@ export default function Login() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="staff@grandvista.com"
+                    placeholder="you@example.com"
                     required
                   />
                 </div>
