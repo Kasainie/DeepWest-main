@@ -54,6 +54,11 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    setLoading(true);
+    setCurrentCompany(null);
+    setCompanyRole(null);
+    setStaffDepartment(null);
+
     const { data: memberships } = await supabase
       .from("company_members")
       .select("company_id, role")
