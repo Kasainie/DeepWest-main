@@ -21,7 +21,7 @@ interface StaffRecord {
   id: string;
   full_name: string;
   staff_code: string;
-  department: string;
+  department: string[];
   role: string;
   phone: string | null;
   is_active: boolean;
@@ -116,7 +116,7 @@ export default function StaffManagement() {
 
   const [form, setForm] = useState({
     full_name: "",
-    department: "hotel",
+    departments: ["hotel"] as string[],
     role: "staff",
     phone: "",
     staff_code: generateStaffCode(),
@@ -142,13 +142,17 @@ export default function StaffManagement() {
   const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentCompany) return;
+    if (form.departments.length === 0) {
+      toast.error("Please select at least one department");
+      return;
+    }
     setSaving(true);
 
     const { error } = await supabase.from("company_staff").insert({
       company_id: currentCompany.id,
       full_name: form.full_name.trim(),
       staff_code: form.staff_code.trim().toUpperCase(),
-      department: form.department,
+      department: form.departments,
       role: form.role,
       phone: form.phone.trim() || null,
     });
@@ -161,7 +165,7 @@ export default function StaffManagement() {
         description: `Code: ${form.staff_code}`,
         duration: 5000,
       });
-      setForm({ full_name: "", department: "hotel", role: "staff", phone: "", staff_code: generateStaffCode() });
+      setForm({ full_name: "", departments: ["hotel"], role: "staff", phone: "", staff_code: generateStaffCode() });
       setAddOpen(false);
       fetchStaff();
     }
