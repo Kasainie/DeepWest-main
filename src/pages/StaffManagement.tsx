@@ -276,48 +276,47 @@ export default function StaffManagement() {
                       />
                     </div>
                     <div className="space-y-2">
-                        <Label>Departments</Label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {departments.map((d) => {
-                            const selected = form.departments.includes(d.value);
-                            return (
-                              <label
-                                key={d.value}
-                                className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors text-sm ${
-                                  selected ? "border-primary bg-primary/10" : "border-border hover:bg-secondary/50"
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={selected}
-                                  onChange={() =>
-                                    setForm((f) => ({
-                                      ...f,
-                                      departments: selected
-                                        ? f.departments.filter((v) => v !== d.value)
-                                        : [...f.departments, d.value],
-                                    }))
-                                  }
-                                  className="sr-only"
-                                />
-                                <d.icon className="h-3.5 w-3.5 shrink-0" />
-                                {d.label}
-                              </label>
-                            );
-                          })}
-                        </div>
+                      <Label>Departments</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {departments.map((d) => {
+                          const selected = form.departments.includes(d.value);
+                          return (
+                            <label
+                              key={d.value}
+                              className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors text-sm ${
+                                selected ? "border-primary bg-primary/10" : "border-border hover:bg-secondary/50"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selected}
+                                onChange={() =>
+                                  setForm((f) => ({
+                                    ...f,
+                                    departments: selected
+                                      ? f.departments.filter((v) => v !== d.value)
+                                      : [...f.departments, d.value],
+                                  }))
+                                }
+                                className="sr-only"
+                              />
+                              <d.icon className="h-3.5 w-3.5 shrink-0" />
+                              {d.label}
+                            </label>
+                          );
+                        })}
                       </div>
-                      <div className="space-y-2">
-                        <Label>Role</Label>
-                        <Select value={form.role} onValueChange={(v) => setForm((f) => ({ ...f, role: v }))}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {roles.map((r) => (
-                              <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Role</Label>
+                      <Select value={form.role} onValueChange={(v) => setForm((f) => ({ ...f, role: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {roles.map((r) => (
+                            <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label>Phone</Label>
