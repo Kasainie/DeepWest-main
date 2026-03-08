@@ -127,7 +127,7 @@ export function AppSidebar() {
               System Status
             </p>
             <div className="mt-1 flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-emerald-400" />
+              <div className="h-2 w-2 rounded-full bg-success" />
               <span className="text-xs text-sidebar-accent-foreground">All systems operational</span>
             </div>
           </div>
