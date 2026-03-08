@@ -48,25 +48,35 @@ const statusIcons: Record<string, typeof Clock> = {
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } };
 const itemVariant = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
-const KITCHEN_ALERT_SOUND = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
+// Distinct sounds: urgent bell for new orders, gentle chime for status updates
+const NEW_ORDER_SOUND = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
+const STATUS_CHANGE_SOUND = "https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3";
 
 export default function Kitchen() {
   const { currentCompany } = useCompany();
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const knownOrderIdsRef = useRef<Set<string>>(new Set());
-  const initialLoadDoneRef = useRef(false);
+  const newOrderAudioRef = useRef<HTMLAudioElement | null>(null);
+  const statusAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  const playAlert = useCallback(() => {
+  const playSound = useCallback((type: "new_order" | "status_change") => {
     try {
-      if (!audioRef.current) {
-        audioRef.current = new Audio(KITCHEN_ALERT_SOUND);
+      if (type === "new_order") {
+        if (!newOrderAudioRef.current) {
+          newOrderAudioRef.current = new Audio(NEW_ORDER_SOUND);
+        }
+        newOrderAudioRef.current.volume = 0.9;
+        newOrderAudioRef.current.currentTime = 0;
+        newOrderAudioRef.current.play().catch(() => {});
+      } else {
+        if (!statusAudioRef.current) {
+          statusAudioRef.current = new Audio(STATUS_CHANGE_SOUND);
+        }
+        statusAudioRef.current.volume = 0.6;
+        statusAudioRef.current.currentTime = 0;
+        statusAudioRef.current.play().catch(() => {});
       }
-      audioRef.current.volume = 0.8;
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
     } catch {}
   }, []);
 
@@ -78,7 +88,7 @@ export default function Kitchen() {
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders", filter: `company_id=eq.${currentCompany.id}` }, (payload) => {
           const newOrder = payload.new as any;
           if (["pending", "preparing"].includes(newOrder.status)) {
-            playAlert();
+            playSound("new_order");
             toast.info(`🔔 New Order #${newOrder.order_number}`, {
               description: newOrder.table_number ? `Table ${newOrder.table_number}` : "No table",
             });
@@ -88,10 +98,11 @@ export default function Kitchen() {
         .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `company_id=eq.${currentCompany.id}` }, (payload) => {
           const updated = payload.new as any;
           const old = payload.old as any;
-          // Play sound when order goes to pending (sent to kitchen)
           if (updated.status === "pending" && old.status !== "pending") {
-            playAlert();
+            playSound("new_order");
             toast.info(`🔔 Order #${updated.order_number} sent to kitchen`);
+          } else if (updated.status !== old.status) {
+            playSound("status_change");
           }
           fetchOrders();
         })
@@ -99,7 +110,7 @@ export default function Kitchen() {
 
       return () => { supabase.removeChannel(channel); };
     }
-  }, [currentCompany?.id, playAlert]);
+  }, [currentCompany?.id, playSound]);
 
   const fetchOrders = async () => {
     if (!currentCompany) return;
