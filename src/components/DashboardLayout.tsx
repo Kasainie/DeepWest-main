@@ -57,7 +57,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-primary-foreground">
                   {initials}
                 </div>
-                <div className="hidden sm:flex flex-col items-end">
+                <div className="flex flex-col items-end">
                   <span className="text-xs font-medium leading-tight">{displayName}</span>
                   {companyRole && (
                     <Badge variant="secondary" className="text-[9px] capitalize px-1.5 py-0">
