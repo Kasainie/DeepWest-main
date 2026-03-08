@@ -93,7 +93,6 @@ export default function SettingsPage() {
         .from("companies")
         .update({
           name: form.name.trim(),
-          slug: form.slug.trim(),
           email: form.email.trim() || null,
           phone: form.phone.trim() || null,
           address: form.address.trim() || null,
@@ -202,14 +201,12 @@ export default function SettingsPage() {
                   </span>
                   <Input
                     value={form.slug}
-                    onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
-                    disabled={!canEdit}
-                    required
-                    className="rounded-l-none"
+                    disabled
+                    className="rounded-l-none bg-muted/50 cursor-not-allowed"
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Your company is accessible at lktech.life/{form.slug || "your-name"}
+                  Your URL slug cannot be changed after registration
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
