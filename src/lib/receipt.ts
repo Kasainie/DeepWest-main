@@ -31,6 +31,7 @@ export function generateReceiptHtml(order: any, company: any): string {
 </head>
 <body>
   <div class="header">
+    ${company?.logo_url ? `<img src="${company.logo_url}" alt="${company?.name || 'Logo'}" style="max-width:80px;max-height:80px;margin:0 auto 8px;display:block;border-radius:4px;">` : ''}
     <div class="company-name">${company?.name || 'Restaurant'}</div>
     ${company?.address ? `<div class="company-info">${company.address}</div>` : ''}
     ${company?.phone ? `<div class="company-info">Tel: ${company.phone}</div>` : ''}

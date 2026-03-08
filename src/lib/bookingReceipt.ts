@@ -23,7 +23,7 @@ function formatDateTime(dateStr: string): string {
 
 export function generateBookingReceiptHtml(
   booking: BookingReceiptData,
-  company: { name?: string; address?: string; phone?: string; email?: string } | null,
+  company: { name?: string; address?: string; phone?: string; email?: string; logo_url?: string } | null,
   type: "check_in" | "check_out"
 ): string {
   const isCheckIn = type === "check_in";
@@ -57,6 +57,7 @@ export function generateBookingReceiptHtml(
 </head>
 <body>
   <div class="header">
+    ${company?.logo_url ? `<img src="${company.logo_url}" alt="${company?.name || 'Logo'}" style="max-width:80px;max-height:80px;margin:0 auto 8px;display:block;border-radius:4px;">` : ""}
     <div class="company-name">${company?.name || "Hotel"}</div>
     ${company?.address ? `<div class="company-info">${company.address}</div>` : ""}
     ${company?.phone ? `<div class="company-info">Tel: ${company.phone}</div>` : ""}
@@ -105,7 +106,7 @@ export function generateBookingReceiptHtml(
 
 export function printBookingReceipt(
   booking: BookingReceiptData,
-  company: { name?: string; address?: string; phone?: string; email?: string } | null,
+  company: { name?: string; address?: string; phone?: string; email?: string; logo_url?: string } | null,
   type: "check_in" | "check_out"
 ): void {
   const html = generateBookingReceiptHtml(booking, company, type);
@@ -119,7 +120,7 @@ export function printBookingReceipt(
 
 export function downloadBookingReceipt(
   booking: BookingReceiptData,
-  company: { name?: string; address?: string; phone?: string; email?: string } | null,
+  company: { name?: string; address?: string; phone?: string; email?: string; logo_url?: string } | null,
   type: "check_in" | "check_out"
 ): void {
   const html = generateBookingReceiptHtml(booking, company, type);
