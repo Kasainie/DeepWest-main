@@ -163,13 +163,7 @@ export default function Dashboard() {
                   format(dateRange.to, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
   const periodLabel = isToday ? "Today" : "Period";
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const showLoading = loading;
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
@@ -192,6 +186,12 @@ export default function Dashboard() {
         <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
       </motion.div>
 
+      {showLoading ? (
+        <div className="flex items-center justify-center min-h-[300px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <>
       {/* Top-level stats */}
       <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         <StatCard title="Total Rooms" value={String(totalRooms)} change={`${occupiedRooms} occupied`} changeType="neutral" icon={BedDouble} />
@@ -322,6 +322,8 @@ export default function Dashboard() {
           </Card>
         </motion.div>
       </div>
+        </>
+      )}
     </motion.div>
   );
 }
