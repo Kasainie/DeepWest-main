@@ -1,13 +1,17 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Search, LogOut, Building2 } from "lucide-react";
+import { Search, LogOut, Building2, Sun, Moon } from "lucide-react";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompany } from "@/contexts/CompanyContext";
+import { useBranding } from "@/contexts/BrandingContext";
 import { CompanySwitcher } from "@/components/CompanySwitcher";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
