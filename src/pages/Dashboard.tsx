@@ -46,6 +46,7 @@ export default function Dashboard() {
   const [todaySalesTotal, setTodaySalesTotal] = useState(0);
   const [lowStockItems, setLowStockItems] = useState(0);
   const [pendingOrders, setPendingOrders] = useState(0);
+  const [todayExpenses, setTodayExpenses] = useState(0);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
 
   useEffect(() => {
@@ -59,7 +60,7 @@ export default function Dashboard() {
 
     const today = new Date().toISOString().split("T")[0];
 
-    const [bookingsRes, roomsRes, guestsRes, ordersRes, salesRes, barRes, pendingOrdersRes, recentOrdersRes] = await Promise.all([
+    const [bookingsRes, roomsRes, guestsRes, ordersRes, salesRes, barRes, pendingOrdersRes, recentOrdersRes, expensesRes] = await Promise.all([
       supabase
         .from("bookings")
         .select("*, guests(full_name)")
@@ -99,6 +100,11 @@ export default function Dashboard() {
         .eq("company_id", currentCompany.id)
         .order("created_at", { ascending: false })
         .limit(5),
+      supabase
+        .from("expenses")
+        .select("amount")
+        .eq("company_id", currentCompany.id)
+        .eq("expense_date", today),
     ]);
 
     // Recent bookings
@@ -144,6 +150,10 @@ export default function Dashboard() {
     // Recent orders
     setRecentOrders(recentOrdersRes.data || []);
 
+    // Expenses today
+    const expensesData = expensesRes.data || [];
+    setTodayExpenses(expensesData.reduce((sum, e) => sum + Number(e.amount), 0));
+
     setLoading(false);
   };
 
@@ -182,6 +192,7 @@ export default function Dashboard() {
         <StatCard title="Total Guests" value={String(totalGuests)} change="All time" changeType="neutral" icon={Users} />
         <StatCard title="Today's Orders" value={String(todayOrders)} change={pendingOrders > 0 ? `${pendingOrders} pending` : "All clear"} changeType={pendingOrders > 0 ? "negative" : "positive"} icon={ShoppingCart} />
         <StatCard title="Today's Revenue" value={`KSh ${todaySalesTotal.toLocaleString()}`} change={`Orders: KSh ${todayOrderRevenue.toLocaleString()}`} changeType="positive" icon={DollarSign} />
+        <StatCard title="Today's Expenses" value={`KSh ${todayExpenses.toLocaleString()}`} change={todayExpenses > 0 ? `Net: KSh ${(todaySalesTotal - todayExpenses).toLocaleString()}` : "No expenses"} changeType={todayExpenses > 0 ? "negative" : "neutral"} icon={Receipt} />
         <StatCard title="Bar Alerts" value={String(lowStockItems)} change={lowStockItems > 0 ? "Low stock items" : "Stock OK"} changeType={lowStockItems > 0 ? "negative" : "positive"} icon={Wine} />
       </motion.div>
 
