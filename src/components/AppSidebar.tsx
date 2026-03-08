@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Users,
   Hotel,
+  ShieldCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -37,6 +38,7 @@ const mainItems = [
 const managementItems = [
   { title: "Bookings", url: "/bookings", icon: CalendarDays },
   { title: "Guests", url: "/guests", icon: Users },
+  { title: "Staff", url: "/staff", icon: ShieldCheck },
   { title: "Website", url: "/website", icon: Globe },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
