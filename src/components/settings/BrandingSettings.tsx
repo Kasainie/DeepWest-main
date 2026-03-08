@@ -14,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Palette, RotateCcw } from "lucide-react";
+import { Loader2, Palette, RotateCcw, Sun, Moon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -44,6 +45,7 @@ const DEFAULTS = {
   font_heading: "Playfair Display",
   font_body: "DM Sans",
   welcome_message: "",
+  theme_mode: "light" as "light" | "dark",
 };
 
 function hslStringToHex(hslStr: string): string {
@@ -110,6 +112,7 @@ export default function BrandingSettings() {
     font_heading: DEFAULTS.font_heading,
     font_body: DEFAULTS.font_body,
     welcome_message: "",
+    theme_mode: DEFAULTS.theme_mode as "light" | "dark",
   });
 
   useEffect(() => {
@@ -121,6 +124,7 @@ export default function BrandingSettings() {
         font_heading: branding.font_heading || DEFAULTS.font_heading,
         font_body: branding.font_body || DEFAULTS.font_body,
         welcome_message: branding.welcome_message || "",
+        theme_mode: branding.theme_mode || "light",
       });
     }
   }, [branding]);
@@ -147,6 +151,7 @@ export default function BrandingSettings() {
         font_heading: form.font_heading,
         font_body: form.font_body,
         welcome_message: form.welcome_message.trim() || null,
+        theme_mode: form.theme_mode,
       };
 
       if (branding) {
