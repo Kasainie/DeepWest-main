@@ -288,7 +288,7 @@ export default function Kitchen() {
           </Card>
         </motion.div>
       ) : (
-        <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <motion.div variants={itemVariant} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {orders.map((order) => (
             <OrderCard key={order.id} order={order} />
           ))}
