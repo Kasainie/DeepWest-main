@@ -153,13 +153,54 @@ export default function SuperAdmin() {
 
   const pausedCount = companies.filter((c) => c.is_paused).length;
 
+  const q = search.toLowerCase().trim();
+  const filteredCompanies = useMemo(() => {
+    if (!q) return companies;
+    return companies.filter((c) => {
+      const companyStaff = staff.filter((s) => s.company_id === c.id);
+      const ownerEmail = ownerEmails[c.owner_id] || "";
+      return (
+        c.name.toLowerCase().includes(q) ||
+        c.slug.toLowerCase().includes(q) ||
+        (c.email || "").toLowerCase().includes(q) ||
+        ownerEmail.toLowerCase().includes(q) ||
+        companyStaff.some((s) =>
+          s.full_name.toLowerCase().includes(q) ||
+          s.staff_code.toLowerCase().includes(q) ||
+          s.role.toLowerCase().includes(q) ||
+          s.department?.some((d) => d.toLowerCase().includes(q))
+        )
+      );
+    });
+  }, [q, companies, staff, ownerEmails]);
+
+  const filteredPending = useMemo(() => {
+    if (!q) return pendingUsers;
+    return pendingUsers.filter(
+      (u) =>
+        u.email.toLowerCase().includes(q) ||
+        (u.full_name || "").toLowerCase().includes(q)
+    );
+  }, [q, pendingUsers]);
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold font-display">Super Admin Dashboard</h1>
-        <p className="text-muted-foreground text-sm">
-          Overview of all registered companies and their staff
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold font-display">Super Admin Dashboard</h1>
+          <p className="text-muted-foreground text-sm">
+            Overview of all registered companies and their staff
+          </p>
+        </div>
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search companies, staff, emails…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
       </div>
 
       {/* Summary cards */}
