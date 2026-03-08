@@ -121,7 +121,51 @@ export default function Guests() {
     setSaving(false);
   };
 
-  const filtered = guests.filter((g) => {
+  const openEdit = (guest: Guest) => {
+    setEditGuest(guest);
+    setEditForm({
+      full_name: guest.full_name,
+      email: guest.email || "",
+      phone: guest.phone || "",
+      id_number: guest.id_number || "",
+      is_vip: guest.is_vip,
+    });
+    setEditOpen(true);
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editGuest) return;
+    setSaving(true);
+    const { error } = await supabase.from("guests").update({
+      full_name: editForm.full_name.trim(),
+      email: editForm.email.trim() || null,
+      phone: editForm.phone.trim() || null,
+      id_number: editForm.id_number.trim() || null,
+      is_vip: editForm.is_vip,
+    }).eq("id", editGuest.id);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Guest updated!");
+      setEditOpen(false);
+      fetchData();
+    }
+    setSaving(false);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteGuest) return;
+    const { error } = await supabase.from("guests").delete().eq("id", deleteGuest.id);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Guest deleted");
+      fetchData();
+    }
+    setDeleteGuest(null);
+  };
+
     const q = search.toLowerCase();
     return g.full_name.toLowerCase().includes(q) || (g.email || "").toLowerCase().includes(q) || (g.phone || "").toLowerCase().includes(q) || (g.id_number || "").toLowerCase().includes(q);
   });
