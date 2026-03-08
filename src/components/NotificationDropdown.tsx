@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
-import { Bell, Check, CheckCheck, Info, AlertTriangle, UserPlus, ShoppingCart, CalendarDays, X } from "lucide-react";
+import { Bell, Check, CheckCheck, Info, AlertTriangle, UserPlus, ShoppingCart, CalendarDays, X, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { formatDistanceToNow } from "date-fns";
 
 interface Notification {
@@ -35,24 +37,44 @@ const typeColors: Record<string, string> = {
 
 const NOTIFICATION_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
 
+function loadSoundSettings() {
+  try {
+    const stored = localStorage.getItem("notification_sound_settings");
+    if (stored) return JSON.parse(stored) as { enabled: boolean; volume: number };
+  } catch {}
+  return { enabled: true, volume: 0.5 };
+}
+
 export function NotificationDropdown() {
   const { currentCompany } = useCompany();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [soundSettings, setSoundSettings] = useState(loadSoundSettings);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
+  const updateSoundSettings = useCallback((update: Partial<{ enabled: boolean; volume: number }>) => {
+    setSoundSettings((prev) => {
+      const next = { ...prev, ...update };
+      localStorage.setItem("notification_sound_settings", JSON.stringify(next));
+      if (audioRef.current) audioRef.current.volume = next.volume;
+      return next;
+    });
+  }, []);
+
   const playNotificationSound = useCallback(() => {
+    if (!soundSettings.enabled) return;
     try {
       if (!audioRef.current) {
         audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
-        audioRef.current.volume = 0.5;
       }
+      audioRef.current.volume = soundSettings.volume;
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(() => {});
     } catch {}
-  }, []);
+  }, [soundSettings.enabled, soundSettings.volume]);
 
   useEffect(() => {
     if (!currentCompany) return;
