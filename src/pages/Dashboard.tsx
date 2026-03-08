@@ -5,9 +5,10 @@ import { useBranding } from "@/contexts/BrandingContext";
 import { StatCard } from "@/components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BedDouble, UtensilsCrossed, Users, TrendingUp, CalendarDays, Loader2 } from "lucide-react";
+import { BedDouble, UtensilsCrossed, Users, TrendingUp, CalendarDays, Loader2, Wine, DollarSign, ShoppingCart } from "lucide-react";
 import { motion } from "framer-motion";
 import RevenueChart from "@/components/dashboard/RevenueChart";
+import { KshIcon } from "@/components/KshIcon";
 
 const container = {
   hidden: { opacity: 0 },
@@ -40,6 +41,12 @@ export default function Dashboard() {
   const [occupiedRooms, setOccupiedRooms] = useState(0);
   const [totalGuests, setTotalGuests] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [todayOrders, setTodayOrders] = useState(0);
+  const [todayOrderRevenue, setTodayOrderRevenue] = useState(0);
+  const [todaySalesTotal, setTodaySalesTotal] = useState(0);
+  const [lowStockItems, setLowStockItems] = useState(0);
+  const [pendingOrders, setPendingOrders] = useState(0);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -50,7 +57,9 @@ export default function Dashboard() {
     if (!currentCompany) return;
     setLoading(true);
 
-    const [bookingsRes, roomsRes, guestsRes] = await Promise.all([
+    const today = new Date().toISOString().split("T")[0];
+
+    const [bookingsRes, roomsRes, guestsRes, ordersRes, salesRes, barRes, pendingOrdersRes, recentOrdersRes] = await Promise.all([
       supabase
         .from("bookings")
         .select("*, guests(full_name)")
@@ -65,6 +74,31 @@ export default function Dashboard() {
         .from("guests")
         .select("id", { count: "exact", head: true })
         .eq("company_id", currentCompany.id),
+      supabase
+        .from("orders")
+        .select("total, created_at")
+        .eq("company_id", currentCompany.id)
+        .gte("created_at", `${today}T00:00:00`),
+      supabase
+        .from("sales")
+        .select("amount")
+        .eq("company_id", currentCompany.id)
+        .eq("sale_date", today),
+      supabase
+        .from("bar_inventory")
+        .select("name, stock, low_threshold")
+        .eq("company_id", currentCompany.id),
+      supabase
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", currentCompany.id)
+        .in("status", ["pending", "preparing"]),
+      supabase
+        .from("orders")
+        .select("id, order_number, table_number, total, status, payment_status, created_at")
+        .eq("company_id", currentCompany.id)
+        .order("created_at", { ascending: false })
+        .limit(5),
     ]);
 
     // Recent bookings
@@ -90,6 +124,26 @@ export default function Dashboard() {
     );
 
     setTotalGuests(guestsRes.count || 0);
+
+    // Orders today
+    const orders = ordersRes.data || [];
+    setTodayOrders(orders.length);
+    setTodayOrderRevenue(orders.reduce((sum, o) => sum + Number(o.total), 0));
+
+    // Sales today
+    const sales = salesRes.data || [];
+    setTodaySalesTotal(sales.reduce((sum, s) => sum + Number(s.amount), 0));
+
+    // Bar low stock
+    const barItems = barRes.data || [];
+    setLowStockItems(barItems.filter((i) => i.stock <= i.low_threshold).length);
+
+    // Pending orders
+    setPendingOrders(pendingOrdersRes.count || 0);
+
+    // Recent orders
+    setRecentOrders(recentOrdersRes.data || []);
+
     setLoading(false);
   };
 
@@ -121,19 +175,25 @@ export default function Dashboard() {
         <p className="text-sm text-muted-foreground mt-1">Welcome back. Here's your property overview.</p>
       </motion.div>
 
-      <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Top-level stats */}
+      <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatCard title="Total Rooms" value={String(totalRooms)} change={`${occupiedRooms} occupied`} changeType="neutral" icon={BedDouble} />
-        <StatCard title="Room Occupancy" value={`${occupancyPct}%`} change={`${occupiedRooms} of ${totalRooms} rooms`} changeType={occupancyPct > 70 ? "positive" : "neutral"} icon={TrendingUp} />
+        <StatCard title="Occupancy" value={`${occupancyPct}%`} change={`${occupiedRooms}/${totalRooms}`} changeType={occupancyPct > 70 ? "positive" : "neutral"} icon={TrendingUp} />
         <StatCard title="Total Guests" value={String(totalGuests)} change="All time" changeType="neutral" icon={Users} />
-        <StatCard title="Active Bookings" value={String(recentBookings.filter((b) => b.status === "active" || b.status === "confirmed").length)} change="Current" changeType="neutral" icon={CalendarDays} />
+        <StatCard title="Today's Orders" value={String(todayOrders)} change={pendingOrders > 0 ? `${pendingOrders} pending` : "All clear"} changeType={pendingOrders > 0 ? "negative" : "positive"} icon={ShoppingCart} />
+        <StatCard title="Today's Revenue" value={`KSh ${todaySalesTotal.toLocaleString()}`} change={`Orders: KSh ${todayOrderRevenue.toLocaleString()}`} changeType="positive" icon={DollarSign} />
+        <StatCard title="Bar Alerts" value={String(lowStockItems)} change={lowStockItems > 0 ? "Low stock items" : "Stock OK"} changeType={lowStockItems > 0 ? "negative" : "positive"} icon={Wine} />
       </motion.div>
 
+      {/* Revenue Chart */}
       <motion.div variants={item}>
         <RevenueChart />
       </motion.div>
 
+      {/* Bottom section: Recent Bookings, Recent Orders, Room Occupancy */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <motion.div variants={item} className="lg:col-span-2">
+        {/* Recent Bookings */}
+        <motion.div variants={item}>
           <Card className="shadow-card border-0">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -143,24 +203,24 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               {recentBookings.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">No bookings yet. Create your first booking!</p>
+                <p className="text-sm text-muted-foreground text-center py-8">No bookings yet</p>
               ) : (
                 <div className="space-y-1">
                   {recentBookings.map((booking) => {
                     const Icon = bookingTypeIcons[booking.booking_type] || CalendarDays;
                     return (
-                      <div key={booking.id} className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-secondary/50 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center">
-                            <Icon className="h-4 w-4 text-primary" />
+                      <div key={booking.id} className="flex items-center justify-between py-2.5 px-2 rounded-lg hover:bg-secondary/50 transition-colors">
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center">
+                            <Icon className="h-3.5 w-3.5 text-primary" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium">{booking.guests?.full_name || "Unknown Guest"}</p>
-                            <p className="text-xs text-muted-foreground">{booking.details || booking.booking_type}</p>
+                            <p className="text-sm font-medium">{booking.guests?.full_name || "Unknown"}</p>
+                            <p className="text-xs text-muted-foreground truncate max-w-[120px]">{booking.details || booking.booking_type}</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-semibold">KSh {Number(booking.amount).toFixed(2)}</p>
+                          <p className="text-xs font-semibold">KSh {Number(booking.amount).toLocaleString()}</p>
                           <Badge variant={booking.status === "confirmed" || booking.status === "active" ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
                             {booking.status}
                           </Badge>
@@ -174,6 +234,51 @@ export default function Dashboard() {
           </Card>
         </motion.div>
 
+        {/* Recent Orders */}
+        <motion.div variants={item}>
+          <Card className="shadow-card border-0">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-display">Recent Orders</CardTitle>
+                <Badge variant="secondary" className="text-xs">{recentOrders.length} latest</Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {recentOrders.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No orders yet</p>
+              ) : (
+                <div className="space-y-1">
+                  {recentOrders.map((order) => (
+                    <div key={order.id} className="flex items-center justify-between py-2.5 px-2 rounded-lg hover:bg-secondary/50 transition-colors">
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center">
+                          <UtensilsCrossed className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Order #{order.order_number}</p>
+                          <p className="text-xs text-muted-foreground">{order.table_number ? `Table ${order.table_number}` : "Takeaway"}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-semibold">KSh {Number(order.total).toLocaleString()}</p>
+                        <div className="flex gap-1">
+                          <Badge variant={order.status === "completed" ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
+                            {order.status}
+                          </Badge>
+                          <Badge variant={order.payment_status === "paid" ? "default" : "destructive"} className="text-[10px] px-1.5 py-0">
+                            {order.payment_status}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Room Occupancy */}
         <motion.div variants={item}>
           <Card className="shadow-card border-0">
             <CardHeader className="pb-3">
