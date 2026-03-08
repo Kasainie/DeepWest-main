@@ -44,6 +44,7 @@ const statusStyles: Record<string, string> = {
   confirmed: "bg-primary/10 text-primary",
   pending: "bg-warning/10 text-warning",
   cancelled: "bg-destructive/10 text-destructive",
+  checked_out: "bg-muted text-muted-foreground",
 };
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.04 } } };
