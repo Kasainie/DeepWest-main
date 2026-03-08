@@ -128,6 +128,10 @@ export default function Bookings() {
     if (error) {
       toast.error(error.message);
     } else {
+      // Mark room as occupied when booking is active/confirmed
+      if (form.room_id && ["confirmed", "active"].includes(form.status)) {
+        await supabase.from("rooms").update({ status: "occupied" }).eq("id", form.room_id);
+      }
       toast.success("Booking created!");
       setForm({ guest_id: "", room_id: "", booking_type: "room", details: "", check_in: "", check_out: "", status: "confirmed", amount: "" });
       setAddOpen(false);
