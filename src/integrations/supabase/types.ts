@@ -874,6 +874,7 @@ export type Database = {
           current_company_id: string | null
           full_name: string | null
           id: string
+          is_approved: boolean
           updated_at: string
           user_id: string
         }
@@ -883,6 +884,7 @@ export type Database = {
           current_company_id?: string | null
           full_name?: string | null
           id?: string
+          is_approved?: boolean
           updated_at?: string
           user_id: string
         }
@@ -892,6 +894,7 @@ export type Database = {
           current_company_id?: string | null
           full_name?: string | null
           id?: string
+          is_approved?: boolean
           updated_at?: string
           user_id?: string
         }
