@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
 import { Bell, Check, CheckCheck, Info, AlertTriangle, UserPlus, ShoppingCart, CalendarDays, X, Volume2, VolumeX } from "lucide-react";
@@ -9,6 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { formatDistanceToNow } from "date-fns";
+
+// Map notification types to the departments that should see them
+const typeToDepartments: Record<string, string[] | null> = {
+  order: ["restaurant", "bar", "kitchen"],
+  booking: ["hotel", "accountant"],
+  staff: null,       // admin-only (null = visible to full-access users only)
+  warning: undefined as any, // visible to all
+  info: undefined as any,    // visible to all
+};
 
 interface Notification {
   id: string;
@@ -46,12 +55,30 @@ function loadSoundSettings() {
 }
 
 export function NotificationDropdown() {
-  const { currentCompany } = useCompany();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const { currentCompany, companyRole, staffDepartment } = useCompany();
+  const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [soundSettings, setSoundSettings] = useState(loadSoundSettings);
+
+  const isFullAccess = !companyRole || ["owner", "admin", "manager"].includes(companyRole);
+
+  // Filter notifications based on staff department access
+  const notifications = useMemo(() => {
+    if (isFullAccess) return allNotifications;
+    return allNotifications.filter((n) => {
+      const allowedDepts = typeToDepartments[n.type];
+      // undefined means visible to all (info, warning)
+      if (!(n.type in typeToDepartments)) return true;
+      if (allowedDepts === undefined) return true;
+      // null means admin-only
+      if (allowedDepts === null) return false;
+      // Check if staff has any matching department
+      if (!staffDepartment || staffDepartment.length === 0) return false;
+      return staffDepartment.some(d => allowedDepts.includes(d.toLowerCase()));
+    });
+  }, [allNotifications, isFullAccess, staffDepartment]);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
@@ -86,14 +113,21 @@ export function NotificationDropdown() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `company_id=eq.${currentCompany.id}` },
         (payload) => {
-          setNotifications((prev) => [payload.new as Notification, ...prev]);
-          playNotificationSound();
+          setAllNotifications((prev) => [payload.new as Notification, ...prev]);
+          // Only play sound if the notification passes the department filter
+          const newNotif = payload.new as Notification;
+          const allowedDepts = typeToDepartments[newNotif.type];
+          const shouldShow = isFullAccess || 
+            !(newNotif.type in typeToDepartments) || 
+            allowedDepts === undefined ||
+            (allowedDepts !== null && staffDepartment?.some(d => allowedDepts.includes(d.toLowerCase())));
+          if (shouldShow) playNotificationSound();
         }
       )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [currentCompany?.id, playNotificationSound]);
+  }, [currentCompany?.id, playNotificationSound, isFullAccess, staffDepartment]);
 
   const fetchNotifications = async () => {
     if (!currentCompany) return;
@@ -104,12 +138,12 @@ export function NotificationDropdown() {
       .order("created_at", { ascending: false })
       .limit(20);
 
-    if (data) setNotifications(data);
+    if (data) setAllNotifications(data);
   };
 
   const markAsRead = async (id: string) => {
     await supabase.from("notifications").update({ is_read: true }).eq("id", id);
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
+    setAllNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
   };
 
   const markAllRead = async () => {
@@ -117,13 +151,13 @@ export function NotificationDropdown() {
     const unreadIds = notifications.filter((n) => !n.is_read).map((n) => n.id);
     if (unreadIds.length === 0) return;
     await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds);
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    setAllNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
   };
 
   const deleteNotification = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     await supabase.from("notifications").delete().eq("id", id);
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    setAllNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
   return (
