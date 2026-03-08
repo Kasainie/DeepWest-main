@@ -63,7 +63,8 @@ export default function Conference() {
 
   const fetchData = useCallback(async () => {
     if (!currentCompany) return;
-    setLoading(true);
+    const isInitial = rooms.length === 0;
+    if (isInitial) setLoading(true);
     const [roomsRes, bookingsRes] = await Promise.all([
       supabase.from("conference_rooms").select("*").eq("company_id", currentCompany.id).order("name"),
       supabase.from("conference_bookings").select("*").eq("company_id", currentCompany.id).order("event_date", { ascending: true }),
@@ -96,16 +97,7 @@ export default function Conference() {
 
   const upcomingBookings = bookings.filter((b) => b.status !== "cancelled" && parseISO(b.event_date) >= new Date(new Date().setHours(0, 0, 0, 0)));
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-10 w-64" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-52" />)}
-        </div>
-      </div>
-    );
-  }
+  const showInlineLoader = loading && rooms.length === 0;
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">

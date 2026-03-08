@@ -102,7 +102,8 @@ export default function Restaurant() {
 
   const fetchMenu = async () => {
     if (!currentCompany) return;
-    setLoading(true);
+    const isInitial = menuItems.length === 0;
+    if (isInitial) setLoading(true);
     const { data } = await supabase
       .from("menu_items")
       .select("*")
@@ -202,13 +203,7 @@ export default function Restaurant() {
       ? menuItems
       : menuItems.filter((m) => m.category === selectedCategory);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const showInlineLoader = loading && menuItems.length === 0;
 
   return (
     <div className="pb-16">
@@ -356,6 +351,7 @@ export default function Restaurant() {
               </TabsContent>
             </Tabs>
           </motion.div>
+          )}
         </motion.div>
       ) : (
         <OrderHistory />

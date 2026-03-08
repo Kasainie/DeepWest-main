@@ -66,7 +66,8 @@ export default function Sales() {
 
   const fetchSales = async () => {
     if (!currentCompany) return;
-    setLoading(true);
+    const isInitial = sales.length === 0;
+    if (isInitial) setLoading(true);
     const fromDate = getLocalDateString(dateRange.from);
     const toDate = getLocalDateString(dateRange.to);
     const { start: rangeStart } = getLocalDayBoundsUTC(dateRange.from);
@@ -173,13 +174,7 @@ export default function Sales() {
     return days.length > 0 ? days : [{ label: format(new Date(), "MMM d"), amount: 0 }];
   }, [sales]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const showInlineLoader = loading && sales.length === 0;
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">

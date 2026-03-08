@@ -34,7 +34,8 @@ export default function Rooms() {
 
   const fetchRooms = async () => {
     if (!currentCompany) return;
-    setLoading(true);
+    const isInitial = rooms.length === 0;
+    if (isInitial) setLoading(true);
     const { data } = await supabase
       .from("rooms")
       .select("*")
@@ -62,13 +63,7 @@ export default function Rooms() {
     setDetailsOpen(true);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const showInlineLoader = loading && rooms.length === 0;
 
   const totalRooms = rooms.length;
   const occupiedRooms = rooms.filter((r) => r.status === "occupied").length;
@@ -88,6 +83,11 @@ export default function Rooms() {
         {currentCompany && <AddRoomDialog companyId={currentCompany.id} onAdded={fetchRooms} />}
       </motion.div>
 
+      {showInlineLoader ? (
+        <div className="flex items-center justify-center min-h-[300px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (<>
       <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard title="Occupancy" value={`${occupancyRate}%`} change={`${occupiedRooms} of ${totalRooms}`} changeType={occupancyRate > 80 ? "positive" : "neutral"} icon={Users} />
         <StatCard title="Available" value={availableRooms} change="Rooms" changeType="positive" icon={DoorOpen} />

@@ -79,7 +79,8 @@ export default function Bookings() {
 
   const fetchData = async () => {
     if (!currentCompany) return;
-    setLoading(true);
+    const isInitial = bookings.length === 0;
+    if (isInitial) setLoading(true);
     const fromDate = format(dateRange.from, "yyyy-MM-dd");
     const toDate = format(dateRange.to, "yyyy-MM-dd");
     const [bRes, gRes, rRes] = await Promise.all([
@@ -191,13 +192,7 @@ export default function Bookings() {
     return guestName.toLowerCase().includes(q) || b.booking_type.toLowerCase().includes(q) || b.status.toLowerCase().includes(q);
   });
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const showInlineLoader = loading && bookings.length === 0;
 
   const activeBookings = bookings.filter((b) => ["confirmed", "active"].includes(b.status)).length;
   const cancelledBookings = bookings.filter((b) => b.status === "cancelled").length;
@@ -309,6 +304,11 @@ export default function Bookings() {
         <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
       </motion.div>
 
+      {showInlineLoader ? (
+        <div className="flex items-center justify-center min-h-[300px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (<>
       <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard title="Total Bookings" value={bookings.length} icon={CalendarDays} />
         <StatCard title="Active" value={activeBookings} change="Confirmed" changeType="positive" icon={CheckCircle} />
