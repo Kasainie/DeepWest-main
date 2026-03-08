@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getLocalDayBoundsUTC, getLocalDateString } from "@/lib/dateUtils";
 import { useCompany } from "@/contexts/CompanyContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { StatCard } from "@/components/StatCard";
@@ -58,7 +59,8 @@ export default function Dashboard() {
     if (!currentCompany) return;
     setLoading(true);
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = getLocalDateString();
+    const { start: todayStart, end: todayEnd } = getLocalDayBoundsUTC(new Date());
 
     const [bookingsRes, roomsRes, guestsRes, ordersRes, salesRes, barRes, pendingOrdersRes, recentOrdersRes, expensesRes] = await Promise.all([
       supabase
@@ -79,7 +81,8 @@ export default function Dashboard() {
         .from("orders")
         .select("total, created_at")
         .eq("company_id", currentCompany.id)
-        .gte("created_at", `${today}T00:00:00`),
+        .gte("created_at", todayStart)
+        .lte("created_at", todayEnd),
       supabase
         .from("sales")
         .select("amount")
