@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { format, subDays, subMonths, startOfMonth, startOfWeek, endOfMonth } from "date-fns";
+import { useEffect, useMemo, useState } from "react";
+import { format, subDays, subMonths, startOfMonth } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -28,15 +28,35 @@ interface DateRangeFilterProps {
   onDateRangeChange: (range: DateRange) => void;
 }
 
+const toLocalDateKey = (date: Date) => format(date, "yyyy-MM-dd");
+
+const resolvePresetFromRange = (range: DateRange): string => {
+  const fromKey = toLocalDateKey(range.from);
+  const toKey = toLocalDateKey(range.to);
+
+  const matched = PRESETS.find((preset) => {
+    if (preset.value === "custom") return false;
+    const presetRange = preset.range();
+    return toLocalDateKey(presetRange.from) === fromKey && toLocalDateKey(presetRange.to) === toKey;
+  });
+
+  return matched?.value ?? "custom";
+};
+
 export function DateRangeFilter({ dateRange, onDateRangeChange }: DateRangeFilterProps) {
-  const [preset, setPreset] = useState("today");
+  const computedPreset = useMemo(() => resolvePresetFromRange(dateRange), [dateRange]);
+  const [preset, setPreset] = useState(computedPreset);
   const [fromOpen, setFromOpen] = useState(false);
   const [toOpen, setToOpen] = useState(false);
+
+  useEffect(() => {
+    setPreset((prev) => (prev === computedPreset ? prev : computedPreset));
+  }, [computedPreset]);
 
   const handlePreset = (value: string) => {
     setPreset(value);
     if (value !== "custom") {
-      const p = PRESETS.find((p) => p.value === value);
+      const p = PRESETS.find((entry) => entry.value === value);
       if (p) onDateRangeChange(p.range());
     }
   };
@@ -110,3 +130,4 @@ export function DateRangeFilter({ dateRange, onDateRangeChange }: DateRangeFilte
     </div>
   );
 }
+
