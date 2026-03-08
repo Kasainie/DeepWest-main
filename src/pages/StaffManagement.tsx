@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Shield, ShieldCheck, User, Loader2, Plus, Copy, Trash2, KeyRound, Building2, UtensilsCrossed, Wine, ChefHat, Calculator } from "lucide-react";
+import { Shield, ShieldCheck, User, Loader2, Plus, Copy, Trash2, KeyRound, Building2, UtensilsCrossed, Wine, ChefHat, Calculator, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { InviteStaffDialog } from "@/components/InviteStaffDialog";
