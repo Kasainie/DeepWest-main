@@ -135,7 +135,19 @@ export default function Bookings() {
     setSaving(false);
   };
 
-  const filtered = bookings.filter((b) => {
+  const handleCheckout = async (booking: Booking) => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    const updates: Promise<any>[] = [
+      supabase.from("bookings").update({ status: "checked_out", check_out: booking.check_out || today }).eq("id", booking.id),
+    ];
+    if (booking.room_id) {
+      updates.push(supabase.from("rooms").update({ status: "available" }).eq("id", booking.room_id));
+    }
+    await Promise.all(updates);
+    toast.success("Guest checked out successfully");
+    fetchData();
+  };
+
     const guestName = b.guests?.full_name || "";
     const q = search.toLowerCase();
     return guestName.toLowerCase().includes(q) || b.booking_type.toLowerCase().includes(q) || b.status.toLowerCase().includes(q);
