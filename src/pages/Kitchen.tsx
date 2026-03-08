@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,28 +46,60 @@ const statusIcons: Record<string, typeof Clock> = {
 };
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } };
-const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
+const itemVariant = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
+
+const KITCHEN_ALERT_SOUND = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
 
 export default function Kitchen() {
   const { currentCompany } = useCompany();
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const knownOrderIdsRef = useRef<Set<string>>(new Set());
+  const initialLoadDoneRef = useRef(false);
+
+  const playAlert = useCallback(() => {
+    try {
+      if (!audioRef.current) {
+        audioRef.current = new Audio(KITCHEN_ALERT_SOUND);
+      }
+      audioRef.current.volume = 0.8;
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {});
+    } catch {}
+  }, []);
 
   useEffect(() => {
     if (currentCompany) {
       fetchOrders();
-      // Realtime subscription
       const channel = supabase
         .channel("kitchen-orders")
-        .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders", filter: `company_id=eq.${currentCompany.id}` }, (payload) => {
+          const newOrder = payload.new as any;
+          if (["pending", "preparing"].includes(newOrder.status)) {
+            playAlert();
+            toast.info(`🔔 New Order #${newOrder.order_number}`, {
+              description: newOrder.table_number ? `Table ${newOrder.table_number}` : "No table",
+            });
+          }
+          fetchOrders();
+        })
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `company_id=eq.${currentCompany.id}` }, (payload) => {
+          const updated = payload.new as any;
+          const old = payload.old as any;
+          // Play sound when order goes to pending (sent to kitchen)
+          if (updated.status === "pending" && old.status !== "pending") {
+            playAlert();
+            toast.info(`🔔 Order #${updated.order_number} sent to kitchen`);
+          }
           fetchOrders();
         })
         .subscribe();
 
       return () => { supabase.removeChannel(channel); };
     }
-  }, [currentCompany?.id]);
+  }, [currentCompany?.id, playAlert]);
 
   const fetchOrders = async () => {
     if (!currentCompany) return;
@@ -231,7 +263,7 @@ export default function Kitchen() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <motion.div variants={item} className="flex items-center justify-between">
+      <motion.div variants={itemVariant} className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-display">Kitchen Display</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -246,7 +278,7 @@ export default function Kitchen() {
       </motion.div>
 
       {orders.length === 0 ? (
-        <motion.div variants={item}>
+        <motion.div variants={itemVariant}>
           <Card className="shadow-card border-0">
             <CardContent className="text-center py-16">
               <ChefHat className="h-14 w-14 mx-auto text-muted-foreground mb-4" />
@@ -256,7 +288,7 @@ export default function Kitchen() {
           </Card>
         </motion.div>
       ) : (
-        <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <motion.div variants={itemVariant} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {orders.map((order) => (
             <OrderCard key={order.id} order={order} />
           ))}
