@@ -135,8 +135,8 @@ export default function SuperAdmin() {
     });
   };
 
-  const q = search.toLowerCase().trim();
   const filteredCompanies = useMemo(() => {
+    const q = search.toLowerCase().trim();
     if (!q) return companies;
     return companies.filter((c) => {
       const companyStaff = staff.filter((s) => s.company_id === c.id);
@@ -154,16 +154,17 @@ export default function SuperAdmin() {
         )
       );
     });
-  }, [q, companies, staff, ownerEmails]);
+  }, [search, companies, staff, ownerEmails]);
 
   const filteredPending = useMemo(() => {
+    const q = search.toLowerCase().trim();
     if (!q) return pendingUsers;
     return pendingUsers.filter(
       (u) =>
         u.email.toLowerCase().includes(q) ||
         (u.full_name || "").toLowerCase().includes(q)
     );
-  }, [q, pendingUsers]);
+  }, [search, pendingUsers]);
 
   if (loading) {
     return (
