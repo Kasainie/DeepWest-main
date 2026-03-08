@@ -170,7 +170,8 @@ export default function Guests() {
                     </div>
                     <div>
                       <p className="text-sm font-medium">{guest.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{guest.email || "No email"}</p>
+                      <p className="text-xs text-muted-foreground">{guest.phone || "No phone"}</p>
+                      {guest.id_number && <p className="text-[10px] text-muted-foreground">ID: {guest.id_number}</p>}
                     </div>
                   </div>
                   {guest.is_vip && (
