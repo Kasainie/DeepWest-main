@@ -4,7 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { CompanyProvider } from "@/contexts/CompanyContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { CompanyGuard } from "@/components/CompanyGuard";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import Rooms from "./pages/Rooms";
@@ -16,6 +18,7 @@ import Guests from "./pages/Guests";
 import Website from "./pages/Website";
 import SettingsPage from "./pages/SettingsPage";
 import StaffManagement from "./pages/StaffManagement";
+import RegisterCompany from "./pages/RegisterCompany";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -35,24 +38,38 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route
+              path="/register-company"
+              element={
+                <ProtectedRoute>
+                  <CompanyProvider>
+                    <RegisterCompany />
+                  </CompanyProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/*"
               element={
                 <ProtectedRoute>
-                  <DashboardLayout>
-                    <Routes>
-                      <Route path="/" element={<Dashboard />} />
-                      <Route path="/rooms" element={<Rooms />} />
-                      <Route path="/restaurant" element={<Restaurant />} />
-                      <Route path="/bar" element={<Bar />} />
-                      <Route path="/conference" element={<Conference />} />
-                      <Route path="/bookings" element={<Bookings />} />
-                      <Route path="/guests" element={<Guests />} />
-                      <Route path="/staff" element={<StaffManagement />} />
-                      <Route path="/website" element={<Website />} />
-                      <Route path="/settings" element={<SettingsPage />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </DashboardLayout>
+                  <CompanyProvider>
+                    <CompanyGuard>
+                      <DashboardLayout>
+                        <Routes>
+                          <Route path="/" element={<Dashboard />} />
+                          <Route path="/rooms" element={<Rooms />} />
+                          <Route path="/restaurant" element={<Restaurant />} />
+                          <Route path="/bar" element={<Bar />} />
+                          <Route path="/conference" element={<Conference />} />
+                          <Route path="/bookings" element={<Bookings />} />
+                          <Route path="/guests" element={<Guests />} />
+                          <Route path="/staff" element={<StaffManagement />} />
+                          <Route path="/website" element={<Website />} />
+                          <Route path="/settings" element={<SettingsPage />} />
+                          <Route path="*" element={<NotFound />} />
+                        </Routes>
+                      </DashboardLayout>
+                    </CompanyGuard>
+                  </CompanyProvider>
                 </ProtectedRoute>
               }
             />

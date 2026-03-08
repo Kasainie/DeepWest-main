@@ -8,11 +8,12 @@ import {
   Settings,
   CalendarDays,
   Users,
-  Hotel,
+  Building2,
   ShieldCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useCompany } from "@/contexts/CompanyContext";
 import {
   Sidebar,
   SidebarContent,
@@ -47,6 +48,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const { currentCompany } = useCompany();
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
@@ -54,15 +56,25 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary">
-            <Hotel className="h-5 w-5 text-sidebar-primary-foreground" />
-          </div>
+          {currentCompany?.logo_url ? (
+            <img
+              src={currentCompany.logo_url}
+              alt={currentCompany.name}
+              className="h-9 w-9 shrink-0 rounded-lg object-cover"
+            />
+          ) : (
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary">
+              <Building2 className="h-5 w-5 text-sidebar-primary-foreground" />
+            </div>
+          )}
           {!collapsed && (
-            <div>
-              <h2 className="text-sm font-semibold text-sidebar-accent-foreground font-display">
-                Grand Vista
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-sidebar-accent-foreground font-display truncate">
+                {currentCompany?.name || "My Company"}
               </h2>
-              <p className="text-xs text-sidebar-foreground">Hotel & Resort</p>
+              <p className="text-xs text-sidebar-foreground truncate">
+                {currentCompany?.description || "Restaurant"}
+              </p>
             </div>
           )}
         </div>

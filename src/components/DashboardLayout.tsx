@@ -4,7 +4,8 @@ import { Bell, Search, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useCompany } from "@/contexts/CompanyContext";
+import { CompanySwitcher } from "@/components/CompanySwitcher";
 import { Badge } from "@/components/ui/badge";
 
 interface DashboardLayoutProps {
@@ -13,7 +14,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, signOut } = useAuth();
-  const { role } = useUserRole();
+  const { companyRole } = useCompany();
   const initials = user?.user_metadata?.full_name
     ? user.user_metadata.full_name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
     : user?.email?.slice(0, 2).toUpperCase() ?? "GV";
@@ -26,7 +27,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <header className="h-14 flex items-center justify-between border-b px-4 bg-card">
             <div className="flex items-center gap-3">
               <SidebarTrigger />
-              <div className="relative hidden md:block">
+              <CompanySwitcher />
+              <div className="relative hidden lg:block">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search bookings, guests..."
@@ -43,9 +45,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-primary-foreground">
                   {initials}
                 </div>
-                {role && (
+                {companyRole && (
                   <Badge variant="secondary" className="text-[10px] capitalize hidden sm:inline-flex">
-                    {role}
+                    {companyRole}
                   </Badge>
                 )}
               </div>
