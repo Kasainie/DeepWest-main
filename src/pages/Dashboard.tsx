@@ -186,6 +186,12 @@ export default function Dashboard() {
         <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
       </motion.div>
 
+      {showLoading ? (
+        <div className="flex items-center justify-center min-h-[300px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <>
       {/* Top-level stats */}
       <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         <StatCard title="Total Rooms" value={String(totalRooms)} change={`${occupiedRooms} occupied`} changeType="neutral" icon={BedDouble} />
