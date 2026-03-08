@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Receipt, TrendingDown, PieChart, Loader2, FolderPlus } from "lucide-react";
+import { Plus, Receipt, TrendingDown, PieChart, Loader2, FolderPlus, Download, FileText } from "lucide-react";
+import { downloadCSV, downloadPDF } from "@/lib/export";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { formatKES } from "@/lib/currency";
@@ -154,7 +155,48 @@ export default function Expenses() {
           <h1 className="text-2xl font-bold font-display">Expenses</h1>
           <p className="text-sm text-muted-foreground mt-1">Budget tracking, categories & P&L</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => {
+            const cols = [
+              { key: "expense_date", header: "Date" },
+              { key: "description", header: "Description" },
+              { key: "category_name", header: "Category" },
+              { key: "payment_method", header: "Payment" },
+              { key: "amount", header: "Amount (KSh)" },
+              { key: "notes", header: "Notes" },
+            ];
+            downloadCSV(expenses.map(e => ({
+              ...e,
+              category_name: categories.find(c => c.id === e.category_id)?.name || "Uncategorized",
+              amount: Number(e.amount).toFixed(2),
+            })), cols, `expenses-${format(new Date(), "yyyy-MM-dd")}`);
+            toast.success("CSV downloaded!");
+          }}>
+            <Download className="h-4 w-4 mr-1" /> CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => {
+            const cols = [
+              { key: "expense_date", header: "Date" },
+              { key: "description", header: "Description" },
+              { key: "category_name", header: "Category" },
+              { key: "payment_method", header: "Payment" },
+              { key: "amount", header: "Amount" },
+            ];
+            downloadPDF("Expenses Report", currentCompany?.name || "Company", cols,
+              expenses.map(e => ({
+                ...e,
+                category_name: categories.find(c => c.id === e.category_id)?.name || "Uncategorized",
+                amount: formatKES(Number(e.amount)),
+              })),
+              [
+                { label: "This Month", value: formatKES(stats.totalMonth) },
+                { label: "Budget", value: formatKES(stats.totalBudget) },
+                { label: "Remaining", value: formatKES(Math.abs(stats.profitLoss)) },
+              ]
+            );
+          }}>
+            <FileText className="h-4 w-4 mr-1" /> PDF
+          </Button>
           <Dialog open={addCatOpen} onOpenChange={setAddCatOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm"><FolderPlus className="h-4 w-4 mr-1" /> Category</Button>
