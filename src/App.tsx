@@ -10,6 +10,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { CompanyGuard } from "@/components/CompanyGuard";
 import { DepartmentGuard } from "@/components/DepartmentGuard";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { SuperAdminGuard } from "@/components/SuperAdminGuard";
 import Dashboard from "./pages/Dashboard";
 import Rooms from "./pages/Rooms";
 import Restaurant from "./pages/Restaurant";
@@ -106,7 +107,7 @@ const App = () => (
                               <Route path="/website" element={<Website />} />
                               <Route path="/settings" element={<SettingsPage />} />
                               <Route path="/about" element={<About />} />
-                              <Route path="/super-admin" element={<SuperAdmin />} />
+                              <Route path="/super-admin" element={<SuperAdminGuard><SuperAdmin /></SuperAdminGuard>} />
                               <Route path="*" element={<NotFound />} />
                             </Routes>
                           </DepartmentGuard>
