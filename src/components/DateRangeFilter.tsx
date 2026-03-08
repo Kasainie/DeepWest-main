@@ -29,7 +29,7 @@ interface DateRangeFilterProps {
 }
 
 export function DateRangeFilter({ dateRange, onDateRangeChange }: DateRangeFilterProps) {
-  const [preset, setPreset] = useState("30d");
+  const [preset, setPreset] = useState("today");
   const [fromOpen, setFromOpen] = useState(false);
   const [toOpen, setToOpen] = useState(false);
 
