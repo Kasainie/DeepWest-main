@@ -27,6 +27,7 @@ const DEFAULT_BRANDING: Omit<Branding, "id" | "company_id"> = {
   font_heading: "Playfair Display",
   font_body: "DM Sans",
   welcome_message: null,
+  theme_mode: "light",
 };
 
 const FONT_URLS: Record<string, string> = {
@@ -53,6 +54,13 @@ export const useBranding = () => useContext(BrandingContext);
 function applyBranding(b: Omit<Branding, "id" | "company_id"> | null) {
   const vals = b || DEFAULT_BRANDING;
   const root = document.documentElement;
+
+  // Apply dark/light mode
+  if (vals.theme_mode === "dark") {
+    root.classList.add("dark");
+  } else {
+    root.classList.remove("dark");
+  }
 
   root.style.setProperty("--primary", vals.primary_color);
   root.style.setProperty("--ring", vals.primary_color);
