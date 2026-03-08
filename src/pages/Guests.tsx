@@ -17,6 +17,7 @@ interface Guest {
   full_name: string;
   email: string | null;
   phone: string | null;
+  id_number: string | null;
   is_vip: boolean;
   total_visits: number;
   total_spent: number;
@@ -33,7 +34,7 @@ export default function Guests() {
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ full_name: "", email: "", phone: "", is_vip: false });
+  const [form, setForm] = useState({ full_name: "", email: "", phone: "", id_number: "", is_vip: false });
 
   useEffect(() => {
     if (currentCompany) fetchGuests();
@@ -61,6 +62,7 @@ export default function Guests() {
       full_name: form.full_name.trim(),
       email: form.email.trim() || null,
       phone: form.phone.trim() || null,
+      id_number: form.id_number.trim() || null,
       is_vip: form.is_vip,
     });
 
@@ -68,7 +70,7 @@ export default function Guests() {
       toast.error(error.message);
     } else {
       toast.success("Guest added!");
-      setForm({ full_name: "", email: "", phone: "", is_vip: false });
+      setForm({ full_name: "", email: "", phone: "", id_number: "", is_vip: false });
       setAddOpen(false);
       fetchGuests();
     }
@@ -115,7 +117,17 @@ export default function Guests() {
                 </div>
                 <div className="space-y-2">
                   <Label>Phone</Label>
-                  <Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} placeholder="+1 555-0123" />
+                  <Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} placeholder="+254 700 123456" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>ID Number</Label>
+                  <Input value={form.id_number} onChange={(e) => setForm((f) => ({ ...f, id_number: e.target.value }))} placeholder="12345678" maxLength={30} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="john@email.com" />
                 </div>
               </div>
               <div className="flex items-center gap-3">
