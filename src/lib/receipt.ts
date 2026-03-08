@@ -51,7 +51,7 @@ export function generateReceiptHtml(order: any, company: any): string {
     <div class="item">
       <span class="item-name">${oi.name}</span>
       <span class="item-qty">${oi.quantity}</span>
-      <span class="item-price">$${Number(oi.total_price).toFixed(2)}</span>
+      <span class="item-price">KSh ${Number(oi.total_price).toFixed(2)}</span>
     </div>`).join('')}
   </div>
 
@@ -59,15 +59,15 @@ export function generateReceiptHtml(order: any, company: any): string {
   <div class="totals">
     <div class="total-line">
       <span>Subtotal</span>
-      <span>$${Number(order.subtotal).toFixed(2)}</span>
+      <span>KSh ${Number(order.subtotal).toFixed(2)}</span>
     </div>
     <div class="total-line">
       <span>Tax (10%)</span>
-      <span>$${Number(order.tax).toFixed(2)}</span>
+      <span>KSh ${Number(order.tax).toFixed(2)}</span>
     </div>
     <div class="total-line total-final">
       <span>TOTAL</span>
-      <span>$${Number(order.total).toFixed(2)}</span>
+      <span>KSh ${Number(order.total).toFixed(2)}</span>
     </div>
   </div>
 

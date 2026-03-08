@@ -250,9 +250,9 @@ export default function BarAdmin() {
 
       {/* Stats */}
       <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Bar Revenue" value={`$${totalRevenue.toFixed(2)}`} change="Recent" changeType="neutral" icon={DollarSign} />
+        <StatCard title="Bar Revenue" value={`KSh ${totalRevenue.toFixed(2)}`} change="Recent" changeType="neutral" icon={DollarSign} />
         <StatCard title="Orders" value={`${totalOrders}`} change="Last 20" changeType="neutral" icon={TrendingUp} />
-        <StatCard title="Avg Check" value={`$${avgCheck.toFixed(2)}`} change="" changeType="neutral" icon={DollarSign} />
+        <StatCard title="Avg Check" value={`KSh ${avgCheck.toFixed(2)}`} change="" changeType="neutral" icon={DollarSign} />
         <StatCard title="Low Stock" value={`${lowStockItems.length}`} change={lowStockItems.length > 0 ? "Needs attention" : "All good"} changeType={lowStockItems.length > 0 ? "negative" : "positive"} icon={Package} />
       </motion.div>
 
@@ -335,7 +335,7 @@ export default function BarAdmin() {
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
-                            <span className="text-sm font-semibold">${mi.price.toFixed(2)}</span>
+                            <span className="text-sm font-semibold">KSh {mi.price.toFixed(2)}</span>
                             <Switch checked={mi.is_available} onCheckedChange={() => handleToggleAvailable(mi.id, mi.is_available)} className="scale-75" />
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteMenuItem(mi.id)}>
                               <Trash2 className="h-3 w-3" />
@@ -494,7 +494,7 @@ export default function BarAdmin() {
                               </Button>
                             </div>
                             {inv.cost_per_unit > 0 && (
-                              <span className="text-xs text-muted-foreground hidden sm:inline">${inv.cost_per_unit}/ea</span>
+                              <span className="text-xs text-muted-foreground hidden sm:inline">KSh {inv.cost_per_unit}/ea</span>
                             )}
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteInventory(inv.id)}>
                               <Trash2 className="h-3 w-3" />

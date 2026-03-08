@@ -140,7 +140,7 @@ export default function RevenueChart() {
             <div>
               <CardTitle className="text-lg font-display">Revenue</CardTitle>
               <p className="text-xs text-muted-foreground">
-                ${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} total
+                KSh {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} total
               </p>
             </div>
           </div>
@@ -182,7 +182,7 @@ export default function RevenueChart() {
                 tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(v) => `$${v}`}
+                tickFormatter={(v) => `KSh ${v}`}
               />
               <Tooltip
                 contentStyle={{
@@ -192,7 +192,7 @@ export default function RevenueChart() {
                   fontSize: 12,
                 }}
                 formatter={(value: number, name: string) => [
-                  `$${value.toFixed(2)}`,
+                  `KSh ${value.toFixed(2)}`,
                   name === "orders" ? "Orders" : name === "bookings" ? "Bookings" : "Total",
                 ]}
               />

@@ -154,20 +154,20 @@ export function OrdersList() {
                   <span>
                     <span className="font-medium">×{oi.quantity}</span> {oi.name}
                   </span>
-                  <span className="text-muted-foreground">${Number(oi.total_price).toFixed(2)}</span>
+                  <span className="text-muted-foreground">KSh {Number(oi.total_price).toFixed(2)}</span>
                 </div>
               ))}
               <div className="border-t pt-1 mt-1 flex justify-between text-xs">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span>${Number(order.subtotal).toFixed(2)}</span>
+                <span>KSh {Number(order.subtotal).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Tax</span>
-                <span>${Number(order.tax).toFixed(2)}</span>
+                <span>KSh {Number(order.tax).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm font-bold">
                 <span>Total</span>
-                <span>${Number(order.total).toFixed(2)}</span>
+                <span>KSh {Number(order.total).toFixed(2)}</span>
               </div>
             </div>
 

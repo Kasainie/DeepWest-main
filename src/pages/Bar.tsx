@@ -14,18 +14,18 @@ const tabs = [
 ];
 
 const popularDrinks = [
-  { name: "Old Fashioned", category: "Cocktail", price: "$16", orders: 42, icon: Martini },
-  { name: "Craft IPA", category: "Beer", price: "$9", orders: 38, icon: Beer },
-  { name: "Espresso Martini", category: "Cocktail", price: "$18", orders: 35, icon: Coffee },
-  { name: "House Red Wine", category: "Wine", price: "$14", orders: 28, icon: Wine },
-  { name: "Mojito", category: "Cocktail", price: "$15", orders: 24, icon: Martini },
+  { name: "Old Fashioned", category: "Cocktail", price: "KSh 1,600", orders: 42, icon: Martini },
+  { name: "Craft IPA", category: "Beer", price: "KSh 900", orders: 38, icon: Beer },
+  { name: "Espresso Martini", category: "Cocktail", price: "KSh 1,800", orders: 35, icon: Coffee },
+  { name: "House Red Wine", category: "Wine", price: "KSh 1,400", orders: 28, icon: Wine },
+  { name: "Mojito", category: "Cocktail", price: "KSh 1,500", orders: 24, icon: Martini },
 ];
 
 const activeOrders = [
-  { table: "Bar 3", items: "2x Old Fashioned, 1x Beer", time: "2 min ago", total: "$41" },
-  { table: "VIP 2", items: "1x Champagne Bottle", time: "5 min ago", total: "$180" },
-  { table: "Lounge 4", items: "3x Wine, 2x Cocktail", time: "8 min ago", total: "$72" },
-  { table: "Terrace 7", items: "4x Beer, 1x Nachos", time: "12 min ago", total: "$56" },
+  { table: "Bar 3", items: "2x Old Fashioned, 1x Beer", time: "2 min ago", total: "KSh 4,100" },
+  { table: "VIP 2", items: "1x Champagne Bottle", time: "5 min ago", total: "KSh 18,000" },
+  { table: "Lounge 4", items: "3x Wine, 2x Cocktail", time: "8 min ago", total: "KSh 7,200" },
+  { table: "Terrace 7", items: "4x Beer, 1x Nachos", time: "12 min ago", total: "KSh 5,600" },
 ];
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
@@ -43,9 +43,9 @@ export default function Bar() {
       </motion.div>
 
       <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Bar Revenue" value="$3,840" change="+15%" changeType="positive" icon={DollarSign} />
+        <StatCard title="Bar Revenue" value="KSh 384,000" change="+15%" changeType="positive" icon={DollarSign} />
         <StatCard title="Active Guests" value="49" change="70% capacity" changeType="neutral" icon={Users} />
-        <StatCard title="Avg Check" value="$28.50" change="+$3.20" changeType="positive" icon={TrendingUp} />
+        <StatCard title="Avg Check" value="KSh 2,850" change="+KSh 320" changeType="positive" icon={TrendingUp} />
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

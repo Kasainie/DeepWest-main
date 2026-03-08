@@ -228,7 +228,7 @@ export default function Restaurant() {
                                 </Badge>
                               </div>
                               <div className="text-right ml-3">
-                                <p className="text-sm font-bold font-display">${Number(mi.price).toFixed(2)}</p>
+                                <p className="text-sm font-bold font-display">KSh {Number(mi.price).toFixed(2)}</p>
                                 {inCart && (
                                   <Badge className="text-[10px] mt-1">×{inCart.quantity}</Badge>
                                 )}
@@ -277,7 +277,7 @@ export default function Restaurant() {
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-medium truncate">{c.menuItem.name}</p>
                                 <p className="text-[10px] text-muted-foreground">
-                                  ${Number(c.menuItem.price).toFixed(2)} each
+                                  KSh {Number(c.menuItem.price).toFixed(2)} each
                                 </p>
                               </div>
                               <div className="flex items-center gap-1">
@@ -293,7 +293,7 @@ export default function Restaurant() {
                                 </Button>
                               </div>
                               <p className="text-xs font-bold w-14 text-right">
-                                ${(c.menuItem.price * c.quantity).toFixed(2)}
+                                KSh {(c.menuItem.price * c.quantity).toFixed(2)}
                               </p>
                             </div>
                           ))}
@@ -313,15 +313,15 @@ export default function Restaurant() {
                         <div className="border-t pt-2 space-y-1">
                           <div className="flex justify-between text-xs">
                             <span className="text-muted-foreground">Subtotal</span>
-                            <span>${cartTotal.toFixed(2)}</span>
+                            <span>KSh {cartTotal.toFixed(2)}</span>
                           </div>
                           <div className="flex justify-between text-xs">
                             <span className="text-muted-foreground">Tax (10%)</span>
-                            <span>${tax.toFixed(2)}</span>
+                            <span>KSh {tax.toFixed(2)}</span>
                           </div>
                           <div className="flex justify-between text-sm font-bold">
                             <span>Total</span>
-                            <span>${(cartTotal + tax).toFixed(2)}</span>
+                            <span>KSh {(cartTotal + tax).toFixed(2)}</span>
                           </div>
                         </div>
 

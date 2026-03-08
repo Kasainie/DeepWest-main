@@ -160,7 +160,7 @@ export default function Dashboard() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-semibold">${Number(booking.amount).toFixed(2)}</p>
+                          <p className="text-sm font-semibold">KSh {Number(booking.amount).toFixed(2)}</p>
                           <Badge variant={booking.status === "confirmed" || booking.status === "active" ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
                             {booking.status}
                           </Badge>

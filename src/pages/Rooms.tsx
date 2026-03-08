@@ -188,7 +188,7 @@ export default function Rooms() {
                   <span className="flex items-center gap-1"><Tv className="h-3 w-3" /> TV</span>
                 </div>
                 <div className="flex items-center justify-between pt-1">
-                  <span className="text-lg font-bold font-display">${Number(room.price_per_night).toFixed(0)}</span>
+                  <span className="text-lg font-bold font-display">KSh {Number(room.price_per_night).toLocaleString()}</span>
                   <span className="text-[10px] text-muted-foreground">per night</span>
                 </div>
               </CardContent>

@@ -49,9 +49,9 @@ describe("generateReceipt", () => {
   it("includes order items and totals", () => {
     const html = generateReceiptHtml(mockOrder, mockCompany);
     expect(html).toContain("Maize");
-    expect(html).toContain("$50.00");
-    expect(html).toContain("$5.00");
-    expect(html).toContain("$55.00");
+    expect(html).toContain("KSh 50.00");
+    expect(html).toContain("KSh 5.00");
+    expect(html).toContain("KSh 55.00");
   });
 
   it("includes order number and table", () => {
