@@ -1,5 +1,4 @@
 import { useCompany } from "@/contexts/CompanyContext";
-import { useNavigate } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -7,12 +6,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Building2 } from "lucide-react";
 
 export function CompanySwitcher() {
   const { companies, currentCompany, switchCompany } = useCompany();
-  const navigate = useNavigate();
 
   if (companies.length === 0) return null;
 
@@ -20,13 +17,7 @@ export function CompanySwitcher() {
     <div className="flex items-center gap-2">
       <Select
         value={currentCompany?.id || ""}
-        onValueChange={(val) => {
-          if (val === "__new__") {
-            navigate("/register-company");
-          } else {
-            switchCompany(val);
-          }
-        }}
+        onValueChange={switchCompany}
       >
         <SelectTrigger className="w-[200px] h-9 bg-secondary border-0">
           <div className="flex items-center gap-2">
