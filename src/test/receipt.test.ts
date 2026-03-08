@@ -1,6 +1,16 @@
 import { describe, it, expect } from "vitest";
 import { generateReceipt } from "@/lib/receipt";
 
+// Helper to extract HTML string from blob since jsdom Blob doesn't support .text()
+function blobToString(blob: Blob): string {
+  // The generateReceipt function creates Blob([html]), so we can reconstruct
+  // by calling the function and inspecting the HTML directly
+  return "";
+}
+
+// We'll test by modifying generateReceipt to also export the HTML, or test via the function internals
+// Instead, let's just verify the blob creation and test the HTML generation separately
+
 const mockOrder = {
   order_number: 42,
   created_at: "2026-03-08T07:06:11.687Z",
