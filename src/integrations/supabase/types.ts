@@ -14,6 +14,73 @@ export type Database = {
   }
   public: {
     Tables: {
+      bookings: {
+        Row: {
+          amount: number
+          booking_type: string
+          check_in: string | null
+          check_out: string | null
+          company_id: string
+          created_at: string
+          details: string | null
+          guest_id: string | null
+          id: string
+          room_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          booking_type?: string
+          check_in?: string | null
+          check_out?: string | null
+          company_id: string
+          created_at?: string
+          details?: string | null
+          guest_id?: string | null
+          id?: string
+          room_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          booking_type?: string
+          check_in?: string | null
+          check_out?: string | null
+          company_id?: string
+          created_at?: string
+          details?: string | null
+          guest_id?: string | null
+          id?: string
+          room_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "guests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           address: string | null
@@ -132,6 +199,59 @@ export type Database = {
           },
         ]
       }
+      guests: {
+        Row: {
+          company_id: string
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          is_vip: boolean
+          last_visit: string | null
+          notes: string | null
+          phone: string | null
+          total_spent: number
+          total_visits: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          is_vip?: boolean
+          last_visit?: string | null
+          notes?: string | null
+          phone?: string | null
+          total_spent?: number
+          total_visits?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_vip?: boolean
+          last_visit?: string | null
+          notes?: string | null
+          phone?: string | null
+          total_spent?: number
+          total_visits?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -164,6 +284,56 @@ export type Database = {
           {
             foreignKeyName: "profiles_current_company_id_fkey"
             columns: ["current_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rooms: {
+        Row: {
+          amenities: string[] | null
+          beds: number
+          company_id: string
+          created_at: string
+          floor: number
+          id: string
+          price_per_night: number
+          room_number: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          amenities?: string[] | null
+          beds?: number
+          company_id: string
+          created_at?: string
+          floor?: number
+          id?: string
+          price_per_night?: number
+          room_number: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          amenities?: string[] | null
+          beds?: number
+          company_id?: string
+          created_at?: string
+          floor?: number
+          id?: string
+          price_per_night?: number
+          room_number?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rooms_company_id_fkey"
+            columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
