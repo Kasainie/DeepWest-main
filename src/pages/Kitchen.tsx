@@ -263,7 +263,7 @@ export default function Kitchen() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <motion.div variants={item} className="flex items-center justify-between">
+      <motion.div variants={itemVariant} className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-display">Kitchen Display</h1>
           <p className="text-sm text-muted-foreground mt-1">
