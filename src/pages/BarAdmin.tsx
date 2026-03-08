@@ -15,6 +15,7 @@ import {
   Wine, Plus, Loader2, DollarSign, TrendingUp, Package, Users,
   Pencil, Trash2, Beer, Coffee, Martini, AlertTriangle,
 } from "lucide-react";
+import { OrdersList } from "@/components/orders/OrdersList";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -351,37 +352,7 @@ export default function BarAdmin() {
 
           {/* ORDERS TAB */}
           <TabsContent value="orders">
-            <Card className="shadow-card border-0">
-              <CardHeader>
-                <CardTitle className="text-lg font-display">Recent Bar Orders</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {orders.length === 0 ? (
-                  <p className="text-center text-sm text-muted-foreground py-8">No orders yet.</p>
-                ) : (
-                  <div className="space-y-1">
-                    {orders.map((order) => (
-                      <div key={order.id} className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-secondary/50 transition-colors">
-                        <div>
-                          <p className="text-sm font-medium">Order #{order.order_number}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            {order.table_number && <Badge variant="secondary" className="text-[10px]">Table {order.table_number}</Badge>}
-                            <Badge variant={order.status === "completed" ? "default" : "secondary"} className="text-[10px] capitalize">{order.status}</Badge>
-                            <Badge variant={order.payment_status === "paid" ? "default" : "destructive"} className="text-[10px] capitalize">{order.payment_status}</Badge>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold">${order.total?.toFixed(2)}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(order.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <OrdersList />
           </TabsContent>
 
           {/* STAFF TAB */}

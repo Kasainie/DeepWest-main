@@ -4,22 +4,30 @@ import { useCompany } from "@/contexts/CompanyContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Check, Clock, ChefHat, Flame } from "lucide-react";
+import { Loader2, Check, Clock, ChefHat, Flame, Download } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { generateReceipt } from "@/lib/receipt";
 
 interface OrderWithItems {
   id: string;
   order_number: number;
   table_number: string | null;
   status: string;
+  payment_status: string;
+  payment_method: string | null;
+  subtotal: number;
+  tax: number;
+  total: number;
   notes: string | null;
   created_at: string;
-  total: number;
+  paid_at: string | null;
   order_items: {
     id: string;
     name: string;
     quantity: number;
+    unit_price: number;
+    total_price: number;
     notes: string | null;
     status: string;
   }[];
@@ -96,6 +104,18 @@ export default function Kitchen() {
     setUpdating(null);
   };
 
+  const handleDownload = (order: OrderWithItems) => {
+    const blob = generateReceipt(order, currentCompany);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const label = order.payment_status === "paid" ? "receipt" : "bill";
+    a.download = `${label}-order-${order.order_number}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${order.payment_status === "paid" ? "Receipt" : "Bill"} downloaded!`);
+  };
+
   const pendingOrders = orders.filter((o) => o.status === "pending");
   const preparingOrders = orders.filter((o) => o.status === "preparing");
   const readyOrders = orders.filter((o) => o.status === "ready");
@@ -150,7 +170,7 @@ export default function Kitchen() {
             </div>
           )}
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {order.status === "pending" && (
               <Button
                 size="sm"
@@ -185,6 +205,15 @@ export default function Kitchen() {
                 Mark Served
               </Button>
             )}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleDownload(order)}
+              className="text-xs"
+            >
+              <Download className="h-3 w-3 mr-1" />
+              {order.payment_status === "paid" ? "Receipt" : "Bill"}
+            </Button>
           </div>
         </CardContent>
       </Card>
