@@ -92,6 +92,7 @@ const App = () => (
                           <Route path="/staff" element={<StaffManagement />} />
                           <Route path="/website" element={<Website />} />
                           <Route path="/settings" element={<SettingsPage />} />
+                          <Route path="/about" element={<About />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
                         </DashboardLayout>
