@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
-import { Shield, ShieldCheck, User, Loader2, Plus, Copy, Trash2, KeyRound, Building2, UtensilsCrossed, Wine, ChefHat, Calculator, RotateCcw } from "lucide-react";
+import { Shield, ShieldCheck, User, Loader2, Plus, Copy, Trash2, KeyRound, Building2, UtensilsCrossed, Wine, ChefHat, Calculator, RotateCcw, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { InviteStaffDialog } from "@/components/InviteStaffDialog";
@@ -63,6 +63,35 @@ const deptColors: Record<string, string> = {
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
+
+function StaffCodeCell({ code, onCopy }: { code: string; onCopy: (code: string) => void }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="flex items-center gap-1">
+      <code className="text-xs font-mono bg-secondary px-2 py-1 rounded hidden sm:inline-block min-w-[70px] text-center">
+        {visible ? code : "••••••••"}
+      </code>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7"
+        onClick={() => setVisible((v) => !v)}
+        title={visible ? "Hide code" : "Reveal code"}
+      >
+        {visible ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7"
+        onClick={() => onCopy(code)}
+        title="Copy code"
+      >
+        <Copy className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
 
 function generateStaffCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -379,18 +408,7 @@ export default function StaffManagement() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <code className="text-xs font-mono bg-secondary px-2 py-1 rounded hidden sm:inline-block">
-                          {member.staff_code}
-                        </code>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => handleCopyCode(member.staff_code)}
-                          title="Copy code"
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
+                        <StaffCodeCell code={member.staff_code} onCopy={handleCopyCode} />
                         {canManage && (
                           <>
                             <AlertDialog>
