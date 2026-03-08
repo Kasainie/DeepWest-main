@@ -27,6 +27,16 @@ interface Booking {
   amount: number;
   created_at: string;
   guests: { full_name: string } | null;
+  room_id: string | null;
+  rooms: { room_number: string } | null;
+}
+
+interface AvailableRoom {
+  id: string;
+  room_number: string;
+  type: string;
+  price_per_night: number;
+  status: string;
 }
 
 const statusStyles: Record<string, string> = {
