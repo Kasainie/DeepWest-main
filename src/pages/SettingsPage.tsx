@@ -51,8 +51,41 @@ export default function SettingsPage() {
       setLogoPreview(currentCompany.logo_url);
       setRemoveLogo(false);
       setLogoFile(null);
+      fetchStaffCode();
     }
   }, [currentCompany?.id]);
+
+  const fetchStaffCode = async () => {
+    if (!currentCompany || !user) return;
+    const { data } = await supabase
+      .from("company_staff")
+      .select("staff_code")
+      .eq("company_id", currentCompany.id)
+      .eq("user_id", user.id)
+      .single();
+    setStaffCode(data?.staff_code || null);
+  };
+
+  const regenerateCode = async () => {
+    if (!currentCompany || !user) return;
+    setRegenerating(true);
+    try {
+      const newCode = "ADM-" + String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+      const { error } = await supabase
+        .from("company_staff")
+        .update({ staff_code: newCode })
+        .eq("company_id", currentCompany.id)
+        .eq("user_id", user.id);
+      if (error) throw error;
+      setStaffCode(newCode);
+      setCodeRevealed(true);
+      toast.success("Access code regenerated!", { description: `New code: ${newCode}` });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to regenerate code");
+    } finally {
+      setRegenerating(false);
+    }
+  };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
