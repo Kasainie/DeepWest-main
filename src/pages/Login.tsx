@@ -115,7 +115,7 @@ export default function Login() {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary">
             <Hotel className="h-7 w-7 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold font-display">Grand Vista</h1>
+          <h1 className="text-2xl font-bold font-display">LKTECH</h1>
           <p className="text-sm text-muted-foreground mt-1">Sign in to your dashboard</p>
         </CardHeader>
         <CardContent>
