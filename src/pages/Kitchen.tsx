@@ -214,6 +214,15 @@ export default function Kitchen() {
               <Download className="h-3 w-3 mr-1" />
               {order.payment_status === "paid" ? "Receipt" : "Bill"}
             </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => printReceipt(order, currentCompany)}
+              className="text-xs"
+            >
+              <Printer className="h-3 w-3 mr-1" />
+              Print
+            </Button>
           </div>
         </CardContent>
       </Card>
