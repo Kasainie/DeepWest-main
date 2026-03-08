@@ -1168,6 +1168,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_company_by_slug: {
+        Args: { _slug: string }
+        Returns: {
+          id: string
+          logo_url: string
+          name: string
+          slug: string
+        }[]
+      }
       get_company_role: {
         Args: { _company_id: string; _user_id: string }
         Returns: string
