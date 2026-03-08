@@ -50,6 +50,7 @@ export default function Sales() {
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>({ from: new Date(), to: new Date() });
+  const [deptFilter, setDeptFilter] = useState<string>("all");
   const [form, setForm] = useState({
     sale_date: format(new Date(), "yyyy-MM-dd"),
     department: "restaurant",
@@ -167,8 +168,7 @@ export default function Sales() {
     setSaving(false);
   };
 
-  // Sales are already filtered server-side by dateRange, so use them directly
-  const filtered = sales;
+  const filtered = deptFilter === "all" ? sales : sales.filter(s => s.department === deptFilter);
 
   const stats = useMemo(() => {
     const totalSales = filtered.reduce((a, s) => a + Number(s.amount), 0);
@@ -298,8 +298,15 @@ export default function Sales() {
       </motion.div>
 
       {/* Date Filter */}
-      <motion.div variants={item}>
+      <motion.div variants={item} className="flex flex-wrap items-center gap-3">
         <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+        <Select value={deptFilter} onValueChange={setDeptFilter}>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="All Departments" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Departments</SelectItem>
+            {DEPARTMENTS.map((d) => <SelectItem key={d} value={d} className="capitalize">{d}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </motion.div>
 
       {/* Stats */}
