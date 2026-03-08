@@ -97,6 +97,7 @@ export function generateBookingReceiptHtml(
   <div class="footer">
     <p>${isCheckIn ? "Welcome! Enjoy your stay." : "Thank you for staying with us!"}</p>
     <p style="margin-top:4px;">${company?.name || "Hotel"}</p>
+    <p style="margin-top:8px;font-size:9px;color:#999;">Powered by LKTECH</p>
   </div>
 </body>
 </html>`;

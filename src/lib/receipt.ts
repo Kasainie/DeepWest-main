@@ -83,6 +83,7 @@ export function generateReceiptHtml(order: any, company: any): string {
   <div class="footer">
     <p>Thank you for dining with us!</p>
     <p style="margin-top:4px;">${company?.name || 'Restaurant'}</p>
+    <p style="margin-top:8px;font-size:9px;color:#999;">Powered by LKTECH</p>
   </div>
 </body>
 </html>`;

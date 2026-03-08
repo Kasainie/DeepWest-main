@@ -84,6 +84,7 @@ export function generateConferenceReceiptHtml(
   <div class="footer">
     <p>Thank you for choosing our venue!</p>
     <p style="margin-top:4px;">${company?.name || "Company"}</p>
+    <p style="margin-top:8px;font-size:9px;color:#999;">Powered by LKTECH</p>
   </div>
 </body>
 </html>`;
