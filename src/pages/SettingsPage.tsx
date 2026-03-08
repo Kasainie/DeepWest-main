@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Upload, X, Loader2, Building2, Lock } from "lucide-react";
+import { Upload, X, Loader2, Building2, Lock, KeyRound, RefreshCw, Copy, Eye, EyeOff } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -18,12 +19,16 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
 export default function SettingsPage() {
   const { currentCompany, companyRole, refreshCompanies } = useCompany();
+  const { user } = useAuth();
   const canEdit = companyRole === "owner" || companyRole === "admin";
 
   const [saving, setSaving] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [removeLogo, setRemoveLogo] = useState(false);
+  const [staffCode, setStaffCode] = useState<string | null>(null);
+  const [codeRevealed, setCodeRevealed] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   const [form, setForm] = useState({
     name: "",
     slug: "",
@@ -46,8 +51,41 @@ export default function SettingsPage() {
       setLogoPreview(currentCompany.logo_url);
       setRemoveLogo(false);
       setLogoFile(null);
+      fetchStaffCode();
     }
   }, [currentCompany?.id]);
+
+  const fetchStaffCode = async () => {
+    if (!currentCompany || !user) return;
+    const { data } = await supabase
+      .from("company_staff")
+      .select("staff_code")
+      .eq("company_id", currentCompany.id)
+      .eq("user_id", user.id)
+      .single();
+    setStaffCode(data?.staff_code || null);
+  };
+
+  const regenerateCode = async () => {
+    if (!currentCompany || !user) return;
+    setRegenerating(true);
+    try {
+      const newCode = "ADM-" + String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+      const { error } = await supabase
+        .from("company_staff")
+        .update({ staff_code: newCode })
+        .eq("company_id", currentCompany.id)
+        .eq("user_id", user.id);
+      if (error) throw error;
+      setStaffCode(newCode);
+      setCodeRevealed(true);
+      toast.success("Access code regenerated!", { description: `New code: ${newCode}` });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to regenerate code");
+    } finally {
+      setRegenerating(false);
+    }
+  };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -272,6 +310,62 @@ export default function SettingsPage() {
           </Card>
         </form>
       </motion.div>
+
+      {/* Admin Access Code */}
+      {canEdit && staffCode && (
+        <motion.div variants={item}>
+          <Card className="shadow-card border-0">
+            <CardHeader>
+              <CardTitle className="text-lg font-display flex items-center gap-2">
+                <KeyRound className="h-5 w-5" />
+                Admin Access Code
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                This is your staff login code. Use it to sign in via the Staff Code tab on the login page.
+              </p>
+              <div className="flex items-center gap-3">
+                <code className="flex-1 text-xl font-mono font-bold tracking-widest bg-muted px-4 py-2.5 rounded-lg">
+                  {codeRevealed ? staffCode : "••••••••"}
+                </code>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setCodeRevealed(!codeRevealed)}
+                  title={codeRevealed ? "Hide code" : "Reveal code"}
+                >
+                  {codeRevealed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    navigator.clipboard.writeText(staffCode);
+                    toast.success("Code copied!");
+                  }}
+                  title="Copy code"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={regenerateCode}
+                disabled={regenerating}
+                className="gap-1.5"
+              >
+                {regenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                Regenerate Code
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Regenerating will invalidate your old code. You'll need to use the new one to log in.
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       <BrandingSettings />
 
