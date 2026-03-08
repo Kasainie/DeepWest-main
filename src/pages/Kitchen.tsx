@@ -301,7 +301,7 @@ export default function Kitchen() {
             <StatCard title="Pending" value={pendingOrders.length} change="Waiting" changeType="neutral" icon={Clock} />
             <StatCard title="Preparing" value={preparingOrders.length} change="Cooking now" changeType="neutral" icon={Flame} />
             <StatCard title="Ready" value={readyOrders.length} change="To serve" changeType="positive" icon={Check} />
-            <StatCard title="Items Today" value={totalItemsToday} change="All orders" changeType="neutral" icon={ClipboardList} />
+            <StatCard title="Active Items" value={totalItemsToday} change="In active orders" changeType="neutral" icon={ClipboardList} />
           </motion.div>
 
           {orders.length === 0 ? (
