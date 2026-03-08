@@ -31,30 +31,42 @@ import {
 } from "@/components/ui/sidebar";
 
 const mainItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Rooms", url: "/rooms", icon: BedDouble },
-  { title: "Restaurant", url: "/restaurant", icon: UtensilsCrossed },
-  { title: "Kitchen", url: "/kitchen", icon: ChefHat },
-  { title: "Bar", url: "/bar", icon: Wine },
-  { title: "Conference", url: "/conference", icon: Presentation },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard, departments: null },
+  { title: "Rooms", url: "/rooms", icon: BedDouble, departments: ["hotel"] },
+  { title: "Restaurant", url: "/restaurant", icon: UtensilsCrossed, departments: ["restaurant"] },
+  { title: "Kitchen", url: "/kitchen", icon: ChefHat, departments: ["kitchen"] },
+  { title: "Bar", url: "/bar", icon: Wine, departments: ["bar"] },
+  { title: "Conference", url: "/conference", icon: Presentation, departments: ["hotel"] },
 ];
 
 const managementItems = [
-  { title: "Bookings", url: "/bookings", icon: CalendarDays },
-  { title: "Guests", url: "/guests", icon: Users },
-  { title: "Staff", url: "/staff", icon: ShieldCheck },
-  { title: "Website", url: "/website", icon: Globe },
-  { title: "Settings", url: "/settings", icon: Settings },
-  { title: "About", url: "/about", icon: Info },
+  { title: "Bookings", url: "/bookings", icon: CalendarDays, departments: ["hotel", "accountant"], adminOnly: false },
+  { title: "Guests", url: "/guests", icon: Users, departments: ["hotel"], adminOnly: false },
+  { title: "Staff", url: "/staff", icon: ShieldCheck, departments: null, adminOnly: true },
+  { title: "Website", url: "/website", icon: Globe, departments: null, adminOnly: true },
+  { title: "Settings", url: "/settings", icon: Settings, departments: null, adminOnly: true },
+  { title: "About", url: "/about", icon: Info, departments: null, adminOnly: false },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const { currentCompany } = useCompany();
+  const { currentCompany, companyRole, staffDepartment } = useCompany();
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+
+  // Owners/admins see everything; staff only see their department pages
+  const isFullAccess = !companyRole || ["owner", "admin", "manager"].includes(companyRole);
+
+  const filterByDepartment = (items: typeof mainItems | typeof managementItems) =>
+    items.filter((item) => {
+      // Admin-only items hidden from staff
+      if ("adminOnly" in item && item.adminOnly && !isFullAccess) return false;
+      if (isFullAccess || !item.departments) return true;
+      if (!staffDepartment) return false;
+      return item.departments.includes(staffDepartment.toLowerCase());
+    });
 
   return (
     <Sidebar collapsible="icon">
@@ -89,7 +101,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Main</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainItems.map((item) => (
+              {filterByDepartment(mainItems).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
@@ -115,7 +127,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Management</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {managementItems.map((item) => (
+              {filterByDepartment(managementItems).map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
