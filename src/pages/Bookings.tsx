@@ -27,6 +27,16 @@ interface Booking {
   amount: number;
   created_at: string;
   guests: { full_name: string } | null;
+  room_id: string | null;
+  rooms: { room_number: string } | null;
+}
+
+interface AvailableRoom {
+  id: string;
+  room_number: string;
+  type: string;
+  price_per_night: number;
+  status: string;
 }
 
 const statusStyles: Record<string, string> = {
@@ -43,12 +53,14 @@ export default function Bookings() {
   const { currentCompany } = useCompany();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [guests, setGuests] = useState<{ id: string; full_name: string }[]>([]);
+  const [availableRooms, setAvailableRooms] = useState<AvailableRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     guest_id: "",
+    room_id: "",
     booking_type: "room",
     details: "",
     check_in: "",
@@ -68,10 +80,10 @@ export default function Bookings() {
     setLoading(true);
     const fromDate = format(dateRange.from, "yyyy-MM-dd");
     const toDate = format(dateRange.to, "yyyy-MM-dd");
-    const [bRes, gRes] = await Promise.all([
+    const [bRes, gRes, rRes] = await Promise.all([
       supabase
         .from("bookings")
-        .select("*, guests(full_name)")
+        .select("*, guests(full_name), rooms(room_number)")
         .eq("company_id", currentCompany.id)
         .gte("created_at", fromDate + "T00:00:00")
         .lte("created_at", toDate + "T23:59:59")
@@ -81,9 +93,16 @@ export default function Bookings() {
         .select("id, full_name")
         .eq("company_id", currentCompany.id)
         .order("full_name"),
+      supabase
+        .from("rooms")
+        .select("id, room_number, type, price_per_night, status")
+        .eq("company_id", currentCompany.id)
+        .eq("status", "available")
+        .order("room_number"),
     ]);
-    setBookings((bRes.data || []) as Booking[]);
+    setBookings((bRes.data || []) as unknown as Booking[]);
     setGuests(gRes.data || []);
+    setAvailableRooms((rRes.data || []) as AvailableRoom[]);
     setLoading(false);
   };
 
@@ -95,6 +114,7 @@ export default function Bookings() {
     const { error } = await supabase.from("bookings").insert({
       company_id: currentCompany.id,
       guest_id: form.guest_id || null,
+      room_id: form.room_id || null,
       booking_type: form.booking_type,
       details: form.details || null,
       check_in: form.check_in || null,
@@ -107,7 +127,7 @@ export default function Bookings() {
       toast.error(error.message);
     } else {
       toast.success("Booking created!");
-      setForm({ guest_id: "", booking_type: "room", details: "", check_in: "", check_out: "", status: "confirmed", amount: "" });
+      setForm({ guest_id: "", room_id: "", booking_type: "room", details: "", check_in: "", check_out: "", status: "confirmed", amount: "" });
       setAddOpen(false);
       fetchData();
     }
@@ -185,6 +205,28 @@ export default function Bookings() {
                   </Select>
                 </div>
               </div>
+              {form.booking_type === "room" && (
+                <div className="space-y-2">
+                  <Label>Room</Label>
+                  <Select value={form.room_id} onValueChange={(v) => {
+                    const room = availableRooms.find(r => r.id === v);
+                    setForm((f) => ({ ...f, room_id: v, details: room ? `Room ${room.room_number} · ${room.type}` : f.details }));
+                  }}>
+                    <SelectTrigger><SelectValue placeholder="Select available room" /></SelectTrigger>
+                    <SelectContent>
+                      {availableRooms.length === 0 ? (
+                        <SelectItem value="none" disabled>No available rooms</SelectItem>
+                      ) : (
+                        availableRooms.map((r) => (
+                          <SelectItem key={r.id} value={r.id}>
+                            Room {r.room_number} · {r.type} · KSh {Number(r.price_per_night).toLocaleString()}/night
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Details</Label>
                 <Input value={form.details} onChange={(e) => setForm((f) => ({ ...f, details: e.target.value }))} placeholder="Suite #101 · 3 nights" />
@@ -263,7 +305,7 @@ export default function Bookings() {
                           <p className="text-sm font-medium">{b.guests?.full_name || "—"}</p>
                         </td>
                         <td className="p-3"><Badge variant="secondary" className="text-[10px] capitalize">{b.booking_type}</Badge></td>
-                        <td className="p-3 text-sm text-muted-foreground hidden md:table-cell">{b.details || "—"}</td>
+                        <td className="p-3 text-sm text-muted-foreground hidden md:table-cell">{b.rooms?.room_number ? `Room ${b.rooms.room_number}` : ""}{b.details ? (b.rooms?.room_number ? ` · ${b.details}` : b.details) : (b.rooms?.room_number ? "" : "—")}</td>
                         <td className="p-3 text-sm text-muted-foreground hidden lg:table-cell">
                           {b.check_in ? format(new Date(b.check_in), "MMM d") : "—"} → {b.check_out ? format(new Date(b.check_out), "MMM d") : "—"}
                         </td>
