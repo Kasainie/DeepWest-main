@@ -204,6 +204,13 @@ export default function Bookings() {
         </Dialog>
       </motion.div>
 
+      <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatCard title="Total Bookings" value={bookings.length} icon={CalendarDays} />
+        <StatCard title="Active" value={activeBookings} change="Confirmed" changeType="positive" icon={CheckCircle} />
+        <StatCard title="Cancelled" value={cancelledBookings} changeType={cancelledBookings > 0 ? "negative" : "neutral"} icon={XCircle} />
+        <StatCard title="Revenue" value={`KSh ${totalRevenue.toLocaleString()}`} change="All bookings" changeType="neutral" iconNode={<KshIcon className="h-5 w-5 text-primary" />} />
+      </motion.div>
+
       <motion.div variants={item} className="flex gap-2">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
