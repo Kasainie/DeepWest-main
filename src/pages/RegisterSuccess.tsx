@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { CheckCircle2, ArrowRight, Copy } from "lucide-react";
+import { CheckCircle2, ArrowRight, Copy, KeyRound } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -10,8 +10,9 @@ export default function RegisterSuccess() {
   const location = useLocation();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
   const slug = location.state?.slug || "";
-
+  const adminCode = location.state?.adminCode || "";
 
   const nextSteps = [
     { title: "Complete Your Profile", description: "Add your company details and branding" },
@@ -44,6 +45,42 @@ export default function RegisterSuccess() {
           </CardHeader>
 
           <CardContent className="space-y-6">
+            {/* Admin Access Code */}
+            {adminCode && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-primary/10 border border-primary/20 rounded-lg p-4 space-y-2"
+              >
+                <div className="flex items-center gap-2">
+                  <KeyRound className="h-4 w-4 text-primary" />
+                  <p className="text-xs font-semibold text-primary uppercase">Your Admin Access Code</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-2xl font-mono font-bold tracking-widest text-foreground">
+                    {adminCode}
+                  </code>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(adminCode);
+                      setCodeCopied(true);
+                      toast.success("Admin code copied!");
+                      setTimeout(() => setCodeCopied(false), 2000);
+                    }}
+                    className="p-2 hover:bg-background rounded-md transition-colors"
+                    title="Copy code"
+                  >
+                    <Copy className={`h-5 w-5 ${codeCopied ? "text-green-600" : "text-muted-foreground"}`} />
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Use this code to log in via Staff Code login. It has also been sent to your email.
+                  Keep it safe — you'll need it to access your admin dashboard.
+                </p>
+              </motion.div>
+            )}
+
             {/* Company Slug Display */}
             <div className="bg-muted/50 rounded-lg p-4 space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase">Your Company URL</p>
