@@ -4,6 +4,8 @@ import { Bell, Search, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
+import { Badge } from "@/components/ui/badge";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
