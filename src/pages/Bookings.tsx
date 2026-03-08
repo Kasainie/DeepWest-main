@@ -60,6 +60,7 @@ export default function Bookings() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     guest_id: "",
+    room_id: "",
     booking_type: "room",
     details: "",
     check_in: "",
