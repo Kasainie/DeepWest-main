@@ -44,7 +44,14 @@ const typeColors: Record<string, string> = {
   booking: "bg-secondary text-secondary-foreground",
 };
 
-const NOTIFICATION_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
+const NOTIFICATION_SOUNDS: Record<string, string> = {
+  order: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",      // cash register ding
+  booking: "https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3",    // gentle chime
+  warning: "https://assets.mixkit.co/active_storage/sfx/2868/2868-preview.mp3",    // alert tone
+  staff: "https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3",      // soft notification
+  info: "https://assets.mixkit.co/active_storage/sfx/2356/2356-preview.mp3",       // subtle pop
+  default: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",
+};
 
 function loadSoundSettings() {
   try {
@@ -59,7 +66,6 @@ export function NotificationDropdown() {
   const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [soundSettings, setSoundSettings] = useState(loadSoundSettings);
 
   const isFullAccess = !companyRole || ["owner", "admin", "manager"].includes(companyRole);
@@ -86,20 +92,23 @@ export function NotificationDropdown() {
     setSoundSettings((prev) => {
       const next = { ...prev, ...update };
       localStorage.setItem("notification_sound_settings", JSON.stringify(next));
-      if (audioRef.current) audioRef.current.volume = next.volume;
       return next;
     });
   }, []);
 
-  const playNotificationSound = useCallback(() => {
+  const audioCache = useRef<Record<string, HTMLAudioElement>>({});
+
+  const playNotificationSound = useCallback((type?: string) => {
     if (!soundSettings.enabled) return;
     try {
-      if (!audioRef.current) {
-        audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
+      const url = NOTIFICATION_SOUNDS[type || ""] || NOTIFICATION_SOUNDS.default;
+      if (!audioCache.current[url]) {
+        audioCache.current[url] = new Audio(url);
       }
-      audioRef.current.volume = soundSettings.volume;
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
+      const audio = audioCache.current[url];
+      audio.volume = soundSettings.volume;
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
     } catch {}
   }, [soundSettings.enabled, soundSettings.volume]);
 
@@ -121,7 +130,7 @@ export function NotificationDropdown() {
             !(newNotif.type in typeToDepartments) || 
             allowedDepts === undefined ||
             (allowedDepts !== null && staffDepartment?.some(d => allowedDepts.includes(d.toLowerCase())));
-          if (shouldShow) playNotificationSound();
+          if (shouldShow) playNotificationSound(newNotif.type);
         }
       )
       .subscribe();
