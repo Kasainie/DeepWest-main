@@ -216,6 +216,7 @@ export default function Tenders() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </motion.div>
 
       {/* Stats */}
