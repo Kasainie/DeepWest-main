@@ -48,6 +48,7 @@ export default function Guests() {
   const [editGuest, setEditGuest] = useState<Guest | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteGuest, setDeleteGuest] = useState<Guest | null>(null);
+  const [historyGuest, setHistoryGuest] = useState<Guest | null>(null);
   const [editForm, setEditForm] = useState({ full_name: "", email: "", phone: "", id_number: "", is_vip: false });
   const [form, setForm] = useState({
     full_name: "", email: "", phone: "", id_number: "", is_vip: false,
