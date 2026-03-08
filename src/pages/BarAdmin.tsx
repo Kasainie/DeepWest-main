@@ -92,7 +92,18 @@ export default function BarAdmin() {
     setMenuItems((menuRes.data || []) as MenuItem[]);
     setBarStaff((staffRes.data || []) as StaffMember[]);
     setOrders(ordersRes.data || []);
-    setInventory((invRes.data || []) as InventoryItem[]);
+    const invItems = (invRes.data || []) as InventoryItem[];
+    setInventory(invItems);
+
+    // Show low-stock summary on load
+    const lowItems = invItems.filter((i) => i.stock <= i.low_threshold);
+    if (lowItems.length > 0) {
+      toast.warning(`${lowItems.length} item${lowItems.length > 1 ? "s" : ""} low on stock`, {
+        description: lowItems.map((i) => i.name).join(", "),
+        duration: 6000,
+      });
+    }
+
     setLoading(false);
   };
 
@@ -167,7 +178,25 @@ export default function BarAdmin() {
   const handleUpdateStock = async (itemId: string, newStock: number) => {
     const { error } = await supabase.from("bar_inventory").update({ stock: newStock }).eq("id", itemId);
     if (!error) {
-      setInventory((prev) => prev.map((i) => i.id === itemId ? { ...i, stock: newStock } : i));
+      setInventory((prev) => prev.map((i) => {
+        if (i.id === itemId) {
+          const updated = { ...i, stock: newStock };
+          if (newStock <= i.low_threshold && i.stock > i.low_threshold) {
+            toast.warning(`Low stock alert: ${i.name}`, {
+              description: `Only ${newStock} ${i.unit} remaining (threshold: ${i.low_threshold})`,
+              duration: 6000,
+            });
+          }
+          if (newStock === 0) {
+            toast.error(`Out of stock: ${i.name}`, {
+              description: `${i.name} is now completely out of stock!`,
+              duration: 8000,
+            });
+          }
+          return updated;
+        }
+        return i;
+      }));
     } else {
       toast.error("Failed to update stock");
     }
