@@ -18,7 +18,7 @@ function formatDate(dateStr: string): string {
 
 export function generateConferenceReceiptHtml(
   booking: ConferenceReceiptData,
-  company: { name?: string; address?: string; phone?: string; email?: string } | null
+  company: { name?: string; address?: string; phone?: string; email?: string; logo_url?: string } | null
 ): string {
   const now = new Date();
   const badgeColor = booking.status === "confirmed" ? "#3b82f6" : booking.status === "cancelled" ? "#ef4444" : "#f59e0b";

@@ -23,7 +23,7 @@ function formatDateTime(dateStr: string): string {
 
 export function generateBookingReceiptHtml(
   booking: BookingReceiptData,
-  company: { name?: string; address?: string; phone?: string; email?: string } | null,
+  company: { name?: string; address?: string; phone?: string; email?: string; logo_url?: string } | null,
   type: "check_in" | "check_out"
 ): string {
   const isCheckIn = type === "check_in";
@@ -106,7 +106,7 @@ export function generateBookingReceiptHtml(
 
 export function printBookingReceipt(
   booking: BookingReceiptData,
-  company: { name?: string; address?: string; phone?: string; email?: string } | null,
+  company: { name?: string; address?: string; phone?: string; email?: string; logo_url?: string } | null,
   type: "check_in" | "check_out"
 ): void {
   const html = generateBookingReceiptHtml(booking, company, type);
@@ -120,7 +120,7 @@ export function printBookingReceipt(
 
 export function downloadBookingReceipt(
   booking: BookingReceiptData,
-  company: { name?: string; address?: string; phone?: string; email?: string } | null,
+  company: { name?: string; address?: string; phone?: string; email?: string; logo_url?: string } | null,
   type: "check_in" | "check_out"
 ): void {
   const html = generateBookingReceiptHtml(booking, company, type);

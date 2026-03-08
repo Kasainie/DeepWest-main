@@ -14,7 +14,7 @@ function formatDate(dateStr: string): string {
 
 export function generateExpenseReceiptHtml(
   expense: ExpenseReceiptData,
-  company: { name?: string; address?: string; phone?: string; email?: string } | null
+  company: { name?: string; address?: string; phone?: string; email?: string; logo_url?: string } | null
 ): string {
   const now = new Date();
   return `<!DOCTYPE html>
