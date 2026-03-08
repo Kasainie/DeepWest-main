@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Wallet, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Plus, Wallet, Loader2, AlertTriangle, CheckCircle2, Download, FileText } from "lucide-react";
+import { downloadCSV, downloadPDF } from "@/lib/export";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { formatKES } from "@/lib/currency";
@@ -106,15 +107,62 @@ export default function Tenders() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <motion.div variants={item} className="flex items-center justify-between">
+      <motion.div variants={item} className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-2xl font-bold font-display">Payment Tenders</h1>
           <p className="text-sm text-muted-foreground mt-1">Cash, M-Pesa & card reconciliation by shift</p>
         </div>
-        <Dialog open={addOpen} onOpenChange={setAddOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Record Tender</Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => {
+            const cols = [
+              { key: "tender_date", header: "Date" },
+              { key: "shift", header: "Shift" },
+              { key: "payment_method", header: "Method" },
+              { key: "expected_amount", header: "Expected (KSh)" },
+              { key: "actual_amount", header: "Actual (KSh)" },
+              { key: "variance", header: "Variance (KSh)" },
+              { key: "notes", header: "Notes" },
+            ];
+            downloadCSV(tenders.map(t => ({
+              ...t,
+              expected_amount: Number(t.expected_amount).toFixed(2),
+              actual_amount: Number(t.actual_amount).toFixed(2),
+              variance: Number(t.variance).toFixed(2),
+            })), cols, `tenders-${format(new Date(), "yyyy-MM-dd")}`);
+            toast.success("CSV downloaded!");
+          }}>
+            <Download className="h-4 w-4 mr-1" /> CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => {
+            const cols = [
+              { key: "tender_date", header: "Date" },
+              { key: "shift", header: "Shift" },
+              { key: "payment_method", header: "Method" },
+              { key: "expected_amount", header: "Expected" },
+              { key: "actual_amount", header: "Actual" },
+              { key: "variance", header: "Variance" },
+              { key: "notes", header: "Notes" },
+            ];
+            downloadPDF("Payment Tenders Report", currentCompany?.name || "Company", cols,
+              tenders.map(t => ({
+                ...t,
+                expected_amount: formatKES(Number(t.expected_amount)),
+                actual_amount: formatKES(Number(t.actual_amount)),
+                variance: formatKES(Number(t.variance)),
+              })),
+              [
+                { label: "Today Expected", value: formatKES(stats.totalExpected) },
+                { label: "Today Actual", value: formatKES(stats.totalActual) },
+                { label: "Variance", value: formatKES(stats.totalVariance) },
+              ]
+            );
+          }}>
+            <FileText className="h-4 w-4 mr-1" /> PDF
+          </Button>
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Record Tender</Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle className="font-display">Record Payment Tender</DialogTitle></DialogHeader>
             <form onSubmit={handleAdd} className="space-y-4 mt-2">
@@ -168,6 +216,7 @@ export default function Tenders() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </motion.div>
 
       {/* Stats */}
