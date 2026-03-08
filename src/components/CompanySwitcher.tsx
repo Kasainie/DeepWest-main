@@ -55,12 +55,6 @@ export function CompanySwitcher() {
               </div>
             </SelectItem>
           ))}
-          <SelectItem value="__new__">
-            <div className="flex items-center gap-2 text-primary">
-              <Plus className="h-3 w-3" />
-              Add new company
-            </div>
-          </SelectItem>
         </SelectContent>
       </Select>
     </div>
