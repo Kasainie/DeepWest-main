@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
 import { Bell, Check, CheckCheck, Info, AlertTriangle, UserPlus, ShoppingCart, CalendarDays, X } from "lucide-react";
@@ -33,12 +33,26 @@ const typeColors: Record<string, string> = {
   booking: "bg-secondary text-secondary-foreground",
 };
 
+const NOTIFICATION_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
+
 export function NotificationDropdown() {
   const { currentCompany } = useCompany();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  const playNotificationSound = useCallback(() => {
+    try {
+      if (!audioRef.current) {
+        audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
+        audioRef.current.volume = 0.5;
+      }
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {});
+    } catch {}
+  }, []);
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -51,12 +65,13 @@ export function NotificationDropdown() {
         { event: "INSERT", schema: "public", table: "notifications", filter: `company_id=eq.${currentCompany.id}` },
         (payload) => {
           setNotifications((prev) => [payload.new as Notification, ...prev]);
+          playNotificationSound();
         }
       )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [currentCompany?.id]);
+  }, [currentCompany?.id, playNotificationSound]);
 
   const fetchNotifications = async () => {
     if (!currentCompany) return;
