@@ -39,7 +39,7 @@ interface Sale {
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
-const DEPARTMENTS = ["restaurant", "bar", "hotel", "kitchen", "other"];
+const DEPARTMENTS = ["restaurant", "bar", "hotel", "kitchen", "conference", "other"];
 const CATEGORIES = ["food", "beverage", "room", "service", "other"];
 const PAYMENT_METHODS = ["cash", "mpesa", "card", "bank_transfer"];
 
