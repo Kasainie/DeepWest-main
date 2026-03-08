@@ -202,15 +202,21 @@ export default function RegisterCompany() {
 
               <div className="space-y-2">
                 <Label htmlFor="slug">URL Slug *</Label>
-                <Input
-                  id="slug"
-                  value={form.slug}
-                  onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
-                  placeholder="my-restaurant"
-                  required
-                />
+                <div className="flex items-center gap-0">
+                  <span className="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground whitespace-nowrap">
+                    lktech.life/
+                  </span>
+                  <Input
+                    id="slug"
+                    value={form.slug}
+                    onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                    placeholder="my-restaurant"
+                    required
+                    className="rounded-l-none"
+                  />
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  Used to identify your company uniquely
+                  Your company will be accessible at lktech.life/{form.slug || "your-name"}
                 </p>
               </div>
 
