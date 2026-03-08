@@ -167,9 +167,12 @@ export default function Conference() {
                 </div>
                 <div className="flex items-center justify-between pt-1 border-t border-border">
                   <RoomStatusSelect roomId={room.id} currentStatus={room.status} onUpdated={fetchData} />
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteRoom(room.id)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <EditRoomDialog room={room} onUpdated={fetchData} />
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteRoom(room.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
