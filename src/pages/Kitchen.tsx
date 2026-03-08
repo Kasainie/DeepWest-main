@@ -4,7 +4,7 @@ import { useCompany } from "@/contexts/CompanyContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Check, Clock, ChefHat, Flame, Download, Printer, ClipboardList, Timer } from "lucide-react";
+import { Loader2, Check, Clock, ChefHat, Flame, Download, Printer, ClipboardList, Timer, CheckCircle } from "lucide-react";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { OrderHistory } from "@/components/OrderHistory";
 import { StatCard } from "@/components/StatCard";
@@ -12,6 +12,7 @@ import { KshIcon } from "@/components/KshIcon";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { generateReceipt, printReceipt } from "@/lib/receipt";
+import { getLocalDayBoundsUTC } from "@/lib/dateUtils";
 
 interface OrderWithItems {
   id: string;
@@ -62,6 +63,8 @@ export default function Kitchen() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [bottomTab, setBottomTab] = useState<"home" | "history">("home");
+  const [completedToday, setCompletedToday] = useState(0);
+  const [totalItemsToday, setTotalItemsToday] = useState(0);
   const newOrderAudioRef = useRef<HTMLAudioElement | null>(null);
   const statusAudioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -120,14 +123,34 @@ export default function Kitchen() {
   const fetchOrders = async () => {
     if (!currentCompany) return;
     setLoading(true);
-    const { data } = await supabase
-      .from("orders")
-      .select("*, order_items(*)")
-      .eq("company_id", currentCompany.id)
-      .in("status", ["pending", "preparing", "ready"])
-      .order("created_at", { ascending: true });
+    const { start, end } = getLocalDayBoundsUTC(new Date());
 
-    setOrders((data || []) as OrderWithItems[]);
+    const [activeRes, completedRes] = await Promise.all([
+      supabase
+        .from("orders")
+        .select("*, order_items(*)")
+        .eq("company_id", currentCompany.id)
+        .in("status", ["pending", "preparing", "ready"])
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("orders")
+        .select("id, order_items(id)")
+        .eq("company_id", currentCompany.id)
+        .in("status", ["served", "completed"])
+        .gte("created_at", start)
+        .lte("created_at", end),
+    ]);
+
+    const activeOrders = (activeRes.data || []) as OrderWithItems[];
+    setOrders(activeOrders);
+
+    const completedOrders = completedRes.data || [];
+    setCompletedToday(completedOrders.length);
+    
+    const activeItems = activeOrders.reduce((sum, o) => sum + o.order_items.length, 0);
+    const completedItems = completedOrders.reduce((sum: number, o: any) => sum + (o.order_items?.length || 0), 0);
+    setTotalItemsToday(activeItems + completedItems);
+
     setLoading(false);
   };
 
@@ -277,7 +300,7 @@ export default function Kitchen() {
     );
   };
 
-  const totalItemsToday = orders.reduce((sum, o) => sum + o.order_items.length, 0);
+  const activeItems = orders.reduce((sum, o) => sum + o.order_items.length, 0);
 
   return (
     <div className="pb-16">
@@ -297,11 +320,12 @@ export default function Kitchen() {
             </div>
           </motion.div>
 
-          <motion.div variants={itemVariant} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <motion.div variants={itemVariant} className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             <StatCard title="Pending" value={pendingOrders.length} change="Waiting" changeType="neutral" icon={Clock} />
             <StatCard title="Preparing" value={preparingOrders.length} change="Cooking now" changeType="neutral" icon={Flame} />
             <StatCard title="Ready" value={readyOrders.length} change="To serve" changeType="positive" icon={Check} />
-            <StatCard title="Active Items" value={totalItemsToday} change="In active orders" changeType="neutral" icon={ClipboardList} />
+            <StatCard title="Completed Today" value={completedToday} change="Served" changeType="positive" icon={CheckCircle} />
+            <StatCard title="Items Today" value={totalItemsToday} change={`${activeItems} active`} changeType="neutral" icon={ClipboardList} />
           </motion.div>
 
           {orders.length === 0 ? (
