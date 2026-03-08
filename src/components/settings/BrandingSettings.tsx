@@ -201,6 +201,30 @@ export default function BrandingSettings() {
           )}
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Theme Mode */}
+          <div className="flex items-center justify-between rounded-lg bg-muted/40 p-4">
+            <div className="flex items-center gap-3">
+              {form.theme_mode === "dark" ? (
+                <Moon className="h-5 w-5 text-primary" />
+              ) : (
+                <Sun className="h-5 w-5 text-primary" />
+              )}
+              <div>
+                <p className="text-sm font-semibold">Dark Mode</p>
+                <p className="text-xs text-muted-foreground">
+                  {form.theme_mode === "dark" ? "Dark theme is active" : "Light theme is active"}
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={form.theme_mode === "dark"}
+              onCheckedChange={(checked) =>
+                setForm((f) => ({ ...f, theme_mode: checked ? "dark" : "light" }))
+              }
+              disabled={!canEdit}
+            />
+          </div>
+
           {/* Colors */}
           <div className="space-y-3">
             <Label className="text-sm font-semibold">Brand Colors</Label>
