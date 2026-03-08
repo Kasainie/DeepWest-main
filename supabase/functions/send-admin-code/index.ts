@@ -65,7 +65,7 @@ Deno.serve(async (req: Request) => {
               </p>
               <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 24px 0;" />
               <p style="color: #999; font-size: 12px;">
-                This is an automated message from Grand Vista. If you did not register a company, please ignore this email.
+                This is an automated message from LKTECH. If you did not register a company, please ignore this email.
               </p>
             </div>
           `,
