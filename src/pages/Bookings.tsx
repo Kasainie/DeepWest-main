@@ -10,8 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Search, Plus, Loader2, CalendarDays, CheckCircle, XCircle, LogOut } from "lucide-react";
+import { Search, Plus, Loader2, CalendarDays, CheckCircle, XCircle, LogOut, Printer } from "lucide-react";
 import { toast } from "sonner";
+import { printBookingReceipt, BookingReceiptData } from "@/lib/bookingReceipt";
 import { motion } from "framer-motion";
 
 import { StatCard } from "@/components/StatCard";
@@ -137,12 +138,41 @@ export default function Bookings() {
 
   const handleCheckout = async (booking: Booking) => {
     const today = format(new Date(), "yyyy-MM-dd");
-    await supabase.from("bookings").update({ status: "checked_out", check_out: booking.check_out || today }).eq("id", booking.id);
+    const checkOutDate = booking.check_out || today;
+    await supabase.from("bookings").update({ status: "checked_out", check_out: checkOutDate }).eq("id", booking.id);
     if (booking.room_id) {
       await supabase.from("rooms").update({ status: "available" }).eq("id", booking.room_id);
     }
     toast.success("Guest checked out successfully");
+    // Print checkout receipt
+    const receiptData: BookingReceiptData = {
+      guest_name: booking.guests?.full_name || "Guest",
+      room_number: booking.rooms?.room_number || undefined,
+      booking_type: booking.booking_type,
+      details: booking.details || undefined,
+      check_in: booking.check_in || undefined,
+      check_out: checkOutDate,
+      amount: booking.amount,
+      status: "checked_out",
+      created_at: booking.created_at,
+    };
+    printBookingReceipt(receiptData, currentCompany, "check_out");
     fetchData();
+  };
+
+  const handlePrintReceipt = (booking: Booking, type: "check_in" | "check_out") => {
+    const receiptData: BookingReceiptData = {
+      guest_name: booking.guests?.full_name || "Guest",
+      room_number: booking.rooms?.room_number || undefined,
+      booking_type: booking.booking_type,
+      details: booking.details || undefined,
+      check_in: booking.check_in || undefined,
+      check_out: booking.check_out || undefined,
+      amount: booking.amount,
+      status: booking.status,
+      created_at: booking.created_at,
+    };
+    printBookingReceipt(receiptData, currentCompany, type);
   };
 
   const filtered = bookings.filter((b) => {
@@ -320,15 +350,26 @@ export default function Bookings() {
                         <td className="p-3 text-sm text-muted-foreground hidden md:table-cell">{b.rooms?.room_number ? `Room ${b.rooms.room_number}` : ""}{b.details ? (b.rooms?.room_number ? ` · ${b.details}` : b.details) : (b.rooms?.room_number ? "" : "—")}</td>
                         <td className="p-3 text-sm text-muted-foreground hidden lg:table-cell">
                           {b.check_in ? format(new Date(b.check_in), "MMM d") : "—"} → {b.check_out ? format(new Date(b.check_out), "MMM d") : "—"}
+                          {b.status === "checked_out" && b.check_out && <span className="ml-1 text-[10px] text-success">(checked out)</span>}
                         </td>
                         <td className="p-3">
                           <Badge className={`${statusStyles[b.status] || ""} text-[10px] border-0`}>{b.status}</Badge>
                         </td>
                         <td className="p-3 text-sm font-semibold text-right">KSh {Number(b.amount).toFixed(2)}</td>
-                        <td className="p-3 text-right">
+                        <td className="p-3 text-right flex items-center justify-end gap-1">
                           {["confirmed", "active"].includes(b.status) && (
-                            <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCheckout(b)}>
-                              <LogOut className="h-3 w-3 mr-1" /> Checkout
+                            <>
+                              <Button size="sm" variant="ghost" className="text-xs h-7" title="Print Check-in Receipt" onClick={() => handlePrintReceipt(b, "check_in")}>
+                                <Printer className="h-3 w-3" />
+                              </Button>
+                              <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCheckout(b)}>
+                                <LogOut className="h-3 w-3 mr-1" /> Checkout
+                              </Button>
+                            </>
+                          )}
+                          {b.status === "checked_out" && (
+                            <Button size="sm" variant="ghost" className="text-xs h-7" title="Print Check-out Receipt" onClick={() => handlePrintReceipt(b, "check_out")}>
+                              <Printer className="h-3 w-3 mr-1" /> Receipt
                             </Button>
                           )}
                         </td>
