@@ -12,6 +12,9 @@ import {
   ShieldCheck,
   ChefHat,
   Info,
+  DollarSign,
+  Wallet,
+  Receipt,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -38,6 +41,12 @@ const mainItems = [
   { title: "Bar", url: "/bar", icon: Wine, departments: ["bar", "bar_admin"] },
   { title: "Bar Admin", url: "/bar-admin", icon: ShieldCheck, departments: ["bar_admin"] },
   { title: "Conference", url: "/conference", icon: Presentation, departments: ["hotel"] },
+];
+
+const accountingItems = [
+  { title: "Sales", url: "/sales", icon: DollarSign, departments: ["accountant"] },
+  { title: "Tenders", url: "/tenders", icon: Wallet, departments: ["accountant"] },
+  { title: "Expenses", url: "/expenses", icon: Receipt, departments: ["accountant"] },
 ];
 
 const managementItems = [
@@ -123,6 +132,34 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {filterByDepartment(accountingItems).length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Accounting</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {filterByDepartment(accountingItems).map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.url)}
+                      tooltip={item.title}
+                    >
+                      <NavLink
+                        to={item.url}
+                        end
+                        activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         <SidebarGroup>
           <SidebarGroupLabel>Management</SidebarGroupLabel>

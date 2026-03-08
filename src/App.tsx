@@ -23,6 +23,9 @@ import Website from "./pages/Website";
 import SettingsPage from "./pages/SettingsPage";
 import StaffManagement from "./pages/StaffManagement";
 import About from "./pages/About";
+import Sales from "./pages/Sales";
+import Tenders from "./pages/Tenders";
+import Expenses from "./pages/Expenses";
 import RegisterCompany from "./pages/RegisterCompany";
 import RegisterSuccess from "./pages/RegisterSuccess";
 import AcceptInvite from "./pages/AcceptInvite";
@@ -93,6 +96,9 @@ const App = () => (
                               <Route path="/conference" element={<Conference />} />
                               <Route path="/bookings" element={<Bookings />} />
                               <Route path="/guests" element={<Guests />} />
+                              <Route path="/sales" element={<Sales />} />
+                              <Route path="/tenders" element={<Tenders />} />
+                              <Route path="/expenses" element={<Expenses />} />
                               <Route path="/staff" element={<StaffManagement />} />
                               <Route path="/website" element={<Website />} />
                               <Route path="/settings" element={<SettingsPage />} />
