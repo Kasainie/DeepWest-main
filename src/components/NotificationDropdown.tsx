@@ -141,13 +141,51 @@ export function NotificationDropdown() {
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h3 className="text-sm font-semibold font-display">Notifications</h3>
-          {unreadCount > 0 && (
-            <Button variant="ghost" size="sm" className="text-xs h-7 gap-1" onClick={markAllRead}>
-              <CheckCheck className="h-3 w-3" />
-              Mark all read
+          <div className="flex items-center gap-1">
+            {unreadCount > 0 && (
+              <Button variant="ghost" size="sm" className="text-xs h-7 gap-1" onClick={markAllRead}>
+                <CheckCheck className="h-3 w-3" />
+                Mark all read
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setShowSettings((s) => !s)}
+              title="Sound settings"
+            >
+              {soundSettings.enabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5 text-muted-foreground" />}
             </Button>
-          )}
+          </div>
         </div>
+        {showSettings && (
+          <div className="px-4 py-3 border-b bg-muted/30 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium">Notification Sound</label>
+              <Switch
+                checked={soundSettings.enabled}
+                onCheckedChange={(checked) => updateSoundSettings({ enabled: checked })}
+              />
+            </div>
+            {soundSettings.enabled && (
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground">Volume</label>
+                <div className="flex items-center gap-2">
+                  <VolumeX className="h-3 w-3 text-muted-foreground shrink-0" />
+                  <Slider
+                    value={[soundSettings.volume * 100]}
+                    onValueChange={([v]) => updateSoundSettings({ volume: v / 100 })}
+                    max={100}
+                    step={5}
+                    className="flex-1"
+                  />
+                  <Volume2 className="h-3 w-3 text-muted-foreground shrink-0" />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         <ScrollArea className="max-h-80">
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
