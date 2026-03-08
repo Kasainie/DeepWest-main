@@ -10,9 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Search, Plus, Loader2, CalendarDays, CheckCircle, XCircle, LogOut, Printer } from "lucide-react";
+import { Search, Plus, Loader2, CalendarDays, CheckCircle, XCircle, LogOut, Printer, Download } from "lucide-react";
 import { toast } from "sonner";
-import { printBookingReceipt, BookingReceiptData } from "@/lib/bookingReceipt";
+import { printBookingReceipt, downloadBookingReceipt, BookingReceiptData } from "@/lib/bookingReceipt";
 import { motion } from "framer-motion";
 
 import { StatCard } from "@/components/StatCard";
@@ -164,19 +164,25 @@ export default function Bookings() {
     fetchData();
   };
 
+  const buildReceiptData = (booking: Booking): BookingReceiptData => ({
+    guest_name: booking.guests?.full_name || "Guest",
+    room_number: booking.rooms?.room_number || undefined,
+    booking_type: booking.booking_type,
+    details: booking.details || undefined,
+    check_in: booking.check_in || undefined,
+    check_out: booking.check_out || undefined,
+    amount: booking.amount,
+    status: booking.status,
+    created_at: booking.created_at,
+  });
+
   const handlePrintReceipt = (booking: Booking, type: "check_in" | "check_out") => {
-    const receiptData: BookingReceiptData = {
-      guest_name: booking.guests?.full_name || "Guest",
-      room_number: booking.rooms?.room_number || undefined,
-      booking_type: booking.booking_type,
-      details: booking.details || undefined,
-      check_in: booking.check_in || undefined,
-      check_out: booking.check_out || undefined,
-      amount: booking.amount,
-      status: booking.status,
-      created_at: booking.created_at,
-    };
-    printBookingReceipt(receiptData, currentCompany, type);
+    printBookingReceipt(buildReceiptData(booking), currentCompany, type);
+  };
+
+  const handleDownloadReceipt = (booking: Booking, type: "check_in" | "check_out") => {
+    downloadBookingReceipt(buildReceiptData(booking), currentCompany, type);
+    toast.success("Receipt downloaded!");
   };
 
   const filtered = bookings.filter((b) => {
@@ -363,6 +369,9 @@ export default function Bookings() {
                         <td className="p-3 text-right flex items-center justify-end gap-1">
                           {["confirmed", "active"].includes(b.status) && (
                             <>
+                              <Button size="sm" variant="ghost" className="text-xs h-7" title="Download Check-in Receipt" onClick={() => handleDownloadReceipt(b, "check_in")}>
+                                <Download className="h-3 w-3" />
+                              </Button>
                               <Button size="sm" variant="ghost" className="text-xs h-7" title="Print Check-in Receipt" onClick={() => handlePrintReceipt(b, "check_in")}>
                                 <Printer className="h-3 w-3" />
                               </Button>
@@ -372,9 +381,14 @@ export default function Bookings() {
                             </>
                           )}
                           {b.status === "checked_out" && (
-                            <Button size="sm" variant="ghost" className="text-xs h-7" title="Print Check-out Receipt" onClick={() => handlePrintReceipt(b, "check_out")}>
-                              <Printer className="h-3 w-3 mr-1" /> Receipt
-                            </Button>
+                            <>
+                              <Button size="sm" variant="ghost" className="text-xs h-7" title="Download Check-out Receipt" onClick={() => handleDownloadReceipt(b, "check_out")}>
+                                <Download className="h-3 w-3" />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="text-xs h-7" title="Print Check-out Receipt" onClick={() => handlePrintReceipt(b, "check_out")}>
+                                <Printer className="h-3 w-3 mr-1" /> Receipt
+                              </Button>
+                            </>
                           )}
                         </td>
                       </tr>

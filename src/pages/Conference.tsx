@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Users, Trash2 } from "lucide-react";
+import { Users, Trash2, Download, Printer } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
@@ -15,6 +15,7 @@ import { EventCalendar } from "@/components/conference/EventCalendar";
 import { EditBookingDialog } from "@/components/conference/EditBookingDialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { downloadConferenceReceipt, printConferenceReceipt } from "@/lib/conferenceReceipt";
 import { format, parseISO } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -229,16 +230,25 @@ export default function Conference() {
                         {event.organizer && ` · ${event.organizer}`}
                       </p>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className="text-sm font-semibold">
-                          {format(parseISO(event.event_date), "MMM d")}
-                          {event.end_date && event.end_date !== event.event_date && `–${format(parseISO(event.end_date), "d")}`}
-                        </p>
-                        <Badge variant={event.status === "confirmed" ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
-                          {event.status}
-                        </Badge>
-                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <p className="text-sm font-semibold">
+                            {format(parseISO(event.event_date), "MMM d")}
+                            {event.end_date && event.end_date !== event.event_date && `–${format(parseISO(event.end_date), "d")}`}
+                          </p>
+                          <Badge variant={event.status === "confirmed" ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
+                            {event.status}
+                          </Badge>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" title="Download Receipt" onClick={() => {
+                          downloadConferenceReceipt({ ...event, room_name: event.room_name || "Unknown" }, currentCompany);
+                          toast.success("Receipt downloaded!");
+                        }}>
+                          <Download className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" title="Print Receipt" onClick={() => printConferenceReceipt({ ...event, room_name: event.room_name || "Unknown" }, currentCompany)}>
+                          <Printer className="h-3.5 w-3.5" />
+                        </Button>
                       <EditBookingDialog booking={event} rooms={rooms} onUpdated={fetchData} />
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
