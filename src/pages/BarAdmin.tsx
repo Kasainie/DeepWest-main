@@ -83,7 +83,7 @@ export default function BarAdmin() {
       supabase.from("menu_items").select("*").eq("company_id", currentCompany.id).order("category"),
       supabase.from("company_staff").select("id, full_name, staff_code, role, is_active")
         .eq("company_id", currentCompany.id)
-        .in("department", ["bar", "bar_admin"]),
+        .overlaps("department", ["bar", "bar_admin"]),
       supabase.from("orders").select("*, order_items(*)")
         .eq("company_id", currentCompany.id)
         .order("created_at", { ascending: false })
