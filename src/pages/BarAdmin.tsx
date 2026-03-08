@@ -494,7 +494,7 @@ export default function BarAdmin() {
                               </Button>
                             </div>
                             {inv.cost_per_unit > 0 && (
-                              <span className="text-xs text-muted-foreground hidden sm:inline">${inv.cost_per_unit}/ea</span>
+                              <span className="text-xs text-muted-foreground hidden sm:inline">KSh {inv.cost_per_unit}/ea</span>
                             )}
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteInventory(inv.id)}>
                               <Trash2 className="h-3 w-3" />
