@@ -123,6 +123,53 @@ export type Database = {
         }
         Relationships: []
       }
+      company_branding: {
+        Row: {
+          accent_color: string | null
+          company_id: string
+          created_at: string
+          font_body: string | null
+          font_heading: string | null
+          id: string
+          primary_color: string | null
+          sidebar_color: string | null
+          updated_at: string
+          welcome_message: string | null
+        }
+        Insert: {
+          accent_color?: string | null
+          company_id: string
+          created_at?: string
+          font_body?: string | null
+          font_heading?: string | null
+          id?: string
+          primary_color?: string | null
+          sidebar_color?: string | null
+          updated_at?: string
+          welcome_message?: string | null
+        }
+        Update: {
+          accent_color?: string | null
+          company_id?: string
+          created_at?: string
+          font_body?: string | null
+          font_heading?: string | null
+          id?: string
+          primary_color?: string | null
+          sidebar_color?: string | null
+          updated_at?: string
+          welcome_message?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_branding_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_invitations: {
         Row: {
           company_id: string
