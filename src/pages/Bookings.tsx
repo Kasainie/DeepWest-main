@@ -53,6 +53,7 @@ export default function Bookings() {
   const { currentCompany } = useCompany();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [guests, setGuests] = useState<{ id: string; full_name: string }[]>([]);
+  const [availableRooms, setAvailableRooms] = useState<AvailableRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
