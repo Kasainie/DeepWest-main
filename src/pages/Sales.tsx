@@ -224,6 +224,7 @@ export default function Sales() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </motion.div>
 
       {/* Stats */}
