@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Shield, ShieldCheck, User, Loader2, Plus, Copy, Trash2, KeyRound, Building2, UtensilsCrossed, Wine, ChefHat, Calculator } from "lucide-react";
+import { Shield, ShieldCheck, User, Loader2, Plus, Copy, Trash2, KeyRound, Building2, UtensilsCrossed, Wine, ChefHat, Calculator, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { InviteStaffDialog } from "@/components/InviteStaffDialog";
@@ -78,6 +78,7 @@ export default function StaffManagement() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [inviteRefreshKey, setInviteRefreshKey] = useState(0);
+  const [resetting, setResetting] = useState<string | null>(null);
   const canManage = companyRole === "owner" || companyRole === "admin";
 
   const [form, setForm] = useState({
@@ -161,6 +162,30 @@ export default function StaffManagement() {
       toast.error("Failed to remove staff");
     }
     setDeleting(null);
+  };
+
+  const handleResetAccess = async (staffId: string, staffName: string) => {
+    setResetting(staffId);
+    const newCode = generateStaffCode();
+    try {
+      const { data, error } = await supabase.functions.invoke("reset-staff-access", {
+        body: { staff_id: staffId, new_staff_code: newCode },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setStaffList((prev) =>
+        prev.map((s) => (s.id === staffId ? { ...s, staff_code: data.new_staff_code } : s))
+      );
+      toast.success(`Access code reset for ${staffName}`, {
+        description: `New code: ${data.new_staff_code}`,
+        duration: 8000,
+      });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reset access");
+    }
+    setResetting(null);
   };
 
   if (!isAdmin && currentUserRole !== "manager" && companyRole !== "owner") {
@@ -364,6 +389,20 @@ export default function StaffManagement() {
                         </Button>
                         {canManage && (
                           <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-primary"
+                              onClick={() => handleResetAccess(member.id, member.full_name)}
+                              disabled={resetting === member.id}
+                              title="Reset access code"
+                            >
+                              {resetting === member.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <RotateCcw className="h-3 w-3" />
+                              )}
+                            </Button>
                             <Switch
                               checked={member.is_active}
                               onCheckedChange={() => handleToggleActive(member.id, member.is_active)}
