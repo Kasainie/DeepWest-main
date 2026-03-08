@@ -1,17 +1,44 @@
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Plus, Monitor, Wifi, Users, Projector, Coffee } from "lucide-react";
+import { Users, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { useCompany } from "@/contexts/CompanyContext";
+import { formatKES } from "@/lib/currency";
+import { AddRoomDialog } from "@/components/conference/AddRoomDialog";
+import { BookSpaceDialog } from "@/components/conference/BookSpaceDialog";
+import { RoomStatusSelect } from "@/components/conference/RoomStatusSelect";
+import { EventCalendar } from "@/components/conference/EventCalendar";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { format, parseISO } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const rooms = [
-  { name: "Grand Ballroom", capacity: 200, price: 2500, status: "available", amenities: ["Projector", "Sound", "WiFi", "Catering"], nextBooking: "Mar 15 · Corporate Summit" },
-  { name: "Executive Board Room", capacity: 20, price: 800, status: "occupied", amenities: ["TV", "WiFi", "Whiteboard"], nextBooking: "In use · Until 4 PM" },
-  { name: "Innovation Lab", capacity: 40, price: 1200, status: "available", amenities: ["Projector", "WiFi", "Screens"], nextBooking: "Mar 12 · Workshop" },
-  { name: "Garden Pavilion", capacity: 100, price: 1800, status: "reserved", amenities: ["Sound", "WiFi", "Catering"], nextBooking: "Mar 14 · Wedding Reception" },
-  { name: "Skyline Suite", capacity: 50, price: 1500, status: "available", amenities: ["TV", "WiFi", "Bar"], nextBooking: "No upcoming" },
-  { name: "Library Room", capacity: 12, price: 500, status: "maintenance", amenities: ["TV", "WiFi"], nextBooking: "Maintenance until Mar 11" },
-];
+interface ConferenceRoom {
+  id: string;
+  name: string;
+  capacity: number;
+  price_per_day: number;
+  status: string;
+  amenities: string[] | null;
+  description: string | null;
+}
+
+interface ConferenceBooking {
+  id: string;
+  event_name: string;
+  organizer: string | null;
+  attendees: number;
+  event_date: string;
+  end_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  status: string;
+  amount: number;
+  room_id: string;
+  room_name?: string;
+}
 
 const statusColors: Record<string, string> = {
   available: "bg-success/10 text-success border-success/20",
@@ -20,83 +47,185 @@ const statusColors: Record<string, string> = {
   maintenance: "bg-muted text-muted-foreground border-muted",
 };
 
-const upcomingEvents = [
-  { name: "Corporate Summit 2026", room: "Grand Ballroom", date: "Mar 15-16", attendees: 180, status: "confirmed" },
-  { name: "Tech Workshop", room: "Innovation Lab", date: "Mar 12", attendees: 35, status: "confirmed" },
-  { name: "Wedding Reception", room: "Garden Pavilion", date: "Mar 14", attendees: 90, status: "pending" },
-  { name: "Board Meeting Q1", room: "Executive Board Room", date: "Mar 18", attendees: 15, status: "confirmed" },
-];
-
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
 export default function Conference() {
+  const { currentCompany } = useCompany();
+  const [rooms, setRooms] = useState<ConferenceRoom[]>([]);
+  const [bookings, setBookings] = useState<ConferenceBooking[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = useCallback(async () => {
+    if (!currentCompany) return;
+    setLoading(true);
+    const [roomsRes, bookingsRes] = await Promise.all([
+      supabase.from("conference_rooms").select("*").eq("company_id", currentCompany.id).order("name"),
+      supabase.from("conference_bookings").select("*").eq("company_id", currentCompany.id).order("event_date", { ascending: true }),
+    ]);
+    const roomList = (roomsRes.data || []) as ConferenceRoom[];
+    setRooms(roomList);
+    const bookingList = ((bookingsRes.data || []) as ConferenceBooking[]).map((b) => ({
+      ...b,
+      room_name: roomList.find((r) => r.id === b.room_id)?.name || "Unknown",
+    }));
+    setBookings(bookingList);
+    setLoading(false);
+  }, [currentCompany]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleDeleteRoom = async (id: string) => {
+    const { error } = await supabase.from("conference_rooms").delete().eq("id", id);
+    if (error) { toast.error("Failed to delete room"); return; }
+    toast.success("Room deleted");
+    fetchData();
+  };
+
+  const handleCancelBooking = async (id: string) => {
+    const { error } = await supabase.from("conference_bookings").update({ status: "cancelled" }).eq("id", id);
+    if (error) { toast.error("Failed to cancel booking"); return; }
+    toast.success("Booking cancelled");
+    fetchData();
+  };
+
+  const upcomingBookings = bookings.filter((b) => b.status !== "cancelled" && parseISO(b.event_date) >= new Date(new Date().setHours(0, 0, 0, 0)));
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-64" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-52" />)}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <motion.div variants={item} className="flex items-center justify-between">
+      <motion.div variants={item} className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold font-display">Conference & Events</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage event spaces and bookings</p>
         </div>
-        <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Book Space</Button>
+        <div className="flex gap-2">
+          <AddRoomDialog onCreated={fetchData} />
+          <BookSpaceDialog rooms={rooms} onCreated={fetchData} />
+        </div>
       </motion.div>
 
-      <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {rooms.map((room) => (
-          <Card key={room.name} className="shadow-card border-0 hover:shadow-elevated transition-shadow">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-display">{room.name}</CardTitle>
-                <Badge className={statusColors[room.status] + " text-[10px] border"}>
-                  {room.status}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Users className="h-3 w-3" /> Up to {room.capacity} people
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {room.amenities.map((a) => (
-                  <span key={a} className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
-                    {a}
-                  </span>
-                ))}
-              </div>
-              <div className="bg-secondary/50 rounded-lg p-2.5">
-                <p className="text-xs text-muted-foreground">{room.nextBooking}</p>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-bold font-display">${room.price.toLocaleString()}</span>
-                <span className="text-[10px] text-muted-foreground">per day</span>
-              </div>
+      {/* Stats */}
+      <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: "Total Rooms", value: rooms.length },
+          { label: "Available", value: rooms.filter((r) => r.status === "available").length },
+          { label: "Upcoming Events", value: upcomingBookings.length },
+          { label: "Total Capacity", value: rooms.reduce((s, r) => s + r.capacity, 0) },
+        ].map((s) => (
+          <Card key={s.label} className="shadow-card border-0">
+            <CardContent className="pt-4 pb-3 px-4">
+              <p className="text-xs text-muted-foreground">{s.label}</p>
+              <p className="text-2xl font-bold font-display mt-1">{s.value}</p>
             </CardContent>
           </Card>
         ))}
       </motion.div>
 
+      {/* Room Cards */}
+      <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {rooms.map((room) => {
+          const nextBooking = bookings.find((b) => b.room_id === room.id && b.status !== "cancelled" && parseISO(b.event_date) >= new Date(new Date().setHours(0, 0, 0, 0)));
+          return (
+            <Card key={room.id} className="shadow-card border-0 hover:shadow-elevated transition-shadow">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-display">{room.name}</CardTitle>
+                  <Badge className={statusColors[room.status] + " text-[10px] border"}>{room.status}</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Users className="h-3 w-3" /> Up to {room.capacity} people
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {(room.amenities || []).map((a) => (
+                    <span key={a} className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">{a}</span>
+                  ))}
+                </div>
+                <div className="bg-secondary/50 rounded-lg p-2.5">
+                  <p className="text-xs text-muted-foreground">
+                    {nextBooking
+                      ? `${format(parseISO(nextBooking.event_date), "MMM d")} · ${nextBooking.event_name}`
+                      : "No upcoming events"}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-bold font-display">{formatKES(room.price_per_day, 0)}</span>
+                  <span className="text-[10px] text-muted-foreground">per day</span>
+                </div>
+                <div className="flex items-center justify-between pt-1 border-t border-border">
+                  <RoomStatusSelect roomId={room.id} currentStatus={room.status} onUpdated={fetchData} />
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteRoom(room.id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+        {rooms.length === 0 && (
+          <Card className="col-span-full shadow-card border-0">
+            <CardContent className="py-12 text-center text-muted-foreground">
+              No conference rooms yet. Add one to get started.
+            </CardContent>
+          </Card>
+        )}
+      </motion.div>
+
+      {/* Calendar */}
+      <motion.div variants={item}>
+        <EventCalendar bookings={bookings} />
+      </motion.div>
+
+      {/* Upcoming Events List */}
       <motion.div variants={item}>
         <Card className="shadow-card border-0">
           <CardHeader>
             <CardTitle className="text-lg font-display">Upcoming Events</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-1">
-              {upcomingEvents.map((event, i) => (
-                <div key={i} className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-secondary/50 transition-colors">
-                  <div>
-                    <p className="text-sm font-medium">{event.name}</p>
-                    <p className="text-xs text-muted-foreground">{event.room} · {event.attendees} attendees</p>
+            {upcomingBookings.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No upcoming events</p>
+            ) : (
+              <div className="space-y-1">
+                {upcomingBookings.map((event) => (
+                  <div key={event.id} className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-secondary/50 transition-colors">
+                    <div>
+                      <p className="text-sm font-medium">{event.event_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {event.room_name} · {event.attendees} attendees
+                        {event.organizer && ` · ${event.organizer}`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className="text-sm font-semibold">
+                          {format(parseISO(event.event_date), "MMM d")}
+                          {event.end_date && event.end_date !== event.event_date && `–${format(parseISO(event.end_date), "d")}`}
+                        </p>
+                        <Badge variant={event.status === "confirmed" ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
+                          {event.status}
+                        </Badge>
+                      </div>
+                      <Button variant="ghost" size="sm" className="text-xs text-destructive h-7" onClick={() => handleCancelBooking(event.id)}>
+                        Cancel
+                      </Button>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold">{event.date}</p>
-                    <Badge variant={event.status === "confirmed" ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
-                      {event.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>
