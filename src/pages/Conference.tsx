@@ -11,6 +11,7 @@ import { BookSpaceDialog } from "@/components/conference/BookSpaceDialog";
 import { EditRoomDialog } from "@/components/conference/EditRoomDialog";
 import { RoomStatusSelect } from "@/components/conference/RoomStatusSelect";
 import { EventCalendar } from "@/components/conference/EventCalendar";
+import { EditBookingDialog } from "@/components/conference/EditBookingDialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
