@@ -186,7 +186,7 @@ export default function Dashboard() {
       </motion.div>
 
       {/* Top-level stats */}
-      <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         <StatCard title="Total Rooms" value={String(totalRooms)} change={`${occupiedRooms} occupied`} changeType="neutral" icon={BedDouble} />
         <StatCard title="Occupancy" value={`${occupancyPct}%`} change={`${occupiedRooms}/${totalRooms}`} changeType={occupancyPct > 70 ? "positive" : "neutral"} icon={TrendingUp} />
         <StatCard title="Total Guests" value={String(totalGuests)} change="All time" changeType="neutral" icon={Users} />
