@@ -93,7 +93,6 @@ export default function SettingsPage() {
         .from("companies")
         .update({
           name: form.name.trim(),
-          slug: form.slug.trim(),
           email: form.email.trim() || null,
           phone: form.phone.trim() || null,
           address: form.address.trim() || null,
