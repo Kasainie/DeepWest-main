@@ -85,7 +85,7 @@ const App = () => (
               }
             />
             <Route
-              path="/dashboard/*"
+              path="/*"
               element={
                 <ProtectedRoute>
                   <CompanyProvider>
