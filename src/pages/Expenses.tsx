@@ -20,6 +20,7 @@ import { downloadExpenseReceipt, printExpenseReceipt } from "@/lib/expenseReceip
 import { motion } from "framer-motion";
 import { formatKES } from "@/lib/currency";
 import { format, subDays, startOfMonth } from "date-fns";
+import { getLocalDateString } from "@/lib/dateUtils";
 
 interface ExpenseCategory {
   id: string;
@@ -49,7 +50,7 @@ export default function Expenses() {
   const [addExpOpen, setAddExpOpen] = useState(false);
   const [addCatOpen, setAddCatOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [dateRange, setDateRange] = useState<DateRange>({ from: subDays(new Date(), 29), to: new Date() });
+  const [dateRange, setDateRange] = useState<DateRange>({ from: new Date(), to: new Date() });
   const [expForm, setExpForm] = useState({
     category_id: "",
     expense_date: format(new Date(), "yyyy-MM-dd"),
@@ -62,14 +63,19 @@ export default function Expenses() {
 
   useEffect(() => {
     if (currentCompany) fetchAll();
-  }, [currentCompany?.id]);
+  }, [currentCompany?.id, dateRange]);
 
   const fetchAll = async () => {
     if (!currentCompany) return;
     setLoading(true);
+    const fromDate = getLocalDateString(dateRange.from);
+    const toDate = getLocalDateString(dateRange.to);
     const [catRes, expRes] = await Promise.all([
       supabase.from("expense_categories").select("*").eq("company_id", currentCompany.id).order("name"),
-      supabase.from("expenses").select("*").eq("company_id", currentCompany.id).order("expense_date", { ascending: false }).limit(500),
+      supabase.from("expenses").select("*").eq("company_id", currentCompany.id)
+        .gte("expense_date", fromDate)
+        .lte("expense_date", toDate)
+        .order("expense_date", { ascending: false }),
     ]);
     setCategories((catRes.data || []) as ExpenseCategory[]);
     setExpenses((expRes.data || []) as Expense[]);
@@ -120,11 +126,8 @@ export default function Expenses() {
     setSaving(false);
   };
 
-  const filtered = useMemo(() => {
-    const fromStr = format(dateRange.from, "yyyy-MM-dd");
-    const toStr = format(dateRange.to, "yyyy-MM-dd");
-    return expenses.filter((e) => e.expense_date >= fromStr && e.expense_date <= toStr);
-  }, [expenses, dateRange]);
+  // Expenses are already filtered server-side by dateRange
+  const filtered = expenses;
 
   const stats = useMemo(() => {
     const totalFiltered = filtered.reduce((a, e) => a + Number(e.amount), 0);

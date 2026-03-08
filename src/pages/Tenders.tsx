@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { formatKES } from "@/lib/currency";
 import { format, subDays } from "date-fns";
+import { getLocalDateString } from "@/lib/dateUtils";
 
 interface Tender {
   id: string;
@@ -39,7 +40,7 @@ export default function Tenders() {
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [dateRange, setDateRange] = useState<DateRange>({ from: subDays(new Date(), 29), to: new Date() });
+  const [dateRange, setDateRange] = useState<DateRange>({ from: new Date(), to: new Date() });
   const [form, setForm] = useState({
     tender_date: format(new Date(), "yyyy-MM-dd"),
     shift: "day",
@@ -51,17 +52,20 @@ export default function Tenders() {
 
   useEffect(() => {
     if (currentCompany) fetchTenders();
-  }, [currentCompany?.id]);
+  }, [currentCompany?.id, dateRange]);
 
   const fetchTenders = async () => {
     if (!currentCompany) return;
     setLoading(true);
+    const fromDate = getLocalDateString(dateRange.from);
+    const toDate = getLocalDateString(dateRange.to);
     const { data } = await supabase
       .from("payment_tenders")
       .select("*")
       .eq("company_id", currentCompany.id)
-      .order("tender_date", { ascending: false })
-      .limit(200);
+      .gte("tender_date", fromDate)
+      .lte("tender_date", toDate)
+      .order("tender_date", { ascending: false });
     setTenders((data || []) as Tender[]);
     setLoading(false);
   };
@@ -89,11 +93,8 @@ export default function Tenders() {
     setSaving(false);
   };
 
-  const filtered = useMemo(() => {
-    const fromStr = format(dateRange.from, "yyyy-MM-dd");
-    const toStr = format(dateRange.to, "yyyy-MM-dd");
-    return tenders.filter((t) => t.tender_date >= fromStr && t.tender_date <= toStr);
-  }, [tenders, dateRange]);
+  // Tenders are already filtered server-side by dateRange
+  const filtered = tenders;
 
   const stats = useMemo(() => {
     const totalExpected = filtered.reduce((a, t) => a + Number(t.expected_amount), 0);
