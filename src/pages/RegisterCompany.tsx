@@ -119,8 +119,7 @@ export default function RegisterCompany() {
       }
 
       await refreshCompanies();
-      toast.success("Company registered successfully!");
-      navigate("/");
+      navigate("/register-success", { state: { slug: company.slug } });
     } catch (err: any) {
       if (err instanceof z.ZodError) {
         toast.error(err.errors[0].message);
