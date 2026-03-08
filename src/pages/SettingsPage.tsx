@@ -195,7 +195,19 @@ export default function SettingsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>URL Slug</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label>URL Slug</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>URL slug is permanent and cannot be changed after registration</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <div className="flex items-center gap-0">
                   <span className="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground whitespace-nowrap">
                     lktech.life/
