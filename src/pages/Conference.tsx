@@ -11,6 +11,7 @@ import { BookSpaceDialog } from "@/components/conference/BookSpaceDialog";
 import { EditRoomDialog } from "@/components/conference/EditRoomDialog";
 import { RoomStatusSelect } from "@/components/conference/RoomStatusSelect";
 import { EventCalendar } from "@/components/conference/EventCalendar";
+import { EditBookingDialog } from "@/components/conference/EditBookingDialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
@@ -37,6 +38,7 @@ interface ConferenceBooking {
   end_time: string | null;
   status: string;
   amount: number;
+  notes: string | null;
   room_id: string;
   room_name?: string;
 }
@@ -222,6 +224,7 @@ export default function Conference() {
                           {event.status}
                         </Badge>
                       </div>
+                      <EditBookingDialog booking={event} rooms={rooms} onUpdated={fetchData} />
                       <Button variant="ghost" size="sm" className="text-xs text-destructive h-7" onClick={() => handleCancelBooking(event.id)}>
                         Cancel
                       </Button>
