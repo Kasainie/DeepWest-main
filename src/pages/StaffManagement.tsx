@@ -389,6 +389,20 @@ export default function StaffManagement() {
                         </Button>
                         {canManage && (
                           <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-primary"
+                              onClick={() => handleResetAccess(member.id, member.full_name)}
+                              disabled={resetting === member.id}
+                              title="Reset access code"
+                            >
+                              {resetting === member.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <RotateCcw className="h-3 w-3" />
+                              )}
+                            </Button>
                             <Switch
                               checked={member.is_active}
                               onCheckedChange={() => handleToggleActive(member.id, member.is_active)}
