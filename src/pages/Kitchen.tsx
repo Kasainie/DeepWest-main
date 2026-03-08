@@ -278,7 +278,7 @@ export default function Kitchen() {
       </motion.div>
 
       {orders.length === 0 ? (
-        <motion.div variants={item}>
+        <motion.div variants={itemVariant}>
           <Card className="shadow-card border-0">
             <CardContent className="text-center py-16">
               <ChefHat className="h-14 w-14 mx-auto text-muted-foreground mb-4" />
