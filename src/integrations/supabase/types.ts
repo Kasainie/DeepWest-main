@@ -564,6 +564,7 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          id_number: string | null
           is_vip: boolean
           last_visit: string | null
           notes: string | null
@@ -578,6 +579,7 @@ export type Database = {
           email?: string | null
           full_name: string
           id?: string
+          id_number?: string | null
           is_vip?: boolean
           last_visit?: string | null
           notes?: string | null
@@ -592,6 +594,7 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+          id_number?: string | null
           is_vip?: boolean
           last_visit?: string | null
           notes?: string | null

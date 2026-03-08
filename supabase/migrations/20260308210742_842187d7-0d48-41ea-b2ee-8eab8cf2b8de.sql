@@ -1,0 +1,1 @@
+ALTER TABLE public.guests ADD COLUMN IF NOT EXISTS id_number text DEFAULT NULL;
