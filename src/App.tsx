@@ -27,6 +27,7 @@ import Sales from "./pages/Sales";
 import Tenders from "./pages/Tenders";
 import Expenses from "./pages/Expenses";
 import RegisterCompany from "./pages/RegisterCompany";
+import SuperAdmin from "./pages/SuperAdmin";
 import RegisterSuccess from "./pages/RegisterSuccess";
 import AcceptInvite from "./pages/AcceptInvite";
 import Login from "./pages/Login";
@@ -103,6 +104,7 @@ const App = () => (
                               <Route path="/website" element={<Website />} />
                               <Route path="/settings" element={<SettingsPage />} />
                               <Route path="/about" element={<About />} />
+                              <Route path="/super-admin" element={<SuperAdmin />} />
                               <Route path="*" element={<NotFound />} />
                             </Routes>
                           </DepartmentGuard>
