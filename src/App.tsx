@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import Rooms from "./pages/Rooms";
 import Restaurant from "./pages/Restaurant";
 import Bar from "./pages/Bar";
+import BarAdmin from "./pages/BarAdmin";
 import Kitchen from "./pages/Kitchen";
 import Conference from "./pages/Conference";
 import Bookings from "./pages/Bookings";
