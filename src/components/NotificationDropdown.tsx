@@ -92,7 +92,6 @@ export function NotificationDropdown() {
     setSoundSettings((prev) => {
       const next = { ...prev, ...update };
       localStorage.setItem("notification_sound_settings", JSON.stringify(next));
-      if (audioRef.current) audioRef.current.volume = next.volume;
       return next;
     });
   }, []);
