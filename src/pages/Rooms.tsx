@@ -10,6 +10,7 @@ import { AddRoomDialog } from "@/components/rooms/AddRoomDialog";
 import { RoomFilters } from "@/components/rooms/RoomFilters";
 import { RoomCard, type Room } from "@/components/rooms/RoomCard";
 import { RoomDetailsDialog } from "@/components/rooms/RoomDetailsDialog";
+import { AssignRoomDialog } from "@/components/rooms/AssignRoomDialog";
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
@@ -24,6 +25,8 @@ export default function Rooms() {
   const [floorFilter, setFloorFilter] = useState("all");
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [assignRoom, setAssignRoom] = useState<Room | null>(null);
+  const [assignOpen, setAssignOpen] = useState(false);
 
   useEffect(() => {
     if (currentCompany) fetchRooms();
@@ -135,7 +138,21 @@ export default function Rooms() {
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
         onUpdated={fetchRooms}
+        onAssignRoom={(room) => {
+          setAssignRoom(room);
+          setAssignOpen(true);
+        }}
       />
+
+      {currentCompany && (
+        <AssignRoomDialog
+          room={assignRoom}
+          open={assignOpen}
+          onOpenChange={setAssignOpen}
+          companyId={currentCompany.id}
+          onAssigned={fetchRooms}
+        />
+      )}
     </motion.div>
   );
 }
