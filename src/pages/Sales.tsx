@@ -355,7 +355,7 @@ export default function Sales() {
         <TabsContent value="chart">
           <motion.div variants={item}>
             <Card className="shadow-card border-0">
-              <CardHeader><CardTitle className="text-base font-display">14-Day Sales Trend</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base font-display">Sales Trend</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={260}>
                   <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
