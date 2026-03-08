@@ -196,13 +196,21 @@ export default function SettingsPage() {
               </div>
               <div className="space-y-2">
                 <Label>URL Slug</Label>
-                <Input
-                  value={form.slug}
-                  onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
-                  disabled={!canEdit}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">Unique identifier for your company</p>
+                <div className="flex items-center gap-0">
+                  <span className="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground whitespace-nowrap">
+                    lktech.life/
+                  </span>
+                  <Input
+                    value={form.slug}
+                    onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                    disabled={!canEdit}
+                    required
+                    className="rounded-l-none"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Your company is accessible at lktech.life/{form.slug || "your-name"}
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
