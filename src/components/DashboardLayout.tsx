@@ -1,6 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Bell, Search, LogOut } from "lucide-react";
+import { Bell, Search, LogOut, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +14,8 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, signOut } = useAuth();
-  const { companyRole } = useCompany();
+  const { currentCompany, companyRole } = useCompany();
+  const displayName = user?.user_metadata?.full_name || user?.email || "Guest";
   const initials = user?.user_metadata?.full_name
     ? user.user_metadata.full_name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
     : user?.email?.slice(0, 2).toUpperCase() ?? "GV";
@@ -27,6 +28,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <header className="h-14 flex items-center justify-between border-b px-4 bg-card">
             <div className="flex items-center gap-3">
               <SidebarTrigger />
+              {currentCompany?.logo_url ? (
+                <img
+                  src={currentCompany.logo_url}
+                  alt={currentCompany.name}
+                  className="h-8 w-8 rounded-lg object-cover shrink-0 hidden sm:block"
+                />
+              ) : (
+                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0 hidden sm:block">
+                  <Building2 className="h-4 w-4 text-primary-foreground" />
+                </div>
+              )}
               <CompanySwitcher />
               <div className="relative hidden lg:block">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -45,11 +57,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-primary-foreground">
                   {initials}
                 </div>
-                {companyRole && (
-                  <Badge variant="secondary" className="text-[10px] capitalize hidden sm:inline-flex">
-                    {companyRole}
-                  </Badge>
-                )}
+                <div className="hidden sm:flex flex-col items-end">
+                  <span className="text-xs font-medium leading-tight">{displayName}</span>
+                  {companyRole && (
+                    <Badge variant="secondary" className="text-[9px] capitalize px-1.5 py-0">
+                      {companyRole}
+                    </Badge>
+                  )}
+                </div>
               </div>
               <Button variant="ghost" size="icon" onClick={signOut} title="Sign out">
                 <LogOut className="h-4 w-4" />
