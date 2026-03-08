@@ -98,15 +98,19 @@ export function NotificationDropdown() {
     });
   }, []);
 
-  const playNotificationSound = useCallback(() => {
+  const audioCache = useRef<Record<string, HTMLAudioElement>>({});
+
+  const playNotificationSound = useCallback((type?: string) => {
     if (!soundSettings.enabled) return;
     try {
-      if (!audioRef.current) {
-        audioRef.current = new Audio(NOTIFICATION_SOUND_URL);
+      const url = NOTIFICATION_SOUNDS[type || ""] || NOTIFICATION_SOUNDS.default;
+      if (!audioCache.current[url]) {
+        audioCache.current[url] = new Audio(url);
       }
-      audioRef.current.volume = soundSettings.volume;
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
+      const audio = audioCache.current[url];
+      audio.volume = soundSettings.volume;
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
     } catch {}
   }, [soundSettings.enabled, soundSettings.volume]);
 
