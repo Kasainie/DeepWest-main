@@ -1,4 +1,4 @@
-import { useMemo, useState, forwardRef } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO, isWithinInterval } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ const statusDot: Record<string, string> = {
   cancelled: "bg-destructive",
 };
 
-export const EventCalendar = forwardRef<HTMLDivElement, Props>(({ bookings }, ref) => {
+export function EventCalendar({ bookings }: Props) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const days = useMemo(() => {
     const start = startOfMonth(currentMonth);
@@ -95,6 +95,4 @@ export const EventCalendar = forwardRef<HTMLDivElement, Props>(({ bookings }, re
       </CardContent>
     </Card>
   );
-});
-
-EventCalendar.displayName = "EventCalendar";
+}
