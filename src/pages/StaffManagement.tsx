@@ -32,6 +32,7 @@ const departments = [
   { value: "hotel", label: "Hotel", icon: Building2 },
   { value: "restaurant", label: "Restaurant", icon: UtensilsCrossed },
   { value: "bar", label: "Bar", icon: Wine },
+  { value: "bar_admin", label: "Bar Admin", icon: ShieldCheck },
   { value: "kitchen", label: "Kitchen", icon: ChefHat },
   { value: "accountant", label: "Accountant", icon: Calculator },
 ];

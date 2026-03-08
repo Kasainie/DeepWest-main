@@ -35,7 +35,8 @@ const mainItems = [
   { title: "Rooms", url: "/rooms", icon: BedDouble, departments: ["hotel"] },
   { title: "Restaurant", url: "/restaurant", icon: UtensilsCrossed, departments: ["restaurant"] },
   { title: "Kitchen", url: "/kitchen", icon: ChefHat, departments: ["kitchen"] },
-  { title: "Bar", url: "/bar", icon: Wine, departments: ["bar"] },
+  { title: "Bar", url: "/bar", icon: Wine, departments: ["bar", "bar_admin"] },
+  { title: "Bar Admin", url: "/bar-admin", icon: ShieldCheck, departments: ["bar_admin"] },
   { title: "Conference", url: "/conference", icon: Presentation, departments: ["hotel"] },
 ];
 
