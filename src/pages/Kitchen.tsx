@@ -14,13 +14,20 @@ interface OrderWithItems {
   order_number: number;
   table_number: string | null;
   status: string;
+  payment_status: string;
+  payment_method: string | null;
+  subtotal: number;
+  tax: number;
+  total: number;
   notes: string | null;
   created_at: string;
-  total: number;
+  paid_at: string | null;
   order_items: {
     id: string;
     name: string;
     quantity: number;
+    unit_price: number;
+    total_price: number;
     notes: string | null;
     status: string;
   }[];
