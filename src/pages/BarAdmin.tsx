@@ -92,7 +92,18 @@ export default function BarAdmin() {
     setMenuItems((menuRes.data || []) as MenuItem[]);
     setBarStaff((staffRes.data || []) as StaffMember[]);
     setOrders(ordersRes.data || []);
-    setInventory((invRes.data || []) as InventoryItem[]);
+    const invItems = (invRes.data || []) as InventoryItem[];
+    setInventory(invItems);
+
+    // Show low-stock summary on load
+    const lowItems = invItems.filter((i) => i.stock <= i.low_threshold);
+    if (lowItems.length > 0) {
+      toast.warning(`${lowItems.length} item${lowItems.length > 1 ? "s" : ""} low on stock`, {
+        description: lowItems.map((i) => i.name).join(", "),
+        duration: 6000,
+      });
+    }
+
     setLoading(false);
   };
 
