@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
+import { subDays, format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
+import { DateRangeFilter, DateRange } from "@/components/DateRangeFilter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,13 +29,14 @@ export default function Bar() {
   const [inventory, setInventory] = useState<BarItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ salesToday: 0, revenue: 0, lowStock: 0, totalItems: 0 });
+  const [dateRange, setDateRange] = useState<DateRange>({ from: subDays(new Date(), 29), to: new Date() });
 
   useEffect(() => {
     if (currentCompany) {
       fetchInventory();
       fetchStats();
     }
-  }, [currentCompany?.id]);
+  }, [currentCompany?.id, dateRange]);
 
   const fetchInventory = async () => {
     if (!currentCompany) return;
@@ -49,7 +52,8 @@ export default function Bar() {
 
   const fetchStats = async () => {
     if (!currentCompany) return;
-    const today = new Date().toISOString().split("T")[0];
+    const fromDate = format(dateRange.from, "yyyy-MM-dd");
+    const toDate = format(dateRange.to, "yyyy-MM-dd");
 
     const [salesRes, inventoryRes] = await Promise.all([
       supabase
@@ -57,7 +61,8 @@ export default function Bar() {
         .select("amount")
         .eq("company_id", currentCompany.id)
         .eq("department", "bar")
-        .gte("sale_date", today),
+        .gte("sale_date", fromDate)
+        .lte("sale_date", toDate),
       supabase
         .from("bar_inventory")
         .select("id, stock, low_threshold")
@@ -96,9 +101,13 @@ export default function Bar() {
         <Button size="sm"><Plus className="h-4 w-4 mr-1" /> New Order</Button>
       </motion.div>
 
+      <motion.div variants={item} className="flex items-center justify-end">
+        <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+      </motion.div>
+
       <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard title="Bar Revenue" value={`KSh ${stats.revenue.toLocaleString()}`} change="Today" changeType="neutral" iconNode={<KshIcon className="h-5 w-5 text-primary" />} />
-        <StatCard title="Bar Sales" value={stats.salesToday} change="Today" changeType="neutral" icon={Wine} />
+        <StatCard title="Bar Revenue" value={`KSh ${stats.revenue.toLocaleString()}`} change="Selected period" changeType="neutral" iconNode={<KshIcon className="h-5 w-5 text-primary" />} />
+        <StatCard title="Bar Sales" value={stats.salesToday} change="Selected period" changeType="neutral" icon={Wine} />
         <StatCard
           title="Low Stock"
           value={stats.lowStock}
