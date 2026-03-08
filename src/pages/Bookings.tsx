@@ -148,6 +148,7 @@ export default function Bookings() {
     fetchData();
   };
 
+  const filtered = bookings.filter((b) => {
     const guestName = b.guests?.full_name || "";
     const q = search.toLowerCase();
     return guestName.toLowerCase().includes(q) || b.booking_type.toLowerCase().includes(q) || b.status.toLowerCase().includes(q);
