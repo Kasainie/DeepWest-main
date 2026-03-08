@@ -298,8 +298,15 @@ export default function Sales() {
       </motion.div>
 
       {/* Date Filter */}
-      <motion.div variants={item}>
+      <motion.div variants={item} className="flex flex-wrap items-center gap-3">
         <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+        <Select value={deptFilter} onValueChange={setDeptFilter}>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="All Departments" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Departments</SelectItem>
+            {DEPARTMENTS.map((d) => <SelectItem key={d} value={d} className="capitalize">{d}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </motion.div>
 
       {/* Stats */}
