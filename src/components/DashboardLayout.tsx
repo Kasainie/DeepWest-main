@@ -20,6 +20,32 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) { // notification dropdown
   const { user, signOut } = useAuth();
   const { currentCompany, companyRole } = useCompany();
+  const { branding, refreshBranding } = useBranding();
+  const isDark = branding?.theme_mode === "dark" || (!branding && document.documentElement.classList.contains("dark"));
+  const [toggling, setToggling] = useState(false);
+
+  const toggleTheme = async () => {
+    if (!currentCompany) return;
+    setToggling(true);
+    const newMode = isDark ? "light" : "dark";
+    // Apply immediately
+    if (newMode === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    // Persist
+    const { error } = await supabase
+      .from("company_branding" as any)
+      .upsert({ company_id: currentCompany.id, theme_mode: newMode } as any, { onConflict: "company_id" });
+    if (error) {
+      toast.error("Failed to save theme preference");
+    } else {
+      await refreshBranding();
+    }
+    setToggling(false);
+  };
+
   const displayName = user?.user_metadata?.full_name || user?.email || "Guest";
   const initials = user?.user_metadata?.full_name
     ? user.user_metadata.full_name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
