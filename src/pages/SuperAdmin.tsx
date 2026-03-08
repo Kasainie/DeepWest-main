@@ -2,8 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, ShieldCheck, Eye, EyeOff, Pause, Play, Mail, UserCheck, UserX, Clock, Search } from "lucide-react";
+import { Building2, Users, ShieldCheck, Eye, EyeOff, Pause, Play, Mail, UserCheck, UserX, Clock, Search, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -124,6 +128,20 @@ export default function SuperAdmin() {
       next.delete(userId);
       return next;
     });
+  };
+
+  const deleteCompany = async (companyId: string) => {
+    const { data, error } = await supabase.functions.invoke("super-admin-companies?action=delete_company", {
+      body: { company_id: companyId },
+    });
+    if (error || data?.error) {
+      toast.error("Failed to delete company");
+    } else {
+      setCompanies((prev) => prev.filter((c) => c.id !== companyId));
+      setStaff((prev) => prev.filter((s) => s.company_id !== companyId));
+      setMembers((prev) => prev.filter((m) => m.company_id !== companyId));
+      toast.success("Company deleted successfully");
+    }
   };
 
   const toggleCode = (staffId: string) => {
