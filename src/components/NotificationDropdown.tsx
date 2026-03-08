@@ -132,7 +132,7 @@ export function NotificationDropdown() {
             !(newNotif.type in typeToDepartments) || 
             allowedDepts === undefined ||
             (allowedDepts !== null && staffDepartment?.some(d => allowedDepts.includes(d.toLowerCase())));
-          if (shouldShow) playNotificationSound();
+          if (shouldShow) playNotificationSound(newNotif.type);
         }
       )
       .subscribe();
