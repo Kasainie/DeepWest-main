@@ -290,7 +290,7 @@ export default function Guests() {
       ) : (
         <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((guest) => (
-            <Card key={guest.id} className="shadow-card border-0 hover:shadow-elevated transition-shadow cursor-pointer">
+            <Card key={guest.id} className="shadow-card border-0 hover:shadow-elevated transition-shadow cursor-pointer" onClick={() => setHistoryGuest(guest)}>
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -391,6 +391,7 @@ export default function Guests() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <GuestHistoryDialog guest={historyGuest} open={!!historyGuest} onOpenChange={(open) => !open && setHistoryGuest(null)} />
     </motion.div>
   );
 }
