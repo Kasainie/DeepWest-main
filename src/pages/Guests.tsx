@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Search, Plus, Star, Loader2, Users } from "lucide-react";
+import { Search, Plus, Star, Loader2, Users, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -24,31 +25,51 @@ interface Guest {
   last_visit: string | null;
 }
 
+interface AvailableRoom {
+  id: string;
+  room_number: string;
+  type: string;
+  price_per_night: number;
+}
+
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
 export default function Guests() {
   const { currentCompany } = useCompany();
   const [guests, setGuests] = useState<Guest[]>([]);
+  const [availableRooms, setAvailableRooms] = useState<AvailableRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ full_name: "", email: "", phone: "", id_number: "", is_vip: false });
+  const [form, setForm] = useState({
+    full_name: "", email: "", phone: "", id_number: "", is_vip: false,
+    check_in: "", check_out: "", room_id: "",
+  });
+
+  const daysToSpend = useMemo(() => {
+    if (!form.check_in || !form.check_out) return 0;
+    const diff = new Date(form.check_out).getTime() - new Date(form.check_in).getTime();
+    return Math.max(0, Math.ceil(diff / 86400000));
+  }, [form.check_in, form.check_out]);
+
+  const selectedRoom = availableRooms.find(r => r.id === form.room_id);
+  const totalAmount = daysToSpend * (selectedRoom?.price_per_night || 0);
 
   useEffect(() => {
-    if (currentCompany) fetchGuests();
+    if (currentCompany) fetchData();
   }, [currentCompany?.id]);
 
-  const fetchGuests = async () => {
+  const fetchData = async () => {
     if (!currentCompany) return;
     setLoading(true);
-    const { data } = await supabase
-      .from("guests")
-      .select("*")
-      .eq("company_id", currentCompany.id)
-      .order("full_name");
-    setGuests((data || []) as Guest[]);
+    const [gRes, rRes] = await Promise.all([
+      supabase.from("guests").select("*").eq("company_id", currentCompany.id).order("full_name"),
+      supabase.from("rooms").select("id, room_number, type, price_per_night").eq("company_id", currentCompany.id).eq("status", "available").order("room_number"),
+    ]);
+    setGuests((gRes.data || []) as Guest[]);
+    setAvailableRooms((rRes.data || []) as AvailableRoom[]);
     setLoading(false);
   };
 
@@ -57,29 +78,47 @@ export default function Guests() {
     if (!currentCompany) return;
     setSaving(true);
 
-    const { error } = await supabase.from("guests").insert({
+    const { data: guestData, error } = await supabase.from("guests").insert({
       company_id: currentCompany.id,
       full_name: form.full_name.trim(),
       email: form.email.trim() || null,
       phone: form.phone.trim() || null,
       id_number: form.id_number.trim() || null,
       is_vip: form.is_vip,
-    });
+    }).select("id").single();
 
     if (error) {
       toast.error(error.message);
-    } else {
-      toast.success("Guest added!");
-      setForm({ full_name: "", email: "", phone: "", id_number: "", is_vip: false });
-      setAddOpen(false);
-      fetchGuests();
+      setSaving(false);
+      return;
     }
+
+    // If room & dates selected, create a booking too
+    if (form.room_id && form.check_in && daysToSpend > 0 && guestData) {
+      await supabase.from("bookings").insert({
+        company_id: currentCompany.id,
+        guest_id: guestData.id,
+        room_id: form.room_id,
+        booking_type: "room",
+        check_in: form.check_in,
+        check_out: form.check_out || null,
+        status: "confirmed",
+        amount: totalAmount,
+        details: `Room ${selectedRoom?.room_number} · ${daysToSpend} night${daysToSpend !== 1 ? "s" : ""}`,
+      });
+      await supabase.from("rooms").update({ status: "occupied" }).eq("id", form.room_id);
+    }
+
+    toast.success("Guest added!");
+    setForm({ full_name: "", email: "", phone: "", id_number: "", is_vip: false, check_in: "", check_out: "", room_id: "" });
+    setAddOpen(false);
+    fetchData();
     setSaving(false);
   };
 
   const filtered = guests.filter((g) => {
     const q = search.toLowerCase();
-    return g.full_name.toLowerCase().includes(q) || (g.email || "").toLowerCase().includes(q);
+    return g.full_name.toLowerCase().includes(q) || (g.email || "").toLowerCase().includes(q) || (g.phone || "").toLowerCase().includes(q) || (g.id_number || "").toLowerCase().includes(q);
   });
 
   if (loading) {
@@ -101,7 +140,7 @@ export default function Guests() {
           <DialogTrigger asChild>
             <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Add Guest</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="font-display">Add New Guest</DialogTitle>
             </DialogHeader>
@@ -112,24 +151,62 @@ export default function Guests() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="john@email.com" />
-                </div>
-                <div className="space-y-2">
                   <Label>Phone</Label>
                   <Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} placeholder="+254 700 123456" />
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>ID Number</Label>
                   <Input value={form.id_number} onChange={(e) => setForm((f) => ({ ...f, id_number: e.target.value }))} placeholder="12345678" maxLength={30} />
                 </div>
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="john@email.com" />
-                </div>
               </div>
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="john@email.com" />
+              </div>
+
+              {/* Room & Stay Duration */}
+              <div className="space-y-2">
+                <Label>Assign Room (optional)</Label>
+                <Select value={form.room_id} onValueChange={(v) => setForm((f) => ({ ...f, room_id: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Select available room" /></SelectTrigger>
+                  <SelectContent>
+                    {availableRooms.length === 0 ? (
+                      <SelectItem value="none" disabled>No available rooms</SelectItem>
+                    ) : (
+                      availableRooms.map((r) => (
+                        <SelectItem key={r.id} value={r.id}>
+                          Room {r.room_number} · {r.type} · KSh {Number(r.price_per_night).toLocaleString()}/night
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {form.room_id && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Check In</Label>
+                      <Input type="date" value={form.check_in} onChange={(e) => setForm((f) => ({ ...f, check_in: e.target.value }))} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Check Out</Label>
+                      <Input type="date" value={form.check_out} onChange={(e) => setForm((f) => ({ ...f, check_out: e.target.value }))} min={form.check_in || undefined} />
+                    </div>
+                  </div>
+                  {daysToSpend > 0 && selectedRoom && (
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-secondary/50 text-sm">
+                      <CalendarDays className="h-4 w-4 text-primary" />
+                      <span className="font-medium">{daysToSpend} night{daysToSpend !== 1 ? "s" : ""}</span>
+                      <span className="text-muted-foreground">·</span>
+                      <span className="font-semibold text-primary">KSh {totalAmount.toLocaleString()}</span>
+                      <span className="text-muted-foreground text-xs">({selectedRoom.price_per_night.toLocaleString()}/night)</span>
+                    </div>
+                  )}
+                </>
+              )}
+
               <div className="flex items-center gap-3">
                 <Switch checked={form.is_vip} onCheckedChange={(v) => setForm((f) => ({ ...f, is_vip: v }))} />
                 <Label>VIP Guest</Label>
@@ -186,7 +263,7 @@ export default function Guests() {
                     <p className="text-[10px] text-muted-foreground">Visits</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold font-display">${Number(guest.total_spent).toFixed(0)}</p>
+                    <p className="text-lg font-bold font-display">KSh {Number(guest.total_spent).toFixed(0)}</p>
                     <p className="text-[10px] text-muted-foreground">Total Spent</p>
                   </div>
                   <div>
