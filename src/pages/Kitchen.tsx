@@ -4,7 +4,9 @@ import { useCompany } from "@/contexts/CompanyContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Check, Clock, ChefHat, Flame, Download, Printer } from "lucide-react";
+import { Loader2, Check, Clock, ChefHat, Flame, Download, Printer, ClipboardList, Timer } from "lucide-react";
+import { StatCard } from "@/components/StatCard";
+import { KshIcon } from "@/components/KshIcon";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { generateReceipt, printReceipt } from "@/lib/receipt";
@@ -272,6 +274,8 @@ export default function Kitchen() {
     );
   };
 
+  const totalItemsToday = orders.reduce((sum, o) => sum + o.order_items.length, 0);
+
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
       <motion.div variants={itemVariant} className="flex items-center justify-between">
@@ -286,6 +290,13 @@ export default function Kitchen() {
           <Badge className="bg-primary/10 text-primary border-primary/30 border">{preparingOrders.length} cooking</Badge>
           <Badge className="bg-success/10 text-success border-success/30 border">{readyOrders.length} ready</Badge>
         </div>
+      </motion.div>
+
+      <motion.div variants={itemVariant} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatCard title="Pending" value={pendingOrders.length} change="Waiting" changeType="neutral" icon={Clock} />
+        <StatCard title="Preparing" value={preparingOrders.length} change="Cooking now" changeType="neutral" icon={Flame} />
+        <StatCard title="Ready" value={readyOrders.length} change="To serve" changeType="positive" icon={Check} />
+        <StatCard title="Items Today" value={totalItemsToday} change="All orders" changeType="neutral" icon={ClipboardList} />
       </motion.div>
 
       {orders.length === 0 ? (
