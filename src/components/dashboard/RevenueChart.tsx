@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DollarSign, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { KshIcon } from "@/components/KshIcon";
 import {
   AreaChart,
   Area,
@@ -135,7 +136,7 @@ export default function RevenueChart() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-              <DollarSign className="h-4 w-4 text-primary" />
+              <KshIcon className="h-4 w-4 text-primary" />
             </div>
             <div>
               <CardTitle className="text-lg font-display">Revenue</CardTitle>

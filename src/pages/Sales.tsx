@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, TrendingUp, DollarSign, BarChart3, Loader2, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Plus, TrendingUp, BarChart3, Loader2, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { KshIcon } from "@/components/KshIcon";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { formatKES } from "@/lib/currency";
@@ -199,7 +200,7 @@ export default function Sales() {
                 <p className="text-2xl font-bold font-display">{formatKES(stats.todaySales)}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-primary" />
+                <KshIcon className="h-5 w-5 text-primary" />
               </div>
             </div>
           </CardContent>

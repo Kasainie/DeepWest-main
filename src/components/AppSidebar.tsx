@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   ChefHat,
   Info,
-  DollarSign,
+  Banknote,
   Wallet,
   Receipt,
 } from "lucide-react";
@@ -44,7 +44,7 @@ const mainItems = [
 ];
 
 const accountingItems = [
-  { title: "Sales", url: "/sales", icon: DollarSign, departments: ["accountant"] },
+  { title: "Sales", url: "/sales", icon: Banknote, departments: ["accountant"] },
   { title: "Tenders", url: "/tenders", icon: Wallet, departments: ["accountant"] },
   { title: "Expenses", url: "/expenses", icon: Receipt, departments: ["accountant"] },
 ];

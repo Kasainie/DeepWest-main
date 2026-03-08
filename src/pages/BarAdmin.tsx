@@ -12,9 +12,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatCard } from "@/components/StatCard";
 import {
-  Wine, Plus, Loader2, DollarSign, TrendingUp, Package, Users,
+  Wine, Plus, Loader2, TrendingUp, Package, Users,
   Pencil, Trash2, Beer, Coffee, Martini, AlertTriangle,
 } from "lucide-react";
+import { KshIcon } from "@/components/KshIcon";
 import { OrdersList } from "@/components/orders/OrdersList";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -250,9 +251,9 @@ export default function BarAdmin() {
 
       {/* Stats */}
       <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Bar Revenue" value={`KSh ${totalRevenue.toFixed(2)}`} change="Recent" changeType="neutral" icon={DollarSign} />
+        <StatCard title="Bar Revenue" value={`KSh ${totalRevenue.toFixed(2)}`} change="Recent" changeType="neutral" iconNode={<KshIcon className="h-5 w-5 text-primary" />} />
         <StatCard title="Orders" value={`${totalOrders}`} change="Last 20" changeType="neutral" icon={TrendingUp} />
-        <StatCard title="Avg Check" value={`KSh ${avgCheck.toFixed(2)}`} change="" changeType="neutral" icon={DollarSign} />
+        <StatCard title="Avg Check" value={`KSh ${avgCheck.toFixed(2)}`} change="" changeType="neutral" iconNode={<KshIcon className="h-5 w-5 text-primary" />} />
         <StatCard title="Low Stock" value={`${lowStockItems.length}`} change={lowStockItems.length > 0 ? "Needs attention" : "All good"} changeType={lowStockItems.length > 0 ? "negative" : "positive"} icon={Package} />
       </motion.div>
 
