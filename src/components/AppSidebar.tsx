@@ -15,9 +15,12 @@ import {
   Banknote,
   Wallet,
   Receipt,
+  Crown,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useCompany } from "@/contexts/CompanyContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCompany } from "@/contexts/CompanyContext";
 import {
   Sidebar,
