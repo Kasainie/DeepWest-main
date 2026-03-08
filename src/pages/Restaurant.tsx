@@ -272,11 +272,11 @@ export default function Restaurant() {
                               <div className="flex items-center gap-2">
                                 {inCart ? (
                                   <>
-                                    <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => updateCartQuantity(mi.id, (inCart.quantity || 1) - 1)}>
+                                    <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => updateQuantity(mi.id, -1)}>
                                       <Minus className="h-3 w-3" />
                                     </Button>
                                     <span className="text-sm font-medium w-6 text-center">{inCart.quantity}</span>
-                                    <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => updateCartQuantity(mi.id, inCart.quantity + 1)}>
+                                    <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => updateQuantity(mi.id, 1)}>
                                       <Plus className="h-3 w-3" />
                                     </Button>
                                     <Button size="sm" variant="ghost" className="h-7 w-7 p-0 ml-auto text-destructive" onClick={() => removeFromCart(mi.id)}>
