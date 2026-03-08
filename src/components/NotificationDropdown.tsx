@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
-import { Bell, Check, CheckCheck, Info, AlertTriangle, UserPlus, ShoppingCart, CalendarDays } from "lucide-react";
+import { Bell, Check, CheckCheck, Info, AlertTriangle, UserPlus, ShoppingCart, CalendarDays, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -83,6 +83,12 @@ export function NotificationDropdown() {
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
   };
 
+  const deleteNotification = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    await supabase.from("notifications").delete().eq("id", id);
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -119,7 +125,7 @@ export function NotificationDropdown() {
                   <button
                     key={notif.id}
                     onClick={() => !notif.is_read && markAsRead(notif.id)}
-                    className={`w-full text-left flex gap-3 px-4 py-3 hover:bg-secondary/50 transition-colors ${
+                    className={`group w-full text-left flex gap-3 px-4 py-3 hover:bg-secondary/50 transition-colors ${
                       !notif.is_read ? "bg-primary/5" : ""
                     }`}
                   >
@@ -138,6 +144,15 @@ export function NotificationDropdown() {
                         {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true })}
                       </p>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                      onClick={(e) => deleteNotification(e, notif.id)}
+                      title="Delete notification"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
                   </button>
                 );
               })}
