@@ -106,7 +106,7 @@ export default function AcceptInvite() {
       setStatus("success");
       toast.success(`Welcome to ${company?.name || "the team"}!`);
 
-      setTimeout(() => navigate("/"), 2000);
+      setTimeout(() => navigate("/dashboard"), 2000);
     } catch (err: any) {
       setStatus("error");
       setErrorMessage(err.message || "Failed to accept invitation");

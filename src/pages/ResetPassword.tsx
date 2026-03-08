@@ -54,7 +54,7 @@ export default function ResetPassword() {
       });
       if (error) throw error;
       toast.success("Password updated successfully!");
-      navigate("/");
+      navigate("/dashboard");
     } catch (err: any) {
       if (err instanceof z.ZodError) {
         toast.error(err.errors[0].message);
