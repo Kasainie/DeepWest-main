@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Navigate, Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
@@ -8,7 +8,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Hotel, Loader2, KeyRound, Mail, Building2 } from "lucide-react";
+import { Hotel, Loader2, KeyRound, Mail, Building2, ShieldCheck } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+
+function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
+  if (!pw) return { score: 0, label: "", color: "" };
+  let score = 0;
+  if (pw.length >= 6) score++;
+  if (pw.length >= 10) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  if (score <= 1) return { score: 20, label: "Weak", color: "bg-destructive" };
+  if (score <= 2) return { score: 40, label: "Fair", color: "bg-orange-500" };
+  if (score <= 3) return { score: 60, label: "Medium", color: "bg-yellow-500" };
+  if (score <= 4) return { score: 80, label: "Strong", color: "bg-emerald-500" };
+  return { score: 100, label: "Very Strong", color: "bg-emerald-600" };
+}
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -226,7 +242,26 @@ export default function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                  />
+                   />
+                  {isSignUp && password && (
+                    <div className="space-y-1 mt-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Strength</span>
+                        <span className={`text-xs font-medium ${
+                          getPasswordStrength(password).score <= 40 ? "text-destructive" : 
+                          getPasswordStrength(password).score <= 60 ? "text-yellow-600" : "text-emerald-600"
+                        }`}>
+                          {getPasswordStrength(password).label}
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${getPasswordStrength(password).color}`}
+                          style={{ width: `${getPasswordStrength(password).score}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {isSignUp && (
                   <div className="space-y-2">
