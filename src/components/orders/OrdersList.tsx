@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, CreditCard, Check, Download, Clock, Printer } from "lucide-react";
 import { toast } from "sonner";
-import { generateReceipt, generateReceiptHtml, printReceipt } from "@/lib/receipt";
+import { generateReceipt, printReceipt } from "@/lib/receipt";
 
 interface OrderWithItems {
   id: string;
