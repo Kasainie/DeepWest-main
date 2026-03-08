@@ -59,8 +59,10 @@ export function AppSidebar() {
   // Owners/admins see everything; staff only see their department pages
   const isFullAccess = !companyRole || ["owner", "admin", "manager"].includes(companyRole);
 
-  const filterByDepartment = (items: typeof mainItems) =>
+  const filterByDepartment = (items: typeof mainItems | typeof managementItems) =>
     items.filter((item) => {
+      // Admin-only items hidden from staff
+      if ("adminOnly" in item && item.adminOnly && !isFullAccess) return false;
       if (isFullAccess || !item.departments) return true;
       if (!staffDepartment) return false;
       return item.departments.includes(staffDepartment.toLowerCase());
