@@ -19,7 +19,7 @@ import { downloadSaleReceipt, printSaleReceipt } from "@/lib/saleReceipt";
 import { motion } from "framer-motion";
 import { formatKES } from "@/lib/currency";
 import { format, subDays, startOfMonth } from "date-fns";
-import { getLocalDateString } from "@/lib/dateUtils";
+import { getLocalDateString, getLocalDayBoundsUTC } from "@/lib/dateUtils";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -33,12 +33,13 @@ interface Sale {
   amount: number;
   payment_method: string;
   created_at: string;
+  source: "manual" | "order" | "booking" | "conference";
 }
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
-const DEPARTMENTS = ["restaurant", "bar", "hotel", "kitchen", "other"];
+const DEPARTMENTS = ["restaurant", "bar", "hotel", "kitchen", "conference", "other"];
 const CATEGORIES = ["food", "beverage", "room", "service", "other"];
 const PAYMENT_METHODS = ["cash", "mpesa", "card", "bank_transfer"];
 
@@ -67,14 +68,79 @@ export default function Sales() {
     setLoading(true);
     const fromDate = getLocalDateString(dateRange.from);
     const toDate = getLocalDateString(dateRange.to);
-    const { data } = await supabase
-      .from("sales")
-      .select("*")
-      .eq("company_id", currentCompany.id)
-      .gte("sale_date", fromDate)
-      .lte("sale_date", toDate)
-      .order("sale_date", { ascending: false });
-    setSales((data || []) as Sale[]);
+    const { start: rangeStart } = getLocalDayBoundsUTC(dateRange.from);
+    const { end: rangeEnd } = getLocalDayBoundsUTC(dateRange.to);
+
+    const [manualRes, ordersRes, bookingsRes, confRes] = await Promise.all([
+      supabase
+        .from("sales")
+        .select("*")
+        .eq("company_id", currentCompany.id)
+        .gte("sale_date", fromDate)
+        .lte("sale_date", toDate)
+        .order("sale_date", { ascending: false }),
+      supabase
+        .from("orders")
+        .select("id, order_number, total, payment_method, payment_status, created_at, table_number")
+        .eq("company_id", currentCompany.id)
+        .gte("created_at", rangeStart)
+        .lte("created_at", rangeEnd),
+      supabase
+        .from("bookings")
+        .select("id, booking_type, amount, status, created_at, details, guests(full_name)")
+        .eq("company_id", currentCompany.id)
+        .gte("created_at", rangeStart)
+        .lte("created_at", rangeEnd),
+      supabase
+        .from("conference_bookings")
+        .select("id, event_name, amount, status, created_at, event_date")
+        .eq("company_id", currentCompany.id)
+        .gte("created_at", rangeStart)
+        .lte("created_at", rangeEnd),
+    ]);
+
+    const manualSales: Sale[] = (manualRes.data || []).map((s: any) => ({ ...s, source: "manual" as const }));
+
+    const orderSales: Sale[] = (ordersRes.data || []).map((o: any) => ({
+      id: `order-${o.id}`,
+      sale_date: getLocalDateString(new Date(o.created_at)),
+      department: "restaurant",
+      category: "food",
+      description: `Order #${o.order_number}${o.table_number ? ` · Table ${o.table_number}` : ""}`,
+      amount: Number(o.total),
+      payment_method: o.payment_method || (o.payment_status === "paid" ? "cash" : "unpaid"),
+      created_at: o.created_at,
+      source: "order" as const,
+    }));
+
+    const bookingSales: Sale[] = (bookingsRes.data || []).map((b: any) => ({
+      id: `booking-${b.id}`,
+      sale_date: getLocalDateString(new Date(b.created_at)),
+      department: b.booking_type === "room" ? "hotel" : b.booking_type,
+      category: b.booking_type === "room" ? "room" : "service",
+      description: `${b.booking_type} booking${b.guests?.full_name ? ` · ${b.guests.full_name}` : ""}${b.details ? ` · ${b.details}` : ""}`,
+      amount: Number(b.amount),
+      payment_method: "cash",
+      created_at: b.created_at,
+      source: "booking" as const,
+    }));
+
+    const confSales: Sale[] = (confRes.data || []).map((c: any) => ({
+      id: `conf-${c.id}`,
+      sale_date: c.event_date || getLocalDateString(new Date(c.created_at)),
+      department: "conference",
+      category: "service",
+      description: `Conference: ${c.event_name}`,
+      amount: Number(c.amount),
+      payment_method: "cash",
+      created_at: c.created_at,
+      source: "conference" as const,
+    }));
+
+    const allSales = [...manualSales, ...orderSales, ...bookingSales, ...confSales]
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+
+    setSales(allSales);
     setLoading(false);
   };
 
@@ -289,7 +355,7 @@ export default function Sales() {
         <TabsContent value="chart">
           <motion.div variants={item}>
             <Card className="shadow-card border-0">
-              <CardHeader><CardTitle className="text-base font-display">14-Day Sales Trend</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base font-display">Sales Trend</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={260}>
                   <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
@@ -326,8 +392,8 @@ export default function Sales() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Date</TableHead>
+                          <TableHead>Source</TableHead>
                           <TableHead>Department</TableHead>
-                          <TableHead>Category</TableHead>
                           <TableHead>Description</TableHead>
                           <TableHead>Payment</TableHead>
                           <TableHead className="text-right">Amount</TableHead>
@@ -338,20 +404,28 @@ export default function Sales() {
                         {filtered.map((s) => (
                           <TableRow key={s.id}>
                             <TableCell className="text-sm">{format(new Date(s.sale_date), "MMM d, yyyy")}</TableCell>
+                            <TableCell>
+                              <Badge variant={s.source === "manual" ? "default" : "secondary"} className="capitalize text-[10px]">
+                                {s.source === "manual" ? "Manual" : s.source === "order" ? "Order" : s.source === "booking" ? "Booking" : "Conference"}
+                              </Badge>
+                            </TableCell>
                             <TableCell><Badge variant="outline" className="capitalize text-xs">{s.department}</Badge></TableCell>
-                            <TableCell className="capitalize text-sm">{s.category}</TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{s.description || "—"}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">{s.description || "—"}</TableCell>
                             <TableCell><Badge variant="secondary" className="capitalize text-xs">{s.payment_method.replace("_", " ")}</Badge></TableCell>
                             <TableCell className="text-right font-medium">{formatKES(Number(s.amount))}</TableCell>
                             <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-1">
-                                <Button variant="ghost" size="icon" className="h-7 w-7" title="Download Receipt" onClick={() => { downloadSaleReceipt(s, currentCompany); toast.success("Receipt downloaded!"); }}>
-                                  <Download className="h-3 w-3" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" title="Print Receipt" onClick={() => printSaleReceipt(s, currentCompany)}>
-                                  <Printer className="h-3 w-3" />
-                                </Button>
-                              </div>
+                              {s.source === "manual" ? (
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" title="Download Receipt" onClick={() => { downloadSaleReceipt(s, currentCompany); toast.success("Receipt downloaded!"); }}>
+                                    <Download className="h-3 w-3" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" title="Print Receipt" onClick={() => printSaleReceipt(s, currentCompany)}>
+                                    <Printer className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
