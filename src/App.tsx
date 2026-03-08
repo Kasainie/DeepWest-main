@@ -19,6 +19,7 @@ import Website from "./pages/Website";
 import SettingsPage from "./pages/SettingsPage";
 import StaffManagement from "./pages/StaffManagement";
 import RegisterCompany from "./pages/RegisterCompany";
+import AcceptInvite from "./pages/AcceptInvite";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -43,6 +44,16 @@ const App = () => (
                 <ProtectedRoute>
                   <CompanyProvider>
                     <RegisterCompany />
+                  </CompanyProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/accept-invite"
+              element={
+                <ProtectedRoute>
+                  <CompanyProvider>
+                    <AcceptInvite />
                   </CompanyProvider>
                 </ProtectedRoute>
               }
