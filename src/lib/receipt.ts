@@ -1,4 +1,4 @@
-export function generateReceipt(order: any, company: any): Blob {
+export function generateReceiptHtml(order: any, company: any): string {
   const date = new Date(order.created_at);
   const paidDate = order.paid_at ? new Date(order.paid_at) : null;
 
@@ -87,5 +87,9 @@ export function generateReceipt(order: any, company: any): Blob {
 </body>
 </html>`;
 
-  return new Blob([html], { type: "text/html" });
+  return html;
+}
+
+export function generateReceipt(order: any, company: any): Blob {
+  return new Blob([generateReceiptHtml(order, company)], { type: "text/html" });
 }
