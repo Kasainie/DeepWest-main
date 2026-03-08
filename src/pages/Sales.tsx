@@ -72,7 +72,7 @@ export default function Sales() {
     const { start: rangeStart } = getLocalDayBoundsUTC(dateRange.from);
     const { end: rangeEnd } = getLocalDayBoundsUTC(dateRange.to);
 
-    const [manualRes, ordersRes, bookingsRes, confRes] = await Promise.all([
+    const [salesRes, bookingsRes, confRes] = await Promise.all([
       supabase
         .from("sales")
         .select("*")
@@ -80,12 +80,6 @@ export default function Sales() {
         .gte("sale_date", fromDate)
         .lte("sale_date", toDate)
         .order("sale_date", { ascending: false }),
-      supabase
-        .from("orders")
-        .select("id, order_number, total, payment_method, payment_status, created_at, table_number")
-        .eq("company_id", currentCompany.id)
-        .gte("created_at", rangeStart)
-        .lte("created_at", rangeEnd),
       supabase
         .from("bookings")
         .select("id, booking_type, amount, status, created_at, details, guests(full_name)")
@@ -100,18 +94,9 @@ export default function Sales() {
         .lte("created_at", rangeEnd),
     ]);
 
-    const manualSales: Sale[] = (manualRes.data || []).map((s: any) => ({ ...s, source: "manual" as const }));
-
-    const orderSales: Sale[] = (ordersRes.data || []).map((o: any) => ({
-      id: `order-${o.id}`,
-      sale_date: getLocalDateString(new Date(o.created_at)),
-      department: "restaurant",
-      category: "food",
-      description: `Order #${o.order_number}${o.table_number ? ` · Table ${o.table_number}` : ""}`,
-      amount: Number(o.total),
-      payment_method: o.payment_method || (o.payment_status === "paid" ? "cash" : "unpaid"),
-      created_at: o.created_at,
-      source: "order" as const,
+    const salesData: Sale[] = (salesRes.data || []).map((s: any) => ({
+      ...s,
+      source: s.reference_type === "order" ? ("order" as const) : ("manual" as const),
     }));
 
     const bookingSales: Sale[] = (bookingsRes.data || []).map((b: any) => ({
@@ -138,7 +123,7 @@ export default function Sales() {
       source: "conference" as const,
     }));
 
-    const allSales = [...manualSales, ...orderSales, ...bookingSales, ...confSales]
+    const allSales = [...salesData, ...bookingSales, ...confSales]
       .sort((a, b) => b.created_at.localeCompare(a.created_at));
 
     setSales(allSales);
