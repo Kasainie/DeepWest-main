@@ -172,7 +172,7 @@ export default function LandingPage() {
                   className="absolute -bottom-2 left-0 right-0 h-3 bg-primary/15 rounded-full -z-10"
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
-                  transition={{ delay: 0.8, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ delay: 0.8, duration: 0.6, ease }}
                 />
               </span>
               , not harder
@@ -263,7 +263,7 @@ export default function LandingPage() {
                           className="flex-1 bg-primary/20 rounded-t-md relative overflow-hidden"
                           initial={{ height: 0 }}
                           animate={{ height: `${h}%` }}
-                          transition={{ delay: 1.8 + i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                          transition={{ delay: 1.8 + i * 0.1, duration: 0.6, ease }}
                         >
                           <motion.div
                             className="absolute bottom-0 left-0 right-0 bg-primary rounded-t-md"
@@ -458,7 +458,7 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.6, ease }}
           className="relative overflow-hidden rounded-3xl bg-primary p-12 md:p-16 text-center"
           whileHover={{ scale: 1.01 }}
         >
