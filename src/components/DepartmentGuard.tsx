@@ -39,7 +39,7 @@ export function DepartmentGuard({ children }: { children: React.ReactNode }) {
     path.startsWith(route)
   )?.[1];
 
-  if (allowedDepartments && (!staffDepartment || !allowedDepartments.includes(staffDepartment.toLowerCase()))) {
+  if (allowedDepartments && (!staffDepartment || !staffDepartment.some(d => allowedDepartments.includes(d.toLowerCase())))) {
     return <Navigate to="/" replace />;
   }
 

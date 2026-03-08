@@ -21,7 +21,7 @@ interface StaffRecord {
   id: string;
   full_name: string;
   staff_code: string;
-  department: string;
+  department: string[];
   role: string;
   phone: string | null;
   is_active: boolean;
@@ -116,7 +116,7 @@ export default function StaffManagement() {
 
   const [form, setForm] = useState({
     full_name: "",
-    department: "hotel",
+    departments: ["hotel"] as string[],
     role: "staff",
     phone: "",
     staff_code: generateStaffCode(),
@@ -142,13 +142,17 @@ export default function StaffManagement() {
   const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentCompany) return;
+    if (form.departments.length === 0) {
+      toast.error("Please select at least one department");
+      return;
+    }
     setSaving(true);
 
     const { error } = await supabase.from("company_staff").insert({
       company_id: currentCompany.id,
       full_name: form.full_name.trim(),
       staff_code: form.staff_code.trim().toUpperCase(),
-      department: form.department,
+      department: form.departments,
       role: form.role,
       phone: form.phone.trim() || null,
     });
@@ -161,7 +165,7 @@ export default function StaffManagement() {
         description: `Code: ${form.staff_code}`,
         duration: 5000,
       });
-      setForm({ full_name: "", department: "hotel", role: "staff", phone: "", staff_code: generateStaffCode() });
+      setForm({ full_name: "", departments: ["hotel"], role: "staff", phone: "", staff_code: generateStaffCode() });
       setAddOpen(false);
       fetchStaff();
     }
@@ -271,34 +275,48 @@ export default function StaffManagement() {
                         required
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Department</Label>
-                        <Select value={form.department} onValueChange={(v) => setForm((f) => ({ ...f, department: v }))}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {departments.map((d) => (
-                              <SelectItem key={d.value} value={d.value}>
-                                <div className="flex items-center gap-2">
-                                  <d.icon className="h-3.5 w-3.5" />
-                                  {d.label}
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                    <div className="space-y-2">
+                      <Label>Departments</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {departments.map((d) => {
+                          const selected = form.departments.includes(d.value);
+                          return (
+                            <label
+                              key={d.value}
+                              className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors text-sm ${
+                                selected ? "border-primary bg-primary/10" : "border-border hover:bg-secondary/50"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selected}
+                                onChange={() =>
+                                  setForm((f) => ({
+                                    ...f,
+                                    departments: selected
+                                      ? f.departments.filter((v) => v !== d.value)
+                                      : [...f.departments, d.value],
+                                  }))
+                                }
+                                className="sr-only"
+                              />
+                              <d.icon className="h-3.5 w-3.5 shrink-0" />
+                              {d.label}
+                            </label>
+                          );
+                        })}
                       </div>
-                      <div className="space-y-2">
-                        <Label>Role</Label>
-                        <Select value={form.role} onValueChange={(v) => setForm((f) => ({ ...f, role: v }))}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {roles.map((r) => (
-                              <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Role</Label>
+                      <Select value={form.role} onValueChange={(v) => setForm((f) => ({ ...f, role: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {roles.map((r) => (
+                            <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label>Phone</Label>
@@ -344,7 +362,7 @@ export default function StaffManagement() {
       {/* Department summary cards */}
       <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {departments.map((dept) => {
-          const count = staffList.filter((s) => s.department === dept.value).length;
+          const count = staffList.filter((s) => s.department.includes(dept.value)).length;
           const DeptIcon = dept.icon;
           return (
             <Card key={dept.value} className="shadow-card border-0">
@@ -381,7 +399,8 @@ export default function StaffManagement() {
             ) : (
               <div className="space-y-1">
                 {staffList.map((member) => {
-                  const DeptIcon = deptIcons[member.department] || User;
+                  const primaryDept = member.department[0] || "hotel";
+                  const DeptIcon = deptIcons[primaryDept] || User;
                   return (
                     <div
                       key={member.id}
@@ -394,10 +413,15 @@ export default function StaffManagement() {
                         <div>
                           <p className="text-sm font-medium">{member.full_name}</p>
                           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                            <Badge className={`${deptColors[member.department] || "bg-muted text-muted-foreground"} text-[10px] border-0`}>
-                              <DeptIcon className="h-2.5 w-2.5 mr-0.5" />
-                              {member.department}
-                            </Badge>
+                            {member.department.map((dept) => {
+                              const DIcon = deptIcons[dept] || User;
+                              return (
+                                <Badge key={dept} className={`${deptColors[dept] || "bg-muted text-muted-foreground"} text-[10px] border-0`}>
+                                  <DIcon className="h-2.5 w-2.5 mr-0.5" />
+                                  {dept}
+                                </Badge>
+                              );
+                            })}
                             <Badge variant="secondary" className="text-[10px] capitalize">
                               {member.role}
                             </Badge>

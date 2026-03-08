@@ -18,7 +18,7 @@ interface CompanyContextType {
   companies: Company[];
   currentCompany: Company | null;
   companyRole: string | null;
-  staffDepartment: string | null;
+  staffDepartment: string[] | null;
   loading: boolean;
   switchCompany: (companyId: string) => Promise<void>;
   refreshCompanies: () => Promise<void>;
@@ -41,7 +41,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
   const [companyRole, setCompanyRole] = useState<string | null>(null);
-  const [staffDepartment, setStaffDepartment] = useState<string | null>(null);
+  const [staffDepartment, setStaffDepartment] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchCompanies = useCallback(async () => {
@@ -97,7 +97,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
         .eq("company_id", active!.id)
         .eq("user_id", user.id)
         .maybeSingle();
-      setStaffDepartment(staffRecord?.department || null);
+      setStaffDepartment(staffRecord?.department as string[] || null);
     }
 
     setLoading(false);
@@ -133,7 +133,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       .eq("company_id", companyId)
       .eq("user_id", user.id)
       .maybeSingle();
-    setStaffDepartment(staffRecord?.department || null);
+    setStaffDepartment(staffRecord?.department as string[] || null);
   };
 
   return (

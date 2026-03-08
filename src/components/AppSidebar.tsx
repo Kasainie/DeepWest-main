@@ -74,8 +74,8 @@ export function AppSidebar() {
       // Admin-only items hidden from staff
       if ("adminOnly" in item && item.adminOnly && !isFullAccess) return false;
       if (isFullAccess || !item.departments) return true;
-      if (!staffDepartment) return false;
-      return item.departments.includes(staffDepartment.toLowerCase());
+      if (!staffDepartment || staffDepartment.length === 0) return false;
+      return staffDepartment.some(d => item.departments!.includes(d.toLowerCase()));
     });
 
   return (
