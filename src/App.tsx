@@ -20,6 +20,7 @@ import Website from "./pages/Website";
 import SettingsPage from "./pages/SettingsPage";
 import StaffManagement from "./pages/StaffManagement";
 import RegisterCompany from "./pages/RegisterCompany";
+import RegisterSuccess from "./pages/RegisterSuccess";
 import AcceptInvite from "./pages/AcceptInvite";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
