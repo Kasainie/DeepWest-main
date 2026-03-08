@@ -166,6 +166,7 @@ export default function Guests() {
     setDeleteGuest(null);
   };
 
+  const filtered = guests.filter((g) => {
     const q = search.toLowerCase();
     return g.full_name.toLowerCase().includes(q) || (g.email || "").toLowerCase().includes(q) || (g.phone || "").toLowerCase().includes(q) || (g.id_number || "").toLowerCase().includes(q);
   });
