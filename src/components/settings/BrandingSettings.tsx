@@ -201,6 +201,18 @@ export default function BrandingSettings() {
     setForm({ ...DEFAULTS, welcome_message: "" });
   };
 
+  const applyPreset = (preset: typeof THEME_PRESETS[number]) => {
+    setForm((f) => ({
+      ...f,
+      primary_color: preset.primary,
+      accent_color: preset.accent,
+      sidebar_color: preset.sidebar,
+      font_heading: preset.heading,
+      font_body: preset.body,
+      theme_mode: preset.mode,
+    }));
+  };
+
   const handleSave = async () => {
     if (!currentCompany || !canEdit) return;
     setSaving(true);
