@@ -12,12 +12,6 @@ export default function RegisterSuccess() {
   const [copied, setCopied] = useState(false);
   const slug = location.state?.slug || "";
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(slug);
-    setCopied(true);
-    toast.success("Slug copied to clipboard!");
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const nextSteps = [
     { title: "Complete Your Profile", description: "Add your company details and branding" },
