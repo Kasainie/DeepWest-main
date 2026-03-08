@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Search, Plus, Loader2, CalendarDays } from "lucide-react";
+import { Search, Plus, Loader2, CalendarDays, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
+import { StatCard } from "@/components/StatCard";
+import { KshIcon } from "@/components/KshIcon";
 
 interface Booking {
   id: string;
@@ -117,6 +119,10 @@ export default function Bookings() {
       </div>
     );
   }
+
+  const activeBookings = bookings.filter((b) => ["confirmed", "active"].includes(b.status)).length;
+  const cancelledBookings = bookings.filter((b) => b.status === "cancelled").length;
+  const totalRevenue = bookings.filter((b) => b.status !== "cancelled").reduce((s, b) => s + Number(b.amount), 0);
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
