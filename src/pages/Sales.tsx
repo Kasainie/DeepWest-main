@@ -149,7 +149,7 @@ export default function Sales() {
               { key: "payment_method", header: "Payment" },
               { key: "amount", header: "Amount (KSh)" },
             ];
-            downloadCSV(sales.map(s => ({ ...s, amount: Number(s.amount).toFixed(2) })), cols, `sales-${format(new Date(), "yyyy-MM-dd")}`);
+            downloadCSV(filtered.map(s => ({ ...s, amount: Number(s.amount).toFixed(2) })), cols, `sales-${format(new Date(), "yyyy-MM-dd")}`);
             toast.success("CSV downloaded!");
           }}>
             <Download className="h-4 w-4 mr-1" /> CSV
@@ -164,11 +164,10 @@ export default function Sales() {
               { key: "amount", header: "Amount (KSh)" },
             ];
             downloadPDF("Sales Report", currentCompany?.name || "Company", cols,
-              sales.map(s => ({ ...s, amount: formatKES(Number(s.amount)) })),
+              filtered.map(s => ({ ...s, amount: formatKES(Number(s.amount)) })),
               [
-                { label: "Today", value: formatKES(stats.todaySales) },
-                { label: "This Month", value: formatKES(stats.monthSales) },
-                { label: "Total (90d)", value: formatKES(stats.totalSales) },
+                { label: "Period Total", value: formatKES(stats.totalSales) },
+                { label: "Transactions", value: String(stats.count) },
               ]
             );
           }}>
@@ -234,14 +233,19 @@ export default function Sales() {
         </div>
       </motion.div>
 
+      {/* Date Filter */}
+      <motion.div variants={item}>
+        <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+      </motion.div>
+
       {/* Stats */}
       <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="shadow-card border-0">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Today's Sales</p>
-                <p className="text-2xl font-bold font-display">{formatKES(stats.todaySales)}</p>
+                <p className="text-xs text-muted-foreground">Period Total</p>
+                <p className="text-2xl font-bold font-display">{formatKES(stats.totalSales)}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <KshIcon className="h-5 w-5 text-primary" />
@@ -253,8 +257,8 @@ export default function Sales() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">This Month</p>
-                <p className="text-2xl font-bold font-display">{formatKES(stats.monthSales)}</p>
+                <p className="text-xs text-muted-foreground">Transactions</p>
+                <p className="text-2xl font-bold font-display">{stats.count}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-success/10 flex items-center justify-center">
                 <TrendingUp className="h-5 w-5 text-success" />
@@ -266,8 +270,8 @@ export default function Sales() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Total (90 days)</p>
-                <p className="text-2xl font-bold font-display">{formatKES(stats.totalSales)}</p>
+                <p className="text-xs text-muted-foreground">Departments</p>
+                <p className="text-2xl font-bold font-display">{Object.keys(stats.byDept).length}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
                 <BarChart3 className="h-5 w-5 text-accent-foreground" />
