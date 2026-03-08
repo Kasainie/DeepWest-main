@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, ShieldCheck, Eye, EyeOff, Pause, Play, Mail, UserCheck, UserX, Clock } from "lucide-react";
+import { Building2, Users, ShieldCheck, Eye, EyeOff, Pause, Play, Mail, UserCheck, UserX, Clock, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
