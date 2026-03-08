@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BedDouble, UtensilsCrossed, Users, DollarSign, TrendingUp, CalendarDays, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import RevenueChart from "@/components/dashboard/RevenueChart";
 
 const container = {
   hidden: { opacity: 0 },
@@ -125,6 +126,10 @@ export default function Dashboard() {
         <StatCard title="Room Occupancy" value={`${occupancyPct}%`} change={`${occupiedRooms} of ${totalRooms} rooms`} changeType={occupancyPct > 70 ? "positive" : "neutral"} icon={TrendingUp} />
         <StatCard title="Total Guests" value={String(totalGuests)} change="All time" changeType="neutral" icon={Users} />
         <StatCard title="Active Bookings" value={String(recentBookings.filter((b) => b.status === "active" || b.status === "confirmed").length)} change="Current" changeType="neutral" icon={CalendarDays} />
+      </motion.div>
+
+      <motion.div variants={item}>
+        <RevenueChart />
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
