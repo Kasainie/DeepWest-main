@@ -18,6 +18,7 @@ interface CompanyContextType {
   companies: Company[];
   currentCompany: Company | null;
   companyRole: string | null;
+  staffDepartment: string | null;
   loading: boolean;
   switchCompany: (companyId: string) => Promise<void>;
   refreshCompanies: () => Promise<void>;
@@ -27,6 +28,7 @@ const CompanyContext = createContext<CompanyContextType>({
   companies: [],
   currentCompany: null,
   companyRole: null,
+  staffDepartment: null,
   loading: true,
   switchCompany: async () => {},
   refreshCompanies: async () => {},
