@@ -346,6 +346,122 @@ export type Database = {
           },
         ]
       }
+      conference_bookings: {
+        Row: {
+          amount: number
+          attendees: number
+          company_id: string
+          created_at: string
+          end_date: string | null
+          end_time: string | null
+          event_date: string
+          event_name: string
+          id: string
+          notes: string | null
+          organizer: string | null
+          room_id: string
+          start_time: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          attendees?: number
+          company_id: string
+          created_at?: string
+          end_date?: string | null
+          end_time?: string | null
+          event_date: string
+          event_name: string
+          id?: string
+          notes?: string | null
+          organizer?: string | null
+          room_id: string
+          start_time?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          attendees?: number
+          company_id?: string
+          created_at?: string
+          end_date?: string | null
+          end_time?: string | null
+          event_date?: string
+          event_name?: string
+          id?: string
+          notes?: string | null
+          organizer?: string | null
+          room_id?: string
+          start_time?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conference_bookings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conference_bookings_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "conference_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conference_rooms: {
+        Row: {
+          amenities: string[] | null
+          capacity: number
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          price_per_day: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amenities?: string[] | null
+          capacity?: number
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          price_per_day?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amenities?: string[] | null
+          capacity?: number
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          price_per_day?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conference_rooms_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_categories: {
         Row: {
           budget_monthly: number | null
