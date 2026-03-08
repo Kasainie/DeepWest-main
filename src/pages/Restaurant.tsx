@@ -224,8 +224,8 @@ export default function Restaurant() {
           </motion.div>
 
           <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <StatCard title="Orders Today" value={stats.ordersToday} icon={ClipboardList} />
-            <StatCard title="Revenue Today" value={`KSh ${stats.revenueToday.toLocaleString()}`} iconNode={<KshIcon className="h-5 w-5 text-primary" />} />
+            <StatCard title="Total Orders" value={stats.ordersToday} change="Selected period" changeType="neutral" icon={ClipboardList} />
+            <StatCard title="Total Revenue" value={`KSh ${stats.revenueToday.toLocaleString()}`} change="Selected period" changeType="neutral" iconNode={<KshIcon className="h-5 w-5 text-primary" />} />
             <StatCard title="Active Orders" value={stats.activeOrders} change="In progress" changeType="neutral" icon={Utensils} />
             <StatCard title="Menu Items" value={stats.menuCount} change="Available" changeType="neutral" icon={UtensilsCrossed} />
           </motion.div>
