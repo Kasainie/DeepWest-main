@@ -31,7 +31,7 @@ export function DepartmentGuard({ children }: { children: React.ReactNode }) {
 
   // Staff on admin-only routes → redirect
   if (ADMIN_ONLY_ROUTES.some((r) => path.startsWith(r))) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   // Check department-restricted routes
@@ -40,7 +40,7 @@ export function DepartmentGuard({ children }: { children: React.ReactNode }) {
   )?.[1];
 
   if (allowedDepartments && (!staffDepartment || !staffDepartment.some(d => allowedDepartments.includes(d.toLowerCase())))) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;

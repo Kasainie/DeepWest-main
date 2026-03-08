@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const mainItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard, departments: null },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, departments: null },
   { title: "Rooms", url: "/rooms", icon: BedDouble, departments: ["hotel"] },
   { title: "Restaurant", url: "/restaurant", icon: UtensilsCrossed, departments: ["restaurant"] },
   { title: "Kitchen", url: "/kitchen", icon: ChefHat, departments: ["kitchen"] },

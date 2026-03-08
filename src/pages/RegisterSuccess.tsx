@@ -134,13 +134,13 @@ export default function RegisterSuccess() {
             <div className="flex gap-3 pt-2">
               <Button
                 variant="outline"
-                onClick={() => navigate("/")}
+                onClick={() => navigate("/dashboard")}
                 className="flex-1"
               >
                 View Settings Later
               </Button>
               <Button
-                onClick={() => navigate("/")}
+                onClick={() => navigate("/dashboard")}
                 className="flex-1"
               >
                 Go to Dashboard
