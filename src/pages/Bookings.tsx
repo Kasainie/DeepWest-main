@@ -350,6 +350,7 @@ export default function Bookings() {
                         <td className="p-3 text-sm text-muted-foreground hidden md:table-cell">{b.rooms?.room_number ? `Room ${b.rooms.room_number}` : ""}{b.details ? (b.rooms?.room_number ? ` · ${b.details}` : b.details) : (b.rooms?.room_number ? "" : "—")}</td>
                         <td className="p-3 text-sm text-muted-foreground hidden lg:table-cell">
                           {b.check_in ? format(new Date(b.check_in), "MMM d") : "—"} → {b.check_out ? format(new Date(b.check_out), "MMM d") : "—"}
+                          {b.status === "checked_out" && b.check_out && <span className="ml-1 text-[10px] text-success">(checked out)</span>}
                         </td>
                         <td className="p-3">
                           <Badge className={`${statusStyles[b.status] || ""} text-[10px] border-0`}>{b.status}</Badge>
