@@ -55,18 +55,23 @@ export default function RegisterSuccess() {
               <p className="text-xs font-semibold text-muted-foreground uppercase">Your Company URL</p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 text-lg font-mono font-semibold break-all text-foreground">
-                  {slug}
+                  lktech.life/{slug}
                 </code>
                 <button
-                  onClick={copyToClipboard}
+                  onClick={() => {
+                    navigator.clipboard.writeText(`lktech.life/${slug}`);
+                    setCopied(true);
+                    toast.success("URL copied to clipboard!");
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
                   className="p-2 hover:bg-background rounded-md transition-colors"
-                  title="Copy slug"
+                  title="Copy URL"
                 >
                   <Copy className={`h-5 w-5 ${copied ? "text-green-600" : "text-muted-foreground"}`} />
                 </button>
               </div>
               <p className="text-xs text-muted-foreground">
-                This unique identifier is used to manage your company
+                Share this URL with your customers to access your business
               </p>
             </div>
 
