@@ -12,10 +12,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Wallet, Loader2, AlertTriangle, CheckCircle2, Download, FileText } from "lucide-react";
 import { downloadCSV, downloadPDF } from "@/lib/export";
+import { DateRangeFilter, DateRange } from "@/components/DateRangeFilter";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { formatKES } from "@/lib/currency";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 
 interface Tender {
   id: string;
@@ -38,6 +39,7 @@ export default function Tenders() {
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange>({ from: subDays(new Date(), 29), to: new Date() });
   const [form, setForm] = useState({
     tender_date: format(new Date(), "yyyy-MM-dd"),
     shift: "day",
@@ -87,15 +89,19 @@ export default function Tenders() {
     setSaving(false);
   };
 
+  const filtered = useMemo(() => {
+    const fromStr = format(dateRange.from, "yyyy-MM-dd");
+    const toStr = format(dateRange.to, "yyyy-MM-dd");
+    return tenders.filter((t) => t.tender_date >= fromStr && t.tender_date <= toStr);
+  }, [tenders, dateRange]);
+
   const stats = useMemo(() => {
-    const today = format(new Date(), "yyyy-MM-dd");
-    const todayTenders = tenders.filter((t) => t.tender_date === today);
-    const totalExpected = todayTenders.reduce((a, t) => a + Number(t.expected_amount), 0);
-    const totalActual = todayTenders.reduce((a, t) => a + Number(t.actual_amount), 0);
+    const totalExpected = filtered.reduce((a, t) => a + Number(t.expected_amount), 0);
+    const totalActual = filtered.reduce((a, t) => a + Number(t.actual_amount), 0);
     const totalVariance = totalActual - totalExpected;
-    const discrepancies = tenders.filter((t) => Number(t.variance) !== 0).length;
+    const discrepancies = filtered.filter((t) => Number(t.variance) !== 0).length;
     return { totalExpected, totalActual, totalVariance, discrepancies };
-  }, [tenders]);
+  }, [filtered]);
 
   if (loading) {
     return (
@@ -123,7 +129,7 @@ export default function Tenders() {
               { key: "variance", header: "Variance (KSh)" },
               { key: "notes", header: "Notes" },
             ];
-            downloadCSV(tenders.map(t => ({
+            downloadCSV(filtered.map(t => ({
               ...t,
               expected_amount: Number(t.expected_amount).toFixed(2),
               actual_amount: Number(t.actual_amount).toFixed(2),
@@ -144,15 +150,15 @@ export default function Tenders() {
               { key: "notes", header: "Notes" },
             ];
             downloadPDF("Payment Tenders Report", currentCompany?.name || "Company", cols,
-              tenders.map(t => ({
+              filtered.map(t => ({
                 ...t,
                 expected_amount: formatKES(Number(t.expected_amount)),
                 actual_amount: formatKES(Number(t.actual_amount)),
                 variance: formatKES(Number(t.variance)),
               })),
               [
-                { label: "Today Expected", value: formatKES(stats.totalExpected) },
-                { label: "Today Actual", value: formatKES(stats.totalActual) },
+                { label: "Expected", value: formatKES(stats.totalExpected) },
+                { label: "Actual", value: formatKES(stats.totalActual) },
                 { label: "Variance", value: formatKES(stats.totalVariance) },
               ]
             );
@@ -219,17 +225,22 @@ export default function Tenders() {
         </div>
       </motion.div>
 
+      {/* Date Filter */}
+      <motion.div variants={item}>
+        <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+      </motion.div>
+
       {/* Stats */}
       <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card className="shadow-card border-0">
           <CardContent className="pt-6">
-            <p className="text-xs text-muted-foreground">Today Expected</p>
+            <p className="text-xs text-muted-foreground">Expected</p>
             <p className="text-xl font-bold font-display mt-1">{formatKES(stats.totalExpected)}</p>
           </CardContent>
         </Card>
         <Card className="shadow-card border-0">
           <CardContent className="pt-6">
-            <p className="text-xs text-muted-foreground">Today Actual</p>
+            <p className="text-xs text-muted-foreground">Actual</p>
             <p className="text-xl font-bold font-display mt-1">{formatKES(stats.totalActual)}</p>
           </CardContent>
         </Card>
@@ -261,11 +272,11 @@ export default function Tenders() {
         <Card className="shadow-card border-0">
           <CardHeader><CardTitle className="text-base font-display">Tender Records</CardTitle></CardHeader>
           <CardContent>
-            {tenders.length === 0 ? (
+            {filtered.length === 0 ? (
               <div className="text-center py-12">
                 <Wallet className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="font-display font-semibold mb-1">No tenders recorded</h3>
-                <p className="text-sm text-muted-foreground">Start recording daily payment tenders</p>
+                <h3 className="font-display font-semibold mb-1">No tenders in this period</h3>
+                <p className="text-sm text-muted-foreground">Adjust the date range or record new tenders</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -282,7 +293,7 @@ export default function Tenders() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {tenders.map((t) => {
+                    {filtered.map((t) => {
                       const v = Number(t.variance);
                       return (
                         <TableRow key={t.id}>

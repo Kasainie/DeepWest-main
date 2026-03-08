@@ -13,10 +13,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, TrendingUp, BarChart3, Loader2, ArrowUpRight, ArrowDownRight, Download, FileText } from "lucide-react";
 import { KshIcon } from "@/components/KshIcon";
 import { downloadCSV, downloadPDF } from "@/lib/export";
+import { DateRangeFilter, DateRange } from "@/components/DateRangeFilter";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { formatKES } from "@/lib/currency";
-import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
+import { format, subDays, startOfMonth } from "date-fns";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -45,6 +46,7 @@ export default function Sales() {
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange>({ from: subDays(new Date(), 29), to: new Date() });
   const [form, setForm] = useState({
     sale_date: format(new Date(), "yyyy-MM-dd"),
     department: "restaurant",
@@ -95,27 +97,32 @@ export default function Sales() {
     setSaving(false);
   };
 
+  const filtered = useMemo(() => {
+    const fromStr = format(dateRange.from, "yyyy-MM-dd");
+    const toStr = format(dateRange.to, "yyyy-MM-dd");
+    return sales.filter((s) => s.sale_date >= fromStr && s.sale_date <= toStr);
+  }, [sales, dateRange]);
+
   const stats = useMemo(() => {
-    const today = format(new Date(), "yyyy-MM-dd");
-    const monthStart = format(startOfMonth(new Date()), "yyyy-MM-dd");
-    const todaySales = sales.filter((s) => s.sale_date === today).reduce((a, s) => a + Number(s.amount), 0);
-    const monthSales = sales.filter((s) => s.sale_date >= monthStart).reduce((a, s) => a + Number(s.amount), 0);
-    const totalSales = sales.reduce((a, s) => a + Number(s.amount), 0);
+    const totalSales = filtered.reduce((a, s) => a + Number(s.amount), 0);
     const byDept: Record<string, number> = {};
-    sales.forEach((s) => { byDept[s.department] = (byDept[s.department] || 0) + Number(s.amount); });
-    return { todaySales, monthSales, totalSales, byDept };
-  }, [sales]);
+    filtered.forEach((s) => { byDept[s.department] = (byDept[s.department] || 0) + Number(s.amount); });
+    return { totalSales, byDept, count: filtered.length };
+  }, [filtered]);
 
   const chartData = useMemo(() => {
-    const days = Array.from({ length: 14 }, (_, i) => {
-      const d = subDays(new Date(), 13 - i);
-      return { date: format(d, "yyyy-MM-dd"), label: format(d, "MMM d") };
+    const fromStr = format(dateRange.from, "yyyy-MM-dd");
+    const toStr = format(dateRange.to, "yyyy-MM-dd");
+    const rangeFiltered = sales.filter((s) => s.sale_date >= fromStr && s.sale_date <= toStr);
+    const dayMap = new Map<string, number>();
+    rangeFiltered.forEach((s) => {
+      dayMap.set(s.sale_date, (dayMap.get(s.sale_date) || 0) + Number(s.amount));
     });
-    return days.map((day) => {
-      const dayTotal = sales.filter((s) => s.sale_date === day.date).reduce((a, s) => a + Number(s.amount), 0);
-      return { label: day.label, amount: Math.round(dayTotal * 100) / 100 };
-    });
-  }, [sales]);
+    const days = Array.from(dayMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, amount]) => ({ label: format(new Date(date), "MMM d"), amount: Math.round(amount * 100) / 100 }));
+    return days.length > 0 ? days : [{ label: format(new Date(), "MMM d"), amount: 0 }];
+  }, [sales, dateRange]);
 
   if (loading) {
     return (
@@ -142,7 +149,7 @@ export default function Sales() {
               { key: "payment_method", header: "Payment" },
               { key: "amount", header: "Amount (KSh)" },
             ];
-            downloadCSV(sales.map(s => ({ ...s, amount: Number(s.amount).toFixed(2) })), cols, `sales-${format(new Date(), "yyyy-MM-dd")}`);
+            downloadCSV(filtered.map(s => ({ ...s, amount: Number(s.amount).toFixed(2) })), cols, `sales-${format(new Date(), "yyyy-MM-dd")}`);
             toast.success("CSV downloaded!");
           }}>
             <Download className="h-4 w-4 mr-1" /> CSV
@@ -157,11 +164,10 @@ export default function Sales() {
               { key: "amount", header: "Amount (KSh)" },
             ];
             downloadPDF("Sales Report", currentCompany?.name || "Company", cols,
-              sales.map(s => ({ ...s, amount: formatKES(Number(s.amount)) })),
+              filtered.map(s => ({ ...s, amount: formatKES(Number(s.amount)) })),
               [
-                { label: "Today", value: formatKES(stats.todaySales) },
-                { label: "This Month", value: formatKES(stats.monthSales) },
-                { label: "Total (90d)", value: formatKES(stats.totalSales) },
+                { label: "Period Total", value: formatKES(stats.totalSales) },
+                { label: "Transactions", value: String(stats.count) },
               ]
             );
           }}>
@@ -227,14 +233,19 @@ export default function Sales() {
         </div>
       </motion.div>
 
+      {/* Date Filter */}
+      <motion.div variants={item}>
+        <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+      </motion.div>
+
       {/* Stats */}
       <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="shadow-card border-0">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Today's Sales</p>
-                <p className="text-2xl font-bold font-display">{formatKES(stats.todaySales)}</p>
+                <p className="text-xs text-muted-foreground">Period Total</p>
+                <p className="text-2xl font-bold font-display">{formatKES(stats.totalSales)}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <KshIcon className="h-5 w-5 text-primary" />
@@ -246,8 +257,8 @@ export default function Sales() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">This Month</p>
-                <p className="text-2xl font-bold font-display">{formatKES(stats.monthSales)}</p>
+                <p className="text-xs text-muted-foreground">Transactions</p>
+                <p className="text-2xl font-bold font-display">{stats.count}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-success/10 flex items-center justify-center">
                 <TrendingUp className="h-5 w-5 text-success" />
@@ -259,8 +270,8 @@ export default function Sales() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Total (90 days)</p>
-                <p className="text-2xl font-bold font-display">{formatKES(stats.totalSales)}</p>
+                <p className="text-xs text-muted-foreground">Departments</p>
+                <p className="text-2xl font-bold font-display">{Object.keys(stats.byDept).length}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
                 <BarChart3 className="h-5 w-5 text-accent-foreground" />
@@ -309,8 +320,8 @@ export default function Sales() {
           <motion.div variants={item}>
             <Card className="shadow-card border-0">
               <CardContent className="pt-6">
-                {sales.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No sales recorded yet</p>
+                {filtered.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">No sales in this period</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <Table>
@@ -325,7 +336,7 @@ export default function Sales() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {sales.map((s) => (
+                        {filtered.map((s) => (
                           <TableRow key={s.id}>
                             <TableCell className="text-sm">{format(new Date(s.sale_date), "MMM d, yyyy")}</TableCell>
                             <TableCell><Badge variant="outline" className="capitalize text-xs">{s.department}</Badge></TableCell>
