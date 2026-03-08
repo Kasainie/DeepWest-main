@@ -3,7 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, Wine, Beer, Coffee, Martini } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
-import { DollarSign, Users, TrendingUp } from "lucide-react";
+import { Users, TrendingUp } from "lucide-react";
+import { KshIcon } from "@/components/KshIcon";
 import { motion } from "framer-motion";
 
 const tabs = [
@@ -43,7 +44,7 @@ export default function Bar() {
       </motion.div>
 
       <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Bar Revenue" value="KSh 384,000" change="+15%" changeType="positive" icon={DollarSign} />
+        <StatCard title="Bar Revenue" value="KSh 384,000" change="+15%" changeType="positive" iconNode={<KshIcon className="h-5 w-5 text-primary" />} />
         <StatCard title="Active Guests" value="49" change="70% capacity" changeType="neutral" icon={Users} />
         <StatCard title="Avg Check" value="KSh 2,850" change="+KSh 320" changeType="positive" icon={TrendingUp} />
       </motion.div>
