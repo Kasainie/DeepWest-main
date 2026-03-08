@@ -52,9 +52,19 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const { currentCompany } = useCompany();
+  const { currentCompany, companyRole, staffDepartment } = useCompany();
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+
+  // Owners/admins see everything; staff only see their department pages
+  const isFullAccess = !companyRole || ["owner", "admin", "manager"].includes(companyRole);
+
+  const filterByDepartment = (items: typeof mainItems) =>
+    items.filter((item) => {
+      if (isFullAccess || !item.departments) return true;
+      if (!staffDepartment) return false;
+      return item.departments.includes(staffDepartment.toLowerCase());
+    });
 
   return (
     <Sidebar collapsible="icon">
