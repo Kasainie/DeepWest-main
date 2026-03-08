@@ -14,10 +14,11 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Receipt, TrendingDown, PieChart, Loader2, FolderPlus, Download, FileText } from "lucide-react";
 import { downloadCSV, downloadPDF } from "@/lib/export";
+import { DateRangeFilter, DateRange } from "@/components/DateRangeFilter";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { formatKES } from "@/lib/currency";
-import { format, startOfMonth } from "date-fns";
+import { format, subDays, startOfMonth } from "date-fns";
 
 interface ExpenseCategory {
   id: string;
@@ -47,6 +48,7 @@ export default function Expenses() {
   const [addExpOpen, setAddExpOpen] = useState(false);
   const [addCatOpen, setAddCatOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange>({ from: subDays(new Date(), 29), to: new Date() });
   const [expForm, setExpForm] = useState({
     category_id: "",
     expense_date: format(new Date(), "yyyy-MM-dd"),
@@ -117,28 +119,30 @@ export default function Expenses() {
     setSaving(false);
   };
 
-  const stats = useMemo(() => {
-    const monthStart = format(startOfMonth(new Date()), "yyyy-MM-dd");
-    const monthExpenses = expenses.filter((e) => e.expense_date >= monthStart);
-    const totalMonth = monthExpenses.reduce((a, e) => a + Number(e.amount), 0);
-    const totalAll = expenses.reduce((a, e) => a + Number(e.amount), 0);
+  const filtered = useMemo(() => {
+    const fromStr = format(dateRange.from, "yyyy-MM-dd");
+    const toStr = format(dateRange.to, "yyyy-MM-dd");
+    return expenses.filter((e) => e.expense_date >= fromStr && e.expense_date <= toStr);
+  }, [expenses, dateRange]);
 
-    // Budget tracking per category for this month
+  const stats = useMemo(() => {
+    const totalFiltered = filtered.reduce((a, e) => a + Number(e.amount), 0);
+
     const byCat: Record<string, { spent: number; budget: number; name: string }> = {};
     categories.forEach((c) => {
       byCat[c.id] = { spent: 0, budget: Number(c.budget_monthly), name: c.name };
     });
-    monthExpenses.forEach((e) => {
+    filtered.forEach((e) => {
       if (e.category_id && byCat[e.category_id]) {
         byCat[e.category_id].spent += Number(e.amount);
       }
     });
 
     const totalBudget = categories.reduce((a, c) => a + Number(c.budget_monthly), 0);
-    const profitLoss = totalBudget > 0 ? totalBudget - totalMonth : 0;
+    const profitLoss = totalBudget > 0 ? totalBudget - totalFiltered : 0;
 
-    return { totalMonth, totalAll, byCat, totalBudget, profitLoss };
-  }, [expenses, categories]);
+    return { totalMonth: totalFiltered, totalAll: filtered.length, byCat, totalBudget, profitLoss };
+  }, [filtered, categories]);
 
   if (loading) {
     return (

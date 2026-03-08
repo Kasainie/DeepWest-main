@@ -12,10 +12,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Wallet, Loader2, AlertTriangle, CheckCircle2, Download, FileText } from "lucide-react";
 import { downloadCSV, downloadPDF } from "@/lib/export";
+import { DateRangeFilter, DateRange } from "@/components/DateRangeFilter";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { formatKES } from "@/lib/currency";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 
 interface Tender {
   id: string;
@@ -38,6 +39,7 @@ export default function Tenders() {
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange>({ from: subDays(new Date(), 29), to: new Date() });
   const [form, setForm] = useState({
     tender_date: format(new Date(), "yyyy-MM-dd"),
     shift: "day",
@@ -87,15 +89,19 @@ export default function Tenders() {
     setSaving(false);
   };
 
+  const filtered = useMemo(() => {
+    const fromStr = format(dateRange.from, "yyyy-MM-dd");
+    const toStr = format(dateRange.to, "yyyy-MM-dd");
+    return tenders.filter((t) => t.tender_date >= fromStr && t.tender_date <= toStr);
+  }, [tenders, dateRange]);
+
   const stats = useMemo(() => {
-    const today = format(new Date(), "yyyy-MM-dd");
-    const todayTenders = tenders.filter((t) => t.tender_date === today);
-    const totalExpected = todayTenders.reduce((a, t) => a + Number(t.expected_amount), 0);
-    const totalActual = todayTenders.reduce((a, t) => a + Number(t.actual_amount), 0);
+    const totalExpected = filtered.reduce((a, t) => a + Number(t.expected_amount), 0);
+    const totalActual = filtered.reduce((a, t) => a + Number(t.actual_amount), 0);
     const totalVariance = totalActual - totalExpected;
-    const discrepancies = tenders.filter((t) => Number(t.variance) !== 0).length;
+    const discrepancies = filtered.filter((t) => Number(t.variance) !== 0).length;
     return { totalExpected, totalActual, totalVariance, discrepancies };
-  }, [tenders]);
+  }, [filtered]);
 
   if (loading) {
     return (
