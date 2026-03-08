@@ -94,23 +94,38 @@ export function OrdersList() {
   };
 
   const handleDownloadReceipt = (order: OrderWithItems) => {
+    const blob = generateReceipt(order, currentCompany);
+    const url = URL.createObjectURL(blob);
+    const filename = `receipt-order-${order.order_number}.html`;
+
+    // In embedded/sandboxed previews, browser downloads are often blocked.
+    // Open in a new tab so users can still save/download manually.
+    if (window.self !== window.top) {
+      window.open(url, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success("Receipt opened in a new tab");
+      return;
+    }
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+
     try {
-      const html = generateReceiptHtml(order, currentCompany);
-      const base64 = btoa(unescape(encodeURIComponent(html)));
-      const dataUrl = `data:text/html;base64,${base64}`;
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = `receipt-order-${order.order_number}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      link.click();
       toast.success("Receipt downloaded!");
-    } catch (err) {
-      // Fallback: open in new tab
-      const blob = generateReceipt(order, currentCompany);
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
-      toast.success("Receipt opened in new tab");
+    } catch {
+      window.open(url, "_blank", "noopener,noreferrer");
+      toast.success("Receipt opened in a new tab");
+    } finally {
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        if (link.parentNode) {
+          link.parentNode.removeChild(link);
+        }
+      }, 1000);
     }
   };
 
