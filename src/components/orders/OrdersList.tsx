@@ -172,7 +172,7 @@ export function OrdersList() {
             </div>
 
             <div className="flex gap-2 flex-wrap">
-              {order.payment_status !== "paid" && (order.status === "ready" || order.status === "served") && (
+              {order.payment_status !== "paid" && (
                 <>
                   <Button
                     size="sm"
