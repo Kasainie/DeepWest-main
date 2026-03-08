@@ -13,7 +13,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+export function DashboardLayout({ children }: DashboardLayoutProps) { // notification dropdown
   const { user, signOut } = useAuth();
   const { currentCompany, companyRole } = useCompany();
   const displayName = user?.user_metadata?.full_name || user?.email || "Guest";
