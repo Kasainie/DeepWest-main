@@ -94,20 +94,15 @@ export default function RegisterCompany() {
         }
       }
 
-      const { data: company, error } = await supabase
-        .from("companies")
-        .insert({
-          name: parsed.name,
-          slug: parsed.slug,
-          email: parsed.email || null,
-          phone: parsed.phone || null,
-          address: parsed.address || null,
-          description: parsed.description || null,
-          logo_url,
-          owner_id: user.id,
-        })
-        .select()
-        .single();
+      const { data: company, error } = await supabase.rpc("create_company_with_owner", {
+        _name: parsed.name,
+        _slug: parsed.slug,
+        _email: parsed.email || null,
+        _phone: parsed.phone || null,
+        _address: parsed.address || null,
+        _description: parsed.description || null,
+        _logo_url: logo_url,
+      });
 
       if (error) {
         if (error.code === "23505") {
@@ -118,18 +113,10 @@ export default function RegisterCompany() {
         return;
       }
 
-      // Add owner as member
-      await supabase.from("company_members").insert({
-        company_id: company.id,
-        user_id: user.id,
-        role: "owner",
-      });
-
-      // Set as current company
-      await supabase
-        .from("profiles")
-        .update({ current_company_id: company.id })
-        .eq("user_id", user.id);
+      if (!company) {
+        toast.error("Registration failed");
+        return;
+      }
 
       await refreshCompanies();
       toast.success("Company registered successfully!");
