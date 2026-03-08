@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Search, Plus, Loader2, CalendarDays } from "lucide-react";
+import { Search, Plus, Loader2, CalendarDays, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
+import { StatCard } from "@/components/StatCard";
+import { KshIcon } from "@/components/KshIcon";
 
 interface Booking {
   id: string;
@@ -118,6 +120,10 @@ export default function Bookings() {
     );
   }
 
+  const activeBookings = bookings.filter((b) => ["confirmed", "active"].includes(b.status)).length;
+  const cancelledBookings = bookings.filter((b) => b.status === "cancelled").length;
+  const totalRevenue = bookings.filter((b) => b.status !== "cancelled").reduce((s, b) => s + Number(b.amount), 0);
+
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
       <motion.div variants={item} className="flex items-center justify-between">
@@ -196,6 +202,13 @@ export default function Bookings() {
             </form>
           </DialogContent>
         </Dialog>
+      </motion.div>
+
+      <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatCard title="Total Bookings" value={bookings.length} icon={CalendarDays} />
+        <StatCard title="Active" value={activeBookings} change="Confirmed" changeType="positive" icon={CheckCircle} />
+        <StatCard title="Cancelled" value={cancelledBookings} changeType={cancelledBookings > 0 ? "negative" : "neutral"} icon={XCircle} />
+        <StatCard title="Revenue" value={`KSh ${totalRevenue.toLocaleString()}`} change="All bookings" changeType="neutral" iconNode={<KshIcon className="h-5 w-5 text-primary" />} />
       </motion.div>
 
       <motion.div variants={item} className="flex gap-2">

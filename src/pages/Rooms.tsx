@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, BedDouble, Wifi, Bath, Tv, Loader2 } from "lucide-react";
+import { Plus, BedDouble, Wifi, Bath, Tv, Loader2, DoorOpen, Users } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { StatCard } from "@/components/StatCard";
+import { KshIcon } from "@/components/KshIcon";
 
 interface Room {
   id: string;
@@ -98,6 +100,12 @@ export default function Rooms() {
     );
   }
 
+  const totalRooms = rooms.length;
+  const occupiedRooms = rooms.filter((r) => r.status === "occupied").length;
+  const availableRooms = rooms.filter((r) => r.status === "available").length;
+  const occupancyRate = totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
+  const avgPrice = totalRooms > 0 ? Math.round(rooms.reduce((s, r) => s + Number(r.price_per_night), 0) / totalRooms) : 0;
+
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
       <motion.div variants={item} className="flex items-center justify-between">
@@ -155,6 +163,13 @@ export default function Rooms() {
             </form>
           </DialogContent>
         </Dialog>
+      </motion.div>
+
+      <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatCard title="Occupancy" value={`${occupancyRate}%`} change={`${occupiedRooms} of ${totalRooms}`} changeType={occupancyRate > 80 ? "positive" : "neutral"} icon={Users} />
+        <StatCard title="Available" value={availableRooms} change="Rooms" changeType="positive" icon={DoorOpen} />
+        <StatCard title="Occupied" value={occupiedRooms} change="Rooms" changeType="neutral" icon={BedDouble} />
+        <StatCard title="Avg Price" value={`KSh ${avgPrice.toLocaleString()}`} change="Per night" changeType="neutral" iconNode={<KshIcon className="h-5 w-5 text-primary" />} />
       </motion.div>
 
       {rooms.length === 0 ? (

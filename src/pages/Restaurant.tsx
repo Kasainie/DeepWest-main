@@ -11,11 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Minus, ShoppingCart, Send, Loader2, UtensilsCrossed, Trash2 } from "lucide-react";
+import { Plus, Minus, ShoppingCart, Send, Loader2, UtensilsCrossed, Trash2, ClipboardList, DollarSign, Utensils } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { OrdersList } from "@/components/orders/OrdersList";
 import { MenuManager } from "@/components/orders/MenuManager";
+import { StatCard } from "@/components/StatCard";
+import { KshIcon } from "@/components/KshIcon";
 
 interface MenuItem {
   id: string;
@@ -48,10 +50,47 @@ export default function Restaurant() {
   const [sending, setSending] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [activeTab, setActiveTab] = useState("new-order");
+  const [stats, setStats] = useState({ ordersToday: 0, revenueToday: 0, activeOrders: 0, menuCount: 0 });
 
   useEffect(() => {
-    if (currentCompany) fetchMenu();
+    if (currentCompany) {
+      fetchMenu();
+      fetchStats();
+    }
   }, [currentCompany?.id]);
+
+  const fetchStats = async () => {
+    if (!currentCompany) return;
+    const today = new Date().toISOString().split("T")[0];
+
+    const [ordersRes, activeRes, menuRes] = await Promise.all([
+      supabase
+        .from("orders")
+        .select("total")
+        .eq("company_id", currentCompany.id)
+        .gte("created_at", today + "T00:00:00"),
+      supabase
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", currentCompany.id)
+        .in("status", ["pending", "preparing", "ready"]),
+      supabase
+        .from("menu_items")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", currentCompany.id)
+        .eq("is_available", true),
+    ]);
+
+    const orders = ordersRes.data || [];
+    const revenue = orders.reduce((sum, o) => sum + Number(o.total), 0);
+
+    setStats({
+      ordersToday: orders.length,
+      revenueToday: revenue,
+      activeOrders: activeRes.count || 0,
+      menuCount: menuRes.count || 0,
+    });
+  };
 
   const fetchMenu = async () => {
     if (!currentCompany) return;
@@ -142,6 +181,7 @@ export default function Restaurant() {
       setTableNumber("");
       setOrderNotes("");
       setActiveTab("orders");
+      fetchStats();
     } catch (err: any) {
       toast.error(err.message || "Failed to send order");
     } finally {
@@ -167,6 +207,13 @@ export default function Restaurant() {
       <motion.div variants={item}>
         <h1 className="text-2xl font-bold font-display">Restaurant</h1>
         <p className="text-sm text-muted-foreground mt-1">Manage orders, menu & kitchen flow</p>
+      </motion.div>
+
+      <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatCard title="Orders Today" value={stats.ordersToday} icon={ClipboardList} />
+        <StatCard title="Revenue Today" value={`KSh ${stats.revenueToday.toLocaleString()}`} iconNode={<KshIcon className="h-5 w-5 text-primary" />} />
+        <StatCard title="Active Orders" value={stats.activeOrders} change="In progress" changeType="neutral" icon={Utensils} />
+        <StatCard title="Menu Items" value={stats.menuCount} change="Available" changeType="neutral" icon={UtensilsCrossed} />
       </motion.div>
 
       <motion.div variants={item}>
