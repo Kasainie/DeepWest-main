@@ -76,15 +76,29 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     const list = (companiesData || []) as Company[];
     setCompanies(list);
 
-    // Get current company from profile
+    // Check for staff login override first, then fall back to profile
+    const staffLoginCompanyId = sessionStorage.getItem("staff_login_company_id");
+    if (staffLoginCompanyId) {
+      sessionStorage.removeItem("staff_login_company_id");
+    }
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("current_company_id")
       .eq("user_id", user.id)
       .single();
 
-    let active = list.find((c) => c.id === profile?.current_company_id) || list[0] || null;
+    const preferredId = staffLoginCompanyId || profile?.current_company_id;
+    let active = list.find((c) => c.id === preferredId) || list[0] || null;
     setCurrentCompany(active);
+
+    // Update profile if we used the staff login override
+    if (staffLoginCompanyId && active && active.id !== profile?.current_company_id) {
+      await supabase
+        .from("profiles")
+        .update({ current_company_id: active.id })
+        .eq("user_id", user.id);
+    }
 
     if (active) {
       const membership = memberships.find((m) => m.company_id === active!.id);
