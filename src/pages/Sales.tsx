@@ -392,8 +392,8 @@ export default function Sales() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Date</TableHead>
+                          <TableHead>Source</TableHead>
                           <TableHead>Department</TableHead>
-                          <TableHead>Category</TableHead>
                           <TableHead>Description</TableHead>
                           <TableHead>Payment</TableHead>
                           <TableHead className="text-right">Amount</TableHead>
@@ -404,20 +404,28 @@ export default function Sales() {
                         {filtered.map((s) => (
                           <TableRow key={s.id}>
                             <TableCell className="text-sm">{format(new Date(s.sale_date), "MMM d, yyyy")}</TableCell>
+                            <TableCell>
+                              <Badge variant={s.source === "manual" ? "default" : "secondary"} className="capitalize text-[10px]">
+                                {s.source === "manual" ? "Manual" : s.source === "order" ? "Order" : s.source === "booking" ? "Booking" : "Conference"}
+                              </Badge>
+                            </TableCell>
                             <TableCell><Badge variant="outline" className="capitalize text-xs">{s.department}</Badge></TableCell>
-                            <TableCell className="capitalize text-sm">{s.category}</TableCell>
-                            <TableCell className="text-sm text-muted-foreground">{s.description || "—"}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">{s.description || "—"}</TableCell>
                             <TableCell><Badge variant="secondary" className="capitalize text-xs">{s.payment_method.replace("_", " ")}</Badge></TableCell>
                             <TableCell className="text-right font-medium">{formatKES(Number(s.amount))}</TableCell>
                             <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-1">
-                                <Button variant="ghost" size="icon" className="h-7 w-7" title="Download Receipt" onClick={() => { downloadSaleReceipt(s, currentCompany); toast.success("Receipt downloaded!"); }}>
-                                  <Download className="h-3 w-3" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" title="Print Receipt" onClick={() => printSaleReceipt(s, currentCompany)}>
-                                  <Printer className="h-3 w-3" />
-                                </Button>
-                              </div>
+                              {s.source === "manual" ? (
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" title="Download Receipt" onClick={() => { downloadSaleReceipt(s, currentCompany); toast.success("Receipt downloaded!"); }}>
+                                    <Download className="h-3 w-3" />
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" title="Print Receipt" onClick={() => printSaleReceipt(s, currentCompany)}>
+                                    <Printer className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
