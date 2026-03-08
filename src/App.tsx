@@ -33,7 +33,7 @@ import PendingApproval from "./pages/PendingApproval";
 import RegisterSuccess from "./pages/RegisterSuccess";
 import AcceptInvite from "./pages/AcceptInvite";
 import Login from "./pages/Login";
-import LandingPage from "./pages/LandingPage";
+import HomeRoute from "./components/HomeRoute";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -48,7 +48,7 @@ const App = () => (
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<LandingPage />} />
+            <Route path="/" element={<HomeRoute />} />
             <Route path="/login" element={<Login />} />
             <Route path="/login/:slug" element={<Login />} />
             <Route path="/pending-approval" element={<PendingApproval />} />
@@ -85,6 +85,24 @@ const App = () => (
               }
             />
             <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <CompanyProvider>
+                    <CompanyGuard>
+                      <BrandingProvider>
+                        <DashboardLayout>
+                          <DepartmentGuard>
+                            <Dashboard />
+                          </DepartmentGuard>
+                        </DashboardLayout>
+                      </BrandingProvider>
+                    </CompanyGuard>
+                  </CompanyProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/*"
               element={
                 <ProtectedRoute>
@@ -94,7 +112,6 @@ const App = () => (
                         <DashboardLayout>
                           <DepartmentGuard>
                             <Routes>
-                              <Route path="/" element={<Dashboard />} />
                               <Route path="/rooms" element={<Rooms />} />
                               <Route path="/restaurant" element={<Restaurant />} />
                               <Route path="/bar" element={<Bar />} />
