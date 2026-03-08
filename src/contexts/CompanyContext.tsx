@@ -49,6 +49,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       setCompanies([]);
       setCurrentCompany(null);
       setCompanyRole(null);
+      setStaffDepartment(null);
       setLoading(false);
       return;
     }
@@ -88,6 +89,15 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     if (active) {
       const membership = memberships.find((m) => m.company_id === active!.id);
       setCompanyRole(membership?.role || null);
+
+      // Fetch staff department
+      const { data: staffRecord } = await supabase
+        .from("company_staff")
+        .select("department")
+        .eq("company_id", active!.id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      setStaffDepartment(staffRecord?.department || null);
     }
 
     setLoading(false);
@@ -115,6 +125,15 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       .single();
 
     setCompanyRole(membership?.role || null);
+
+    // Fetch staff department on switch
+    const { data: staffRecord } = await supabase
+      .from("company_staff")
+      .select("department")
+      .eq("company_id", companyId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    setStaffDepartment(staffRecord?.department || null);
   };
 
   return (
@@ -123,6 +142,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
         companies,
         currentCompany,
         companyRole,
+        staffDepartment,
         loading,
         switchCompany,
         refreshCompanies: fetchCompanies,
