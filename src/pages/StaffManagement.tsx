@@ -8,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Shield, ShieldCheck, User, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { useCompany } from "@/contexts/CompanyContext";
+import { InviteStaffDialog } from "@/components/InviteStaffDialog";
+import { PendingInvitations } from "@/components/PendingInvitations";
 
 interface StaffMember {
   user_id: string;
@@ -33,9 +36,12 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
 export default function StaffManagement() {
   const { isAdmin, role: currentUserRole } = useUserRole();
+  const { companyRole } = useCompany();
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [inviteRefreshKey, setInviteRefreshKey] = useState(0);
+  const canInvite = companyRole === "owner" || companyRole === "admin";
 
   const fetchStaff = async () => {
     setLoading(true);
@@ -115,11 +121,20 @@ export default function StaffManagement() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
+      <motion.div variants={item} className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold font-display">Staff Management</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage staff roles and permissions
+          </p>
+        </div>
+        {canInvite && (
+          <InviteStaffDialog onInviteSent={() => setInviteRefreshKey((k) => k + 1)} />
+        )}
+      </motion.div>
+
       <motion.div variants={item}>
-        <h1 className="text-2xl font-bold font-display">Staff Management</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Manage staff roles and permissions
-        </p>
+        <PendingInvitations refreshKey={inviteRefreshKey} />
       </motion.div>
 
       <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
