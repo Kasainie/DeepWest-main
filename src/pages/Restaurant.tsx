@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { subDays, format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { getLocalDayBoundsUTC } from "@/lib/dateUtils";
 import { useCompany } from "@/contexts/CompanyContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { DateRangeFilter, DateRange } from "@/components/DateRangeFilter";
@@ -56,7 +56,7 @@ export default function Restaurant() {
   const [activeTab, setActiveTab] = useState("new-order");
   const [bottomTab, setBottomTab] = useState<"home" | "history">("home");
   const [stats, setStats] = useState({ ordersToday: 0, revenueToday: 0, activeOrders: 0, menuCount: 0 });
-  const [dateRange, setDateRange] = useState<DateRange>({ from: subDays(new Date(), 29), to: new Date() });
+  const [dateRange, setDateRange] = useState<DateRange>({ from: new Date(), to: new Date() });
 
   useEffect(() => {
     if (currentCompany) {
@@ -67,16 +67,16 @@ export default function Restaurant() {
 
   const fetchStats = async () => {
     if (!currentCompany) return;
-    const fromDate = format(dateRange.from, "yyyy-MM-dd");
-    const toDate = format(dateRange.to, "yyyy-MM-dd");
+    const { start: rangeStart } = getLocalDayBoundsUTC(dateRange.from);
+    const { end: rangeEnd } = getLocalDayBoundsUTC(dateRange.to);
 
     const [ordersRes, activeRes, menuRes] = await Promise.all([
       supabase
         .from("orders")
         .select("total")
         .eq("company_id", currentCompany.id)
-        .gte("created_at", fromDate + "T00:00:00")
-        .lte("created_at", toDate + "T23:59:59"),
+        .gte("created_at", rangeStart)
+        .lte("created_at", rangeEnd),
       supabase
         .from("orders")
         .select("id", { count: "exact", head: true })
