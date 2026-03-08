@@ -161,7 +161,8 @@ export function RoomDetailsDialog({ room, open, onOpenChange, onUpdated }: RoomD
         </DialogHeader>
 
         {!editing ? (
-          <div className="space-y-4">
+          <ScrollArea className="flex-1 overflow-auto">
+          <div className="space-y-4 pr-2">
             <div className="flex items-center gap-2">
               <Badge className={`${statusColors[room.status] || statusColors.available} text-xs border capitalize`}>
                 {room.status}
