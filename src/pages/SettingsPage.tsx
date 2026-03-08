@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Upload, X, Loader2, Building2 } from "lucide-react";
+import { Upload, X, Loader2, Building2, Lock } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import BrandingSettings from "@/components/settings/BrandingSettings";
@@ -194,7 +195,19 @@ export default function SettingsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>URL Slug</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label>URL Slug</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>URL slug is permanent and cannot be changed after registration</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <div className="flex items-center gap-0">
                   <span className="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground whitespace-nowrap">
                     lktech.life/
