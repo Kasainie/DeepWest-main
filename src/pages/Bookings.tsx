@@ -325,6 +325,13 @@ export default function Bookings() {
                           <Badge className={`${statusStyles[b.status] || ""} text-[10px] border-0`}>{b.status}</Badge>
                         </td>
                         <td className="p-3 text-sm font-semibold text-right">KSh {Number(b.amount).toFixed(2)}</td>
+                        <td className="p-3 text-right">
+                          {["confirmed", "active"].includes(b.status) && (
+                            <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCheckout(b)}>
+                              <LogOut className="h-3 w-3 mr-1" /> Checkout
+                            </Button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
