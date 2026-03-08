@@ -74,6 +74,7 @@ Deno.serve(async (req: Request) => {
             department: staff.department,
             role: staff.role,
             company_name: staff.company_name,
+            company_id: staff.company_id,
           },
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -136,6 +137,7 @@ Deno.serve(async (req: Request) => {
           department: staff.department,
           role: staff.role,
           company_name: staff.company_name,
+          company_id: staff.company_id,
         },
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
