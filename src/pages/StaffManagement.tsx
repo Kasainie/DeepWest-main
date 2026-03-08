@@ -47,6 +47,7 @@ const deptIcons: Record<string, typeof Building2> = {
   hotel: Building2,
   restaurant: UtensilsCrossed,
   bar: Wine,
+  bar_admin: ShieldCheck,
   kitchen: ChefHat,
   accountant: Calculator,
 };
@@ -55,6 +56,7 @@ const deptColors: Record<string, string> = {
   hotel: "bg-primary/10 text-primary",
   restaurant: "bg-warning/10 text-warning",
   bar: "bg-accent/10 text-accent",
+  bar_admin: "bg-accent/20 text-accent-foreground",
   kitchen: "bg-destructive/10 text-destructive",
   accountant: "bg-success/10 text-success",
 };
