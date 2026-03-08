@@ -245,7 +245,7 @@ export default function Bookings() {
                         <td className="p-3">
                           <Badge className={`${statusStyles[b.status] || ""} text-[10px] border-0`}>{b.status}</Badge>
                         </td>
-                        <td className="p-3 text-sm font-semibold text-right">${Number(b.amount).toFixed(2)}</td>
+                        <td className="p-3 text-sm font-semibold text-right">KSh {Number(b.amount).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>

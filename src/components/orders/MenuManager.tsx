@@ -164,7 +164,7 @@ export function MenuManager({ onMenuChange }: MenuManagerProps) {
                 <p className="text-sm font-medium">{mi.name}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                   <Badge variant="secondary" className="text-[10px] capitalize">{mi.category}</Badge>
-                  <span className="text-xs font-bold">${Number(mi.price).toFixed(2)}</span>
+                  <span className="text-xs font-bold">KSh {Number(mi.price).toFixed(2)}</span>
                   {mi.description && <span className="text-[10px] text-muted-foreground truncate">{mi.description}</span>}
                 </div>
               </div>
