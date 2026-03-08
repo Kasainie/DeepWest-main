@@ -73,16 +73,25 @@ export default function RegisterCompany() {
 
       let logo_url: string | null = null;
       if (logoFile) {
-        const ext = logoFile.name.split(".").pop();
-        const path = `${user.id}/${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from("company-logos")
-          .upload(path, logoFile);
-        if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage
-          .from("company-logos")
-          .getPublicUrl(path);
-        logo_url = urlData.publicUrl;
+        try {
+          const ext = logoFile.name.split(".").pop();
+          const path = `${user.id}/${Date.now()}.${ext}`;
+          const { error: uploadError } = await supabase.storage
+            .from("company-logos")
+            .upload(path, logoFile, { upsert: true });
+          if (uploadError) {
+            console.warn("Logo upload failed, continuing without logo:", uploadError);
+            toast.warning("Logo upload failed, but company will be created without it.");
+          } else {
+            const { data: urlData } = supabase.storage
+              .from("company-logos")
+              .getPublicUrl(path);
+            logo_url = urlData.publicUrl;
+          }
+        } catch (uploadErr) {
+          console.warn("Logo upload error:", uploadErr);
+          toast.warning("Logo upload failed, continuing without logo.");
+        }
       }
 
       const { data: company, error } = await supabase
