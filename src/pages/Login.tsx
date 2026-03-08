@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Hotel, Loader2, KeyRound, Mail, Building2, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Hotel, Loader2, KeyRound, Mail, Building2, ShieldCheck } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
