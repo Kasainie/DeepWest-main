@@ -31,21 +31,21 @@ import {
 } from "@/components/ui/sidebar";
 
 const mainItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Rooms", url: "/rooms", icon: BedDouble },
-  { title: "Restaurant", url: "/restaurant", icon: UtensilsCrossed },
-  { title: "Kitchen", url: "/kitchen", icon: ChefHat },
-  { title: "Bar", url: "/bar", icon: Wine },
-  { title: "Conference", url: "/conference", icon: Presentation },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard, departments: null },
+  { title: "Rooms", url: "/rooms", icon: BedDouble, departments: ["hotel"] },
+  { title: "Restaurant", url: "/restaurant", icon: UtensilsCrossed, departments: ["restaurant"] },
+  { title: "Kitchen", url: "/kitchen", icon: ChefHat, departments: ["kitchen"] },
+  { title: "Bar", url: "/bar", icon: Wine, departments: ["bar"] },
+  { title: "Conference", url: "/conference", icon: Presentation, departments: ["hotel"] },
 ];
 
 const managementItems = [
-  { title: "Bookings", url: "/bookings", icon: CalendarDays },
-  { title: "Guests", url: "/guests", icon: Users },
-  { title: "Staff", url: "/staff", icon: ShieldCheck },
-  { title: "Website", url: "/website", icon: Globe },
-  { title: "Settings", url: "/settings", icon: Settings },
-  { title: "About", url: "/about", icon: Info },
+  { title: "Bookings", url: "/bookings", icon: CalendarDays, departments: ["hotel", "accountant"] },
+  { title: "Guests", url: "/guests", icon: Users, departments: ["hotel"] },
+  { title: "Staff", url: "/staff", icon: ShieldCheck, departments: null },
+  { title: "Website", url: "/website", icon: Globe, departments: null },
+  { title: "Settings", url: "/settings", icon: Settings, departments: null },
+  { title: "About", url: "/about", icon: Info, departments: null },
 ];
 
 export function AppSidebar() {
