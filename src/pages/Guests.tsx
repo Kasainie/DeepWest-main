@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Search, Plus, Star, Loader2, Users, CalendarDays } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Search, Plus, Star, Loader2, Users, CalendarDays, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -43,6 +44,10 @@ export default function Guests() {
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editGuest, setEditGuest] = useState<Guest | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteGuest, setDeleteGuest] = useState<Guest | null>(null);
+  const [editForm, setEditForm] = useState({ full_name: "", email: "", phone: "", id_number: "", is_vip: false });
   const [form, setForm] = useState({
     full_name: "", email: "", phone: "", id_number: "", is_vip: false,
     check_in: "", check_out: "", room_id: "",
@@ -114,6 +119,51 @@ export default function Guests() {
     setAddOpen(false);
     fetchData();
     setSaving(false);
+  };
+
+  const openEdit = (guest: Guest) => {
+    setEditGuest(guest);
+    setEditForm({
+      full_name: guest.full_name,
+      email: guest.email || "",
+      phone: guest.phone || "",
+      id_number: guest.id_number || "",
+      is_vip: guest.is_vip,
+    });
+    setEditOpen(true);
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editGuest) return;
+    setSaving(true);
+    const { error } = await supabase.from("guests").update({
+      full_name: editForm.full_name.trim(),
+      email: editForm.email.trim() || null,
+      phone: editForm.phone.trim() || null,
+      id_number: editForm.id_number.trim() || null,
+      is_vip: editForm.is_vip,
+    }).eq("id", editGuest.id);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Guest updated!");
+      setEditOpen(false);
+      fetchData();
+    }
+    setSaving(false);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteGuest) return;
+    const { error } = await supabase.from("guests").delete().eq("id", deleteGuest.id);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Guest deleted");
+      fetchData();
+    }
+    setDeleteGuest(null);
   };
 
   const filtered = guests.filter((g) => {
@@ -251,11 +301,19 @@ export default function Guests() {
                       {guest.id_number && <p className="text-[10px] text-muted-foreground">ID: {guest.id_number}</p>}
                     </div>
                   </div>
-                  {guest.is_vip && (
-                    <Badge className="bg-warning/10 text-warning border-0 text-[10px]">
-                      <Star className="h-2.5 w-2.5 mr-0.5 fill-current" /> VIP
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {guest.is_vip && (
+                      <Badge className="bg-warning/10 text-warning border-0 text-[10px]">
+                        <Star className="h-2.5 w-2.5 mr-0.5 fill-current" /> VIP
+                      </Badge>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openEdit(guest); }}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteGuest(guest); }}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center bg-secondary/50 rounded-lg p-3">
                   <div>
@@ -276,6 +334,61 @@ export default function Guests() {
           ))}
         </motion.div>
       )}
+
+      {/* Edit Guest Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">Edit Guest</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label>Full Name</Label>
+              <Input value={editForm.full_name} onChange={(e) => setEditForm((f) => ({ ...f, full_name: e.target.value }))} required />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Phone</Label>
+                <Input value={editForm.phone} onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>ID Number</Label>
+                <Input value={editForm.id_number} onChange={(e) => setEditForm((f) => ({ ...f, id_number: e.target.value }))} maxLength={30} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input type="email" value={editForm.email} onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))} />
+            </div>
+            <div className="flex items-center gap-3">
+              <Switch checked={editForm.is_vip} onCheckedChange={(v) => setEditForm((f) => ({ ...f, is_vip: v }))} />
+              <Label>VIP Guest</Label>
+            </div>
+            <Button type="submit" className="w-full" disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save Changes
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteGuest} onOpenChange={(open) => !open && setDeleteGuest(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Guest</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteGuest?.full_name}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }
