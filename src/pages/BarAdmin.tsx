@@ -41,34 +41,32 @@ interface StaffMember {
 }
 
 interface InventoryItem {
+  id: string;
   name: string;
+  category: string;
   stock: number;
   unit: string;
-  lowThreshold: number;
+  low_threshold: number;
+  cost_per_unit: number;
 }
 
-// Mock inventory data (would be a real table in production)
-const mockInventory: InventoryItem[] = [
-  { name: "Vodka (750ml)", stock: 12, unit: "bottles", lowThreshold: 5 },
-  { name: "Whiskey (750ml)", stock: 3, unit: "bottles", lowThreshold: 5 },
-  { name: "Craft IPA Kegs", stock: 2, unit: "kegs", lowThreshold: 3 },
-  { name: "House Red Wine", stock: 18, unit: "bottles", lowThreshold: 8 },
-  { name: "Tonic Water", stock: 4, unit: "cases", lowThreshold: 6 },
-  { name: "Lime Juice", stock: 8, unit: "bottles", lowThreshold: 4 },
-  { name: "Simple Syrup", stock: 6, unit: "bottles", lowThreshold: 3 },
-  { name: "Champagne", stock: 7, unit: "bottles", lowThreshold: 4 },
-];
+const inventoryCategories = ["spirit", "wine", "beer", "mixer", "garnish", "other"];
 
 export default function BarAdmin() {
   const { currentCompany } = useCompany();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [barStaff, setBarStaff] = useState<StaffMember[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [addInventoryOpen, setAddInventoryOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [menuForm, setMenuForm] = useState({
     name: "", category: "cocktail", price: "", description: "",
+  });
+  const [invForm, setInvForm] = useState({
+    name: "", category: "spirit", stock: "", unit: "bottles", low_threshold: "5", cost_per_unit: "",
   });
 
   useEffect(() => {
@@ -79,7 +77,7 @@ export default function BarAdmin() {
     if (!currentCompany) return;
     setLoading(true);
 
-    const [menuRes, staffRes, ordersRes] = await Promise.all([
+    const [menuRes, staffRes, ordersRes, invRes] = await Promise.all([
       supabase.from("menu_items").select("*").eq("company_id", currentCompany.id).order("category"),
       supabase.from("company_staff").select("id, full_name, staff_code, role, is_active")
         .eq("company_id", currentCompany.id)
@@ -88,11 +86,13 @@ export default function BarAdmin() {
         .eq("company_id", currentCompany.id)
         .order("created_at", { ascending: false })
         .limit(20),
+      supabase.from("bar_inventory").select("*").eq("company_id", currentCompany.id).order("category"),
     ]);
 
     setMenuItems((menuRes.data || []) as MenuItem[]);
     setBarStaff((staffRes.data || []) as StaffMember[]);
     setOrders(ordersRes.data || []);
+    setInventory((invRes.data || []) as InventoryItem[]);
     setLoading(false);
   };
 
@@ -138,10 +138,55 @@ export default function BarAdmin() {
     }
   };
 
+  const handleAddInventory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCompany) return;
+    setSaving(true);
+
+    const { error } = await supabase.from("bar_inventory").insert({
+      company_id: currentCompany.id,
+      name: invForm.name.trim(),
+      category: invForm.category,
+      stock: parseFloat(invForm.stock) || 0,
+      unit: invForm.unit.trim(),
+      low_threshold: parseFloat(invForm.low_threshold) || 5,
+      cost_per_unit: parseFloat(invForm.cost_per_unit) || 0,
+    });
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Inventory item added!");
+      setInvForm({ name: "", category: "spirit", stock: "", unit: "bottles", low_threshold: "5", cost_per_unit: "" });
+      setAddInventoryOpen(false);
+      fetchAll();
+    }
+    setSaving(false);
+  };
+
+  const handleUpdateStock = async (itemId: string, newStock: number) => {
+    const { error } = await supabase.from("bar_inventory").update({ stock: newStock }).eq("id", itemId);
+    if (!error) {
+      setInventory((prev) => prev.map((i) => i.id === itemId ? { ...i, stock: newStock } : i));
+    } else {
+      toast.error("Failed to update stock");
+    }
+  };
+
+  const handleDeleteInventory = async (itemId: string) => {
+    const { error } = await supabase.from("bar_inventory").delete().eq("id", itemId);
+    if (!error) {
+      setInventory((prev) => prev.filter((i) => i.id !== itemId));
+      toast.success("Inventory item removed");
+    } else {
+      toast.error("Failed to remove item");
+    }
+  };
+
   const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
   const totalOrders = orders.length;
   const avgCheck = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-  const lowStockItems = mockInventory.filter((i) => i.stock <= i.lowThreshold);
+  const lowStockItems = inventory.filter((i) => i.stock <= i.low_threshold);
 
   const categoryIcon = (cat: string) => {
     switch (cat) {
@@ -351,7 +396,61 @@ export default function BarAdmin() {
           </TabsContent>
 
           {/* INVENTORY TAB */}
-          <TabsContent value="inventory">
+          <TabsContent value="inventory" className="space-y-4">
+            <div className="flex justify-end">
+              <Dialog open={addInventoryOpen} onOpenChange={setAddInventoryOpen}>
+                <DialogTrigger asChild>
+                  <Button><Plus className="h-4 w-4 mr-2" />Add Item</Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="font-display">Add Inventory Item</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleAddInventory} className="space-y-4 mt-2">
+                    <div className="space-y-2">
+                      <Label>Name</Label>
+                      <Input value={invForm.name} onChange={(e) => setInvForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Vodka (750ml)" required />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Category</Label>
+                        <Select value={invForm.category} onValueChange={(v) => setInvForm((f) => ({ ...f, category: v }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {inventoryCategories.map((c) => (
+                              <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Unit</Label>
+                        <Input value={invForm.unit} onChange={(e) => setInvForm((f) => ({ ...f, unit: e.target.value }))} placeholder="bottles" required />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Stock</Label>
+                        <Input type="number" min="0" value={invForm.stock} onChange={(e) => setInvForm((f) => ({ ...f, stock: e.target.value }))} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Low Alert</Label>
+                        <Input type="number" min="0" value={invForm.low_threshold} onChange={(e) => setInvForm((f) => ({ ...f, low_threshold: e.target.value }))} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Cost/Unit</Label>
+                        <Input type="number" step="0.01" min="0" value={invForm.cost_per_unit} onChange={(e) => setInvForm((f) => ({ ...f, cost_per_unit: e.target.value }))} />
+                      </div>
+                    </div>
+                    <Button type="submit" className="w-full" disabled={saving}>
+                      {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Add Item
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+
             <Card className="shadow-card border-0">
               <CardHeader>
                 <CardTitle className="text-lg font-display flex items-center gap-2">
@@ -359,31 +458,53 @@ export default function BarAdmin() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-1">
-                  {mockInventory.map((inv, i) => {
-                    const isLow = inv.stock <= inv.lowThreshold;
-                    return (
-                      <div key={i} className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-secondary/50 transition-colors">
-                        <div className="flex items-center gap-3">
-                          {isLow && <AlertTriangle className="h-4 w-4 text-warning shrink-0" />}
-                          <div>
-                            <p className="text-sm font-medium">{inv.name}</p>
-                            <p className="text-xs text-muted-foreground">{inv.stock} {inv.unit} remaining</p>
+                {inventory.length === 0 ? (
+                  <p className="text-center text-sm text-muted-foreground py-8">No inventory items yet. Add your first item above.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {inventory.map((inv) => {
+                      const isLow = inv.stock <= inv.low_threshold;
+                      return (
+                        <div key={inv.id} className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-secondary/50 transition-colors">
+                          <div className="flex items-center gap-3">
+                            {isLow && <AlertTriangle className="h-4 w-4 text-warning shrink-0" />}
+                            <div>
+                              <p className="text-sm font-medium">{inv.name}</p>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="text-[10px] capitalize">{inv.category}</Badge>
+                                <span className="text-xs text-muted-foreground">{inv.stock} {inv.unit} remaining</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="w-20 h-2 rounded-full bg-secondary overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${isLow ? "bg-warning" : "bg-primary"}`}
+                                style={{ width: `${Math.min(100, (inv.stock / (inv.low_threshold * 3)) * 100)}%` }}
+                              />
+                            </div>
+                            {isLow && <Badge variant="secondary" className="text-[10px] text-warning">Low</Badge>}
+                            <div className="flex items-center gap-1">
+                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleUpdateStock(inv.id, Math.max(0, inv.stock - 1))} title="Decrease stock">
+                                <span className="text-sm font-bold">−</span>
+                              </Button>
+                              <span className="text-sm font-semibold w-8 text-center">{inv.stock}</span>
+                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleUpdateStock(inv.id, inv.stock + 1)} title="Increase stock">
+                                <span className="text-sm font-bold">+</span>
+                              </Button>
+                            </div>
+                            {inv.cost_per_unit > 0 && (
+                              <span className="text-xs text-muted-foreground hidden sm:inline">${inv.cost_per_unit}/ea</span>
+                            )}
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteInventory(inv.id)}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className="w-20 h-2 rounded-full bg-secondary overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${isLow ? "bg-warning" : "bg-primary"}`}
-                              style={{ width: `${Math.min(100, (inv.stock / (inv.lowThreshold * 3)) * 100)}%` }}
-                            />
-                          </div>
-                          {isLow && <Badge variant="secondary" className="text-[10px] text-warning">Low</Badge>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      bar_inventory: {
+        Row: {
+          category: string
+          company_id: string
+          cost_per_unit: number
+          created_at: string
+          id: string
+          low_threshold: number
+          name: string
+          stock: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          company_id: string
+          cost_per_unit?: number
+          created_at?: string
+          id?: string
+          low_threshold?: number
+          name: string
+          stock?: number
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          cost_per_unit?: number
+          created_at?: string
+          id?: string
+          low_threshold?: number
+          name?: string
+          stock?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bar_inventory_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           amount: number
