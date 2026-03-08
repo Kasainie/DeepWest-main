@@ -396,7 +396,61 @@ export default function BarAdmin() {
           </TabsContent>
 
           {/* INVENTORY TAB */}
-          <TabsContent value="inventory">
+          <TabsContent value="inventory" className="space-y-4">
+            <div className="flex justify-end">
+              <Dialog open={addInventoryOpen} onOpenChange={setAddInventoryOpen}>
+                <DialogTrigger asChild>
+                  <Button><Plus className="h-4 w-4 mr-2" />Add Item</Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="font-display">Add Inventory Item</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleAddInventory} className="space-y-4 mt-2">
+                    <div className="space-y-2">
+                      <Label>Name</Label>
+                      <Input value={invForm.name} onChange={(e) => setInvForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Vodka (750ml)" required />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Category</Label>
+                        <Select value={invForm.category} onValueChange={(v) => setInvForm((f) => ({ ...f, category: v }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {inventoryCategories.map((c) => (
+                              <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Unit</Label>
+                        <Input value={invForm.unit} onChange={(e) => setInvForm((f) => ({ ...f, unit: e.target.value }))} placeholder="bottles" required />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Stock</Label>
+                        <Input type="number" min="0" value={invForm.stock} onChange={(e) => setInvForm((f) => ({ ...f, stock: e.target.value }))} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Low Alert</Label>
+                        <Input type="number" min="0" value={invForm.low_threshold} onChange={(e) => setInvForm((f) => ({ ...f, low_threshold: e.target.value }))} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Cost/Unit</Label>
+                        <Input type="number" step="0.01" min="0" value={invForm.cost_per_unit} onChange={(e) => setInvForm((f) => ({ ...f, cost_per_unit: e.target.value }))} />
+                      </div>
+                    </div>
+                    <Button type="submit" className="w-full" disabled={saving}>
+                      {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Add Item
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+
             <Card className="shadow-card border-0">
               <CardHeader>
                 <CardTitle className="text-lg font-display flex items-center gap-2">
@@ -404,31 +458,53 @@ export default function BarAdmin() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-1">
-                  {mockInventory.map((inv, i) => {
-                    const isLow = inv.stock <= inv.lowThreshold;
-                    return (
-                      <div key={i} className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-secondary/50 transition-colors">
-                        <div className="flex items-center gap-3">
-                          {isLow && <AlertTriangle className="h-4 w-4 text-warning shrink-0" />}
-                          <div>
-                            <p className="text-sm font-medium">{inv.name}</p>
-                            <p className="text-xs text-muted-foreground">{inv.stock} {inv.unit} remaining</p>
+                {inventory.length === 0 ? (
+                  <p className="text-center text-sm text-muted-foreground py-8">No inventory items yet. Add your first item above.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {inventory.map((inv) => {
+                      const isLow = inv.stock <= inv.low_threshold;
+                      return (
+                        <div key={inv.id} className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-secondary/50 transition-colors">
+                          <div className="flex items-center gap-3">
+                            {isLow && <AlertTriangle className="h-4 w-4 text-warning shrink-0" />}
+                            <div>
+                              <p className="text-sm font-medium">{inv.name}</p>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="text-[10px] capitalize">{inv.category}</Badge>
+                                <span className="text-xs text-muted-foreground">{inv.stock} {inv.unit} remaining</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="w-20 h-2 rounded-full bg-secondary overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${isLow ? "bg-warning" : "bg-primary"}`}
+                                style={{ width: `${Math.min(100, (inv.stock / (inv.low_threshold * 3)) * 100)}%` }}
+                              />
+                            </div>
+                            {isLow && <Badge variant="secondary" className="text-[10px] text-warning">Low</Badge>}
+                            <div className="flex items-center gap-1">
+                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleUpdateStock(inv.id, Math.max(0, inv.stock - 1))} title="Decrease stock">
+                                <span className="text-sm font-bold">−</span>
+                              </Button>
+                              <span className="text-sm font-semibold w-8 text-center">{inv.stock}</span>
+                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleUpdateStock(inv.id, inv.stock + 1)} title="Increase stock">
+                                <span className="text-sm font-bold">+</span>
+                              </Button>
+                            </div>
+                            {inv.cost_per_unit > 0 && (
+                              <span className="text-xs text-muted-foreground hidden sm:inline">${inv.cost_per_unit}/ea</span>
+                            )}
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDeleteInventory(inv.id)}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className="w-20 h-2 rounded-full bg-secondary overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${isLow ? "bg-warning" : "bg-primary"}`}
-                              style={{ width: `${Math.min(100, (inv.stock / (inv.lowThreshold * 3)) * 100)}%` }}
-                            />
-                          </div>
-                          {isLow && <Badge variant="secondary" className="text-[10px] text-warning">Low</Badge>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
