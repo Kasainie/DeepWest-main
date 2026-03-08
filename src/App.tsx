@@ -48,6 +48,7 @@ const App = () => (
       <AuthProvider>
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/login/:slug" element={<Login />} />
             <Route path="/pending-approval" element={<PendingApproval />} />
