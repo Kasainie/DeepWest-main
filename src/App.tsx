@@ -28,6 +28,7 @@ import Tenders from "./pages/Tenders";
 import Expenses from "./pages/Expenses";
 import RegisterCompany from "./pages/RegisterCompany";
 import SuperAdmin from "./pages/SuperAdmin";
+import PendingApproval from "./pages/PendingApproval";
 import RegisterSuccess from "./pages/RegisterSuccess";
 import AcceptInvite from "./pages/AcceptInvite";
 import Login from "./pages/Login";
@@ -46,6 +47,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/pending-approval" element={<PendingApproval />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route

@@ -46,11 +46,26 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Approve / reject user
+    if (req.method === "POST" && action === "approve_user") {
+      const { user_id, approved } = await req.json();
+      const { error } = await admin
+        .from("profiles")
+        .update({ is_approved: approved })
+        .eq("user_id", user_id);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Default: list all data
-    const [companiesRes, staffRes, membersRes] = await Promise.all([
+    const [companiesRes, staffRes, membersRes, pendingRes] = await Promise.all([
       admin.from("companies").select("*").order("created_at", { ascending: false }),
       admin.from("company_staff").select("*").order("created_at", { ascending: false }),
       admin.from("company_members").select("*"),
+      admin.from("profiles").select("*").eq("is_approved", false),
     ]);
 
     // Fetch owner emails via auth admin API
@@ -63,12 +78,28 @@ Deno.serve(async (req) => {
       } catch (_) { /* skip */ }
     }
 
+    // Fetch pending user emails
+    const pendingProfiles = pendingRes.data || [];
+    const pendingUsers: Array<{ user_id: string; email: string; full_name: string | null; created_at: string }> = [];
+    for (const profile of pendingProfiles) {
+      try {
+        const { data } = await admin.auth.admin.getUserById(profile.user_id);
+        pendingUsers.push({
+          user_id: profile.user_id,
+          email: data?.user?.email || "unknown",
+          full_name: profile.full_name,
+          created_at: profile.created_at,
+        });
+      } catch (_) { /* skip */ }
+    }
+
     return new Response(
       JSON.stringify({
         companies: companiesRes.data || [],
         staff: staffRes.data || [],
         members: membersRes.data || [],
         ownerEmails,
+        pendingUsers,
       }),
       {
         status: 200,
