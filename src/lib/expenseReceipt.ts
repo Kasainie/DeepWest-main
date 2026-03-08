@@ -73,6 +73,7 @@ export function generateExpenseReceiptHtml(
   <div class="footer">
     <p>Internal expense record</p>
     <p style="margin-top:4px;">${company?.name || "Company"}</p>
+    <p style="margin-top:8px;font-size:9px;color:#999;">Powered by LKTECH</p>
   </div>
 </body>
 </html>`;
