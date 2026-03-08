@@ -13,10 +13,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, TrendingUp, BarChart3, Loader2, ArrowUpRight, ArrowDownRight, Download, FileText } from "lucide-react";
 import { KshIcon } from "@/components/KshIcon";
 import { downloadCSV, downloadPDF } from "@/lib/export";
+import { DateRangeFilter, DateRange } from "@/components/DateRangeFilter";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { formatKES } from "@/lib/currency";
-import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
+import { format, subDays, startOfMonth } from "date-fns";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -45,6 +46,7 @@ export default function Sales() {
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange>({ from: subDays(new Date(), 29), to: new Date() });
   const [form, setForm] = useState({
     sale_date: format(new Date(), "yyyy-MM-dd"),
     department: "restaurant",
@@ -95,27 +97,32 @@ export default function Sales() {
     setSaving(false);
   };
 
+  const filtered = useMemo(() => {
+    const fromStr = format(dateRange.from, "yyyy-MM-dd");
+    const toStr = format(dateRange.to, "yyyy-MM-dd");
+    return sales.filter((s) => s.sale_date >= fromStr && s.sale_date <= toStr);
+  }, [sales, dateRange]);
+
   const stats = useMemo(() => {
-    const today = format(new Date(), "yyyy-MM-dd");
-    const monthStart = format(startOfMonth(new Date()), "yyyy-MM-dd");
-    const todaySales = sales.filter((s) => s.sale_date === today).reduce((a, s) => a + Number(s.amount), 0);
-    const monthSales = sales.filter((s) => s.sale_date >= monthStart).reduce((a, s) => a + Number(s.amount), 0);
-    const totalSales = sales.reduce((a, s) => a + Number(s.amount), 0);
+    const totalSales = filtered.reduce((a, s) => a + Number(s.amount), 0);
     const byDept: Record<string, number> = {};
-    sales.forEach((s) => { byDept[s.department] = (byDept[s.department] || 0) + Number(s.amount); });
-    return { todaySales, monthSales, totalSales, byDept };
-  }, [sales]);
+    filtered.forEach((s) => { byDept[s.department] = (byDept[s.department] || 0) + Number(s.amount); });
+    return { totalSales, byDept, count: filtered.length };
+  }, [filtered]);
 
   const chartData = useMemo(() => {
-    const days = Array.from({ length: 14 }, (_, i) => {
-      const d = subDays(new Date(), 13 - i);
-      return { date: format(d, "yyyy-MM-dd"), label: format(d, "MMM d") };
+    const fromStr = format(dateRange.from, "yyyy-MM-dd");
+    const toStr = format(dateRange.to, "yyyy-MM-dd");
+    const rangeFiltered = sales.filter((s) => s.sale_date >= fromStr && s.sale_date <= toStr);
+    const dayMap = new Map<string, number>();
+    rangeFiltered.forEach((s) => {
+      dayMap.set(s.sale_date, (dayMap.get(s.sale_date) || 0) + Number(s.amount));
     });
-    return days.map((day) => {
-      const dayTotal = sales.filter((s) => s.sale_date === day.date).reduce((a, s) => a + Number(s.amount), 0);
-      return { label: day.label, amount: Math.round(dayTotal * 100) / 100 };
-    });
-  }, [sales]);
+    const days = Array.from(dayMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, amount]) => ({ label: format(new Date(date), "MMM d"), amount: Math.round(amount * 100) / 100 }));
+    return days.length > 0 ? days : [{ label: format(new Date(), "MMM d"), amount: 0 }];
+  }, [sales, dateRange]);
 
   if (loading) {
     return (
