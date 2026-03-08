@@ -579,6 +579,36 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_company_with_owner: {
+        Args: {
+          _address?: string
+          _description?: string
+          _email?: string
+          _logo_url?: string
+          _name: string
+          _phone?: string
+          _slug: string
+        }
+        Returns: {
+          address: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          owner_id: string
+          phone: string | null
+          slug: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "companies"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_company_role: {
         Args: { _company_id: string; _user_id: string }
         Returns: string
