@@ -80,10 +80,10 @@ export default function Bookings() {
     setLoading(true);
     const fromDate = format(dateRange.from, "yyyy-MM-dd");
     const toDate = format(dateRange.to, "yyyy-MM-dd");
-    const [bRes, gRes] = await Promise.all([
+    const [bRes, gRes, rRes] = await Promise.all([
       supabase
         .from("bookings")
-        .select("*, guests(full_name)")
+        .select("*, guests(full_name), rooms(room_number)")
         .eq("company_id", currentCompany.id)
         .gte("created_at", fromDate + "T00:00:00")
         .lte("created_at", toDate + "T23:59:59")
@@ -93,9 +93,16 @@ export default function Bookings() {
         .select("id, full_name")
         .eq("company_id", currentCompany.id)
         .order("full_name"),
+      supabase
+        .from("rooms")
+        .select("id, room_number, type, price_per_night, status")
+        .eq("company_id", currentCompany.id)
+        .eq("status", "available")
+        .order("room_number"),
     ]);
-    setBookings((bRes.data || []) as Booking[]);
+    setBookings((bRes.data || []) as unknown as Booking[]);
     setGuests(gRes.data || []);
+    setAvailableRooms((rRes.data || []) as AvailableRoom[]);
     setLoading(false);
   };
 
