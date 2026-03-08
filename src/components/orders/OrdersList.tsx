@@ -94,14 +94,24 @@ export function OrdersList() {
   };
 
   const handleDownloadReceipt = (order: OrderWithItems) => {
-    const blob = generateReceipt(order, currentCompany);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `receipt-order-${order.order_number}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Receipt downloaded!");
+    try {
+      const html = generateReceiptHtml(order, currentCompany);
+      const base64 = btoa(unescape(encodeURIComponent(html)));
+      const dataUrl = `data:text/html;base64,${base64}`;
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `receipt-order-${order.order_number}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast.success("Receipt downloaded!");
+    } catch (err) {
+      // Fallback: open in new tab
+      const blob = generateReceipt(order, currentCompany);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      toast.success("Receipt opened in new tab");
+    }
   };
 
   if (loading) {
