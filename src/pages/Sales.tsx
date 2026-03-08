@@ -19,6 +19,7 @@ import { downloadSaleReceipt, printSaleReceipt } from "@/lib/saleReceipt";
 import { motion } from "framer-motion";
 import { formatKES } from "@/lib/currency";
 import { format, subDays, startOfMonth } from "date-fns";
+import { getLocalDateString } from "@/lib/dateUtils";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -47,7 +48,7 @@ export default function Sales() {
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [dateRange, setDateRange] = useState<DateRange>({ from: subDays(new Date(), 29), to: new Date() });
+  const [dateRange, setDateRange] = useState<DateRange>({ from: new Date(), to: new Date() });
   const [form, setForm] = useState({
     sale_date: format(new Date(), "yyyy-MM-dd"),
     department: "restaurant",
@@ -59,17 +60,19 @@ export default function Sales() {
 
   useEffect(() => {
     if (currentCompany) fetchSales();
-  }, [currentCompany?.id]);
+  }, [currentCompany?.id, dateRange]);
 
   const fetchSales = async () => {
     if (!currentCompany) return;
     setLoading(true);
-    const since = subDays(new Date(), 90).toISOString();
+    const fromDate = getLocalDateString(dateRange.from);
+    const toDate = getLocalDateString(dateRange.to);
     const { data } = await supabase
       .from("sales")
       .select("*")
       .eq("company_id", currentCompany.id)
-      .gte("created_at", since)
+      .gte("sale_date", fromDate)
+      .lte("sale_date", toDate)
       .order("sale_date", { ascending: false });
     setSales((data || []) as Sale[]);
     setLoading(false);
@@ -98,11 +101,8 @@ export default function Sales() {
     setSaving(false);
   };
 
-  const filtered = useMemo(() => {
-    const fromStr = format(dateRange.from, "yyyy-MM-dd");
-    const toStr = format(dateRange.to, "yyyy-MM-dd");
-    return sales.filter((s) => s.sale_date >= fromStr && s.sale_date <= toStr);
-  }, [sales, dateRange]);
+  // Sales are already filtered server-side by dateRange, so use them directly
+  const filtered = sales;
 
   const stats = useMemo(() => {
     const totalSales = filtered.reduce((a, s) => a + Number(s.amount), 0);
@@ -112,18 +112,15 @@ export default function Sales() {
   }, [filtered]);
 
   const chartData = useMemo(() => {
-    const fromStr = format(dateRange.from, "yyyy-MM-dd");
-    const toStr = format(dateRange.to, "yyyy-MM-dd");
-    const rangeFiltered = sales.filter((s) => s.sale_date >= fromStr && s.sale_date <= toStr);
     const dayMap = new Map<string, number>();
-    rangeFiltered.forEach((s) => {
+    sales.forEach((s) => {
       dayMap.set(s.sale_date, (dayMap.get(s.sale_date) || 0) + Number(s.amount));
     });
     const days = Array.from(dayMap.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, amount]) => ({ label: format(new Date(date), "MMM d"), amount: Math.round(amount * 100) / 100 }));
     return days.length > 0 ? days : [{ label: format(new Date(), "MMM d"), amount: 0 }];
-  }, [sales, dateRange]);
+  }, [sales]);
 
   if (loading) {
     return (
