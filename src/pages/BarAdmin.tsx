@@ -56,12 +56,17 @@ export default function BarAdmin() {
   const { currentCompany } = useCompany();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [barStaff, setBarStaff] = useState<StaffMember[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [addInventoryOpen, setAddInventoryOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [menuForm, setMenuForm] = useState({
     name: "", category: "cocktail", price: "", description: "",
+  });
+  const [invForm, setInvForm] = useState({
+    name: "", category: "spirit", stock: "", unit: "bottles", low_threshold: "5", cost_per_unit: "",
   });
 
   useEffect(() => {
