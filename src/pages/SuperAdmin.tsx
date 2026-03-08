@@ -318,6 +318,7 @@ export default function SuperAdmin() {
           const companyStaff = staff.filter((s) => s.company_id === company.id);
           const companyMembers = members.filter((m) => m.company_id === company.id);
           const ownerEmail = ownerEmails[company.owner_id];
+          const isSuperAdminCompany = ownerEmail === "kochjomboz04@gmail.com";
 
           return (
             <AccordionItem
@@ -352,11 +353,13 @@ export default function SuperAdmin() {
                 <div className="flex items-center justify-between rounded-md border p-3 bg-muted/50">
                   <div className="flex items-center gap-2">
                     {company.is_paused ? <Pause className="h-4 w-4 text-destructive" /> : <Play className="h-4 w-4 text-green-600" />}
-                    <span className="text-sm font-medium">{company.is_paused ? "Company is paused" : "Company is active"}</span>
+                    <span className="text-sm font-medium">
+                      {isSuperAdminCompany ? "Super admin company (cannot be paused)" : company.is_paused ? "Company is paused" : "Company is active"}
+                    </span>
                   </div>
                   <Switch
                     checked={company.is_paused}
-                    disabled={togglingPause.has(company.id)}
+                    disabled={isSuperAdminCompany || togglingPause.has(company.id)}
                     onCheckedChange={(checked) => togglePause(company.id, checked)}
                   />
                 </div>
