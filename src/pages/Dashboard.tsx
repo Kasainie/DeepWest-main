@@ -5,7 +5,7 @@ import { useBranding } from "@/contexts/BrandingContext";
 import { StatCard } from "@/components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BedDouble, UtensilsCrossed, Users, TrendingUp, CalendarDays, Loader2, Wine, DollarSign, ShoppingCart } from "lucide-react";
+import { BedDouble, UtensilsCrossed, Users, TrendingUp, CalendarDays, Loader2, Wine, DollarSign, ShoppingCart, Receipt } from "lucide-react";
 import { motion } from "framer-motion";
 import RevenueChart from "@/components/dashboard/RevenueChart";
 import { KshIcon } from "@/components/KshIcon";
