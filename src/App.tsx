@@ -20,6 +20,7 @@ import Guests from "./pages/Guests";
 import Website from "./pages/Website";
 import SettingsPage from "./pages/SettingsPage";
 import StaffManagement from "./pages/StaffManagement";
+import About from "./pages/About";
 import RegisterCompany from "./pages/RegisterCompany";
 import RegisterSuccess from "./pages/RegisterSuccess";
 import AcceptInvite from "./pages/AcceptInvite";
