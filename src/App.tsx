@@ -15,6 +15,7 @@ import Bookings from "./pages/Bookings";
 import Guests from "./pages/Guests";
 import Website from "./pages/Website";
 import SettingsPage from "./pages/SettingsPage";
+import StaffManagement from "./pages/StaffManagement";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
