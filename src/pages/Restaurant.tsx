@@ -52,6 +52,7 @@ export default function Restaurant() {
   const [sending, setSending] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [activeTab, setActiveTab] = useState("new-order");
+  const [bottomTab, setBottomTab] = useState<"home" | "history">("home");
   const [stats, setStats] = useState({ ordersToday: 0, revenueToday: 0, activeOrders: 0, menuCount: 0 });
   const [dateRange, setDateRange] = useState<DateRange>({ from: subDays(new Date(), 29), to: new Date() });
 
