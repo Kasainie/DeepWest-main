@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, CreditCard, Check, Download, Clock } from "lucide-react";
+import { Loader2, CreditCard, Check, Download, Clock, Printer } from "lucide-react";
 import { toast } from "sonner";
-import { generateReceipt } from "@/lib/receipt";
+import { generateReceipt, printReceipt } from "@/lib/receipt";
 
 interface OrderWithItems {
   id: string;
@@ -205,26 +205,48 @@ export function OrdersList() {
                 </>
               )}
               {order.payment_status === "paid" && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleDownloadReceipt(order)}
-                  className="text-xs"
-                >
-                  <Download className="h-3 w-3 mr-1" />
-                  Download Receipt
-                </Button>
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDownloadReceipt(order)}
+                    className="text-xs"
+                  >
+                    <Download className="h-3 w-3 mr-1" />
+                    Download Receipt
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => printReceipt(order, currentCompany)}
+                    className="text-xs"
+                  >
+                    <Printer className="h-3 w-3 mr-1" />
+                    Print
+                  </Button>
+                </>
               )}
               {order.payment_status !== "paid" && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleDownloadReceipt(order)}
-                  className="text-xs"
-                >
-                  <Download className="h-3 w-3 mr-1" />
-                  Print Bill
-                </Button>
+                <>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleDownloadReceipt(order)}
+                    className="text-xs"
+                  >
+                    <Download className="h-3 w-3 mr-1" />
+                    Download Bill
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => printReceipt(order, currentCompany)}
+                    className="text-xs"
+                  >
+                    <Printer className="h-3 w-3 mr-1" />
+                    Print Bill
+                  </Button>
+                </>
               )}
             </div>
           </CardContent>

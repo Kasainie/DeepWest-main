@@ -93,3 +93,13 @@ export function generateReceiptHtml(order: any, company: any): string {
 export function generateReceipt(order: any, company: any): Blob {
   return new Blob([generateReceiptHtml(order, company)], { type: "text/html" });
 }
+
+export function printReceipt(order: any, company: any): void {
+  const html = generateReceiptHtml(order, company);
+  const printWindow = window.open("", "_blank", "width=400,height=600");
+  if (!printWindow) return;
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}

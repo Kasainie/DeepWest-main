@@ -4,10 +4,10 @@ import { useCompany } from "@/contexts/CompanyContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Check, Clock, ChefHat, Flame, Download } from "lucide-react";
+import { Loader2, Check, Clock, ChefHat, Flame, Download, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { generateReceipt } from "@/lib/receipt";
+import { generateReceipt, printReceipt } from "@/lib/receipt";
 
 interface OrderWithItems {
   id: string;
@@ -213,6 +213,15 @@ export default function Kitchen() {
             >
               <Download className="h-3 w-3 mr-1" />
               {order.payment_status === "paid" ? "Receipt" : "Bill"}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => printReceipt(order, currentCompany)}
+              className="text-xs"
+            >
+              <Printer className="h-3 w-3 mr-1" />
+              Print
             </Button>
           </div>
         </CardContent>
