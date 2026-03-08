@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Search, Plus, Star, Loader2, Users, CalendarDays, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { GuestHistoryDialog } from "@/components/guests/GuestHistoryDialog";
 
 interface Guest {
   id: string;
