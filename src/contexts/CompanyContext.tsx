@@ -41,6 +41,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
   const [companyRole, setCompanyRole] = useState<string | null>(null);
+  const [staffDepartment, setStaffDepartment] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchCompanies = useCallback(async () => {
