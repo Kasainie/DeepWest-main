@@ -145,6 +145,57 @@ export default function SuperAdmin() {
     }
   };
 
+  const exportCompanyData = (company: Company, companyStaff: Staff[], companyMembers: Member[]) => {
+    // Export company info
+    downloadCSV(
+      [{ ...company, owner_email: ownerEmails[company.owner_id] || "" }],
+      [
+        { key: "name", header: "Company Name" },
+        { key: "slug", header: "Slug" },
+        { key: "email", header: "Email" },
+        { key: "phone", header: "Phone" },
+        { key: "address", header: "Address" },
+        { key: "owner_email", header: "Owner Email" },
+        { key: "is_paused", header: "Paused" },
+        { key: "created_at", header: "Created At" },
+      ],
+      `${company.slug}-company-info`
+    );
+
+    // Export staff
+    if (companyStaff.length > 0) {
+      downloadCSV(
+        companyStaff.map((s) => ({ ...s, department: s.department?.join(", ") })),
+        [
+          { key: "full_name", header: "Name" },
+          { key: "role", header: "Role" },
+          { key: "department", header: "Departments" },
+          { key: "staff_code", header: "Staff Code" },
+          { key: "phone", header: "Phone" },
+          { key: "is_active", header: "Active" },
+        ],
+        `${company.slug}-staff`
+      );
+    }
+
+    // Export members
+    if (companyMembers.length > 0) {
+      downloadCSV(
+        companyMembers,
+        [
+          { key: "user_id", header: "User ID" },
+          { key: "role", header: "Role" },
+          { key: "created_at", header: "Joined At" },
+        ],
+        `${company.slug}-members`
+      );
+    }
+
+    toast.success(`Exported data for ${company.name}`, {
+      description: `${companyStaff.length} staff, ${companyMembers.length} members`,
+    });
+  };
+
   const toggleCode = (staffId: string) => {
     setRevealedCodes((prev) => {
       const next = new Set(prev);
