@@ -168,8 +168,7 @@ export default function Sales() {
     setSaving(false);
   };
 
-  // Sales are already filtered server-side by dateRange, so use them directly
-  const filtered = sales;
+  const filtered = deptFilter === "all" ? sales : sales.filter(s => s.department === deptFilter);
 
   const stats = useMemo(() => {
     const totalSales = filtered.reduce((a, s) => a + Number(s.amount), 0);
