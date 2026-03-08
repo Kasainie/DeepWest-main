@@ -59,12 +59,18 @@ const managementItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, setOpenMobile, isMobile } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { currentCompany, companyRole, staffDepartment } = useCompany();
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+
+  const handleNavClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   // Owners/admins see everything; staff only see their department pages
   const isFullAccess = !companyRole || ["owner", "admin", "manager"].includes(companyRole);
