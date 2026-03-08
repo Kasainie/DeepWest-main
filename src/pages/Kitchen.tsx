@@ -350,8 +350,8 @@ export default function Kitchen() {
                 <OrderCard key={order.id} order={order} />
               ))}
             </motion.div>
-          )}
-        </motion.div>
+            )}
+          </motion.div>
           </>
           )}
       ) : (

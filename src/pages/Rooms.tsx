@@ -155,5 +155,5 @@ export default function Rooms() {
       )}
       </>
       )}
+    </motion.div>
   );
-}
