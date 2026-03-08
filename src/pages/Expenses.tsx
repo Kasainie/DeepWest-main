@@ -67,7 +67,8 @@ export default function Expenses() {
 
   const fetchAll = async () => {
     if (!currentCompany) return;
-    setLoading(true);
+    const isInitial = expenses.length === 0 && categories.length === 0;
+    if (isInitial) setLoading(true);
     const fromDate = getLocalDateString(dateRange.from);
     const toDate = getLocalDateString(dateRange.to);
     const [catRes, expRes] = await Promise.all([
@@ -148,13 +149,7 @@ export default function Expenses() {
     return { totalMonth: totalFiltered, totalAll: filtered.length, byCat, totalBudget, profitLoss };
   }, [filtered, categories]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const showInlineLoader = loading && expenses.length === 0;
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">

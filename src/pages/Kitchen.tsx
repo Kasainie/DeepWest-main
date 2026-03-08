@@ -195,13 +195,7 @@ export default function Kitchen() {
   const preparingOrders = orders.filter((o) => o.status === "preparing");
   const readyOrders = orders.filter((o) => o.status === "ready");
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const showInlineLoader = loading && orders.length === 0;
 
   const OrderCard = ({ order }: { order: OrderWithItems }) => {
     const StatusIcon = statusIcons[order.status] || Clock;
@@ -327,6 +321,11 @@ export default function Kitchen() {
             </div>
           </motion.div>
 
+          {showInlineLoader ? (
+            <div className="flex items-center justify-center min-h-[300px]">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (<>
           <motion.div variants={itemVariant} className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             <StatCard title="Pending" value={pendingOrders.length} change="Waiting" changeType="neutral" icon={Clock} />
             <StatCard title="Preparing" value={preparingOrders.length} change="Cooking now" changeType="neutral" icon={Flame} />
@@ -351,6 +350,8 @@ export default function Kitchen() {
                 <OrderCard key={order.id} order={order} />
               ))}
             </motion.div>
+          )}
+          </>
           )}
         </motion.div>
       ) : (

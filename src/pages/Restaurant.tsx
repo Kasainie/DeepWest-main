@@ -102,7 +102,8 @@ export default function Restaurant() {
 
   const fetchMenu = async () => {
     if (!currentCompany) return;
-    setLoading(true);
+    const isInitial = menuItems.length === 0;
+    if (isInitial) setLoading(true);
     const { data } = await supabase
       .from("menu_items")
       .select("*")
@@ -202,13 +203,7 @@ export default function Restaurant() {
       ? menuItems
       : menuItems.filter((m) => m.category === selectedCategory);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const showInlineLoader = loading && menuItems.length === 0;
 
   return (
     <div className="pb-16">
@@ -230,6 +225,11 @@ export default function Restaurant() {
             <StatCard title="Menu Items" value={stats.menuCount} change="Available" changeType="neutral" icon={UtensilsCrossed} />
           </motion.div>
 
+          {showInlineLoader ? (
+            <div className="flex items-center justify-center min-h-[300px]">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
           <motion.div variants={item}>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList>
@@ -240,19 +240,10 @@ export default function Restaurant() {
 
               <TabsContent value="new-order" className="mt-4">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Menu */}
                   <div className="lg:col-span-2 space-y-4">
                     <div className="flex gap-2 flex-wrap">
                       {categories.map((cat) => (
-                        <Button
-                          key={cat}
-                          variant={selectedCategory === cat ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setSelectedCategory(cat)}
-                          className="capitalize text-xs"
-                        >
-                          {cat}
-                        </Button>
+                        <Button key={cat} variant={selectedCategory === cat ? "default" : "outline"} size="sm" onClick={() => setSelectedCategory(cat)} className="capitalize text-xs">{cat}</Button>
                       ))}
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -272,21 +263,13 @@ export default function Restaurant() {
                               <div className="flex items-center gap-2">
                                 {inCart ? (
                                   <>
-                                    <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => updateQuantity(mi.id, -1)}>
-                                      <Minus className="h-3 w-3" />
-                                    </Button>
+                                    <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => updateQuantity(mi.id, -1)}><Minus className="h-3 w-3" /></Button>
                                     <span className="text-sm font-medium w-6 text-center">{inCart.quantity}</span>
-                                    <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => updateQuantity(mi.id, 1)}>
-                                      <Plus className="h-3 w-3" />
-                                    </Button>
-                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 ml-auto text-destructive" onClick={() => removeFromCart(mi.id)}>
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
+                                    <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => updateQuantity(mi.id, 1)}><Plus className="h-3 w-3" /></Button>
+                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 ml-auto text-destructive" onClick={() => removeFromCart(mi.id)}><Trash2 className="h-3 w-3" /></Button>
                                   </>
                                 ) : (
-                                  <Button size="sm" className="h-7 text-xs" disabled={!mi.is_available} onClick={() => addToCart(mi)}>
-                                    <Plus className="h-3 w-3 mr-1" /> Add
-                                  </Button>
+                                  <Button size="sm" className="h-7 text-xs" disabled={!mi.is_available} onClick={() => addToCart(mi)}><Plus className="h-3 w-3 mr-1" /> Add</Button>
                                 )}
                               </div>
                             </CardContent>
@@ -295,8 +278,6 @@ export default function Restaurant() {
                       })}
                     </div>
                   </div>
-
-                  {/* Cart */}
                   <div>
                     <Card className="shadow-card sticky top-4">
                       <CardHeader className="pb-2">
@@ -315,9 +296,7 @@ export default function Restaurant() {
                                   <p className="font-medium">{c.menuItem.name}</p>
                                   <p className="text-xs text-muted-foreground">×{c.quantity} · KSh {(c.menuItem.price * c.quantity).toLocaleString()}</p>
                                 </div>
-                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={() => removeFromCart(c.menuItem.id)}>
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
+                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={() => removeFromCart(c.menuItem.id)}><Trash2 className="h-3 w-3" /></Button>
                               </div>
                             ))}
                             <div className="border-t pt-2 space-y-1 text-sm">
@@ -356,6 +335,7 @@ export default function Restaurant() {
               </TabsContent>
             </Tabs>
           </motion.div>
+          )}
         </motion.div>
       ) : (
         <OrderHistory />
