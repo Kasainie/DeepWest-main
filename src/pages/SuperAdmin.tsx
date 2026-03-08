@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, ShieldCheck, Eye, EyeOff, Pause, Play, Mail, UserCheck, UserX, Clock } from "lucide-react";
+import { Building2, Users, ShieldCheck, Eye, EyeOff, Pause, Play, Mail, UserCheck, UserX, Clock, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -63,6 +64,7 @@ export default function SuperAdmin() {
   const [revealedCodes, setRevealedCodes] = useState<Set<string>>(new Set());
   const [togglingPause, setTogglingPause] = useState<Set<string>>(new Set());
   const [approvingUsers, setApprovingUsers] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -133,6 +135,36 @@ export default function SuperAdmin() {
     });
   };
 
+  const q = search.toLowerCase().trim();
+  const filteredCompanies = useMemo(() => {
+    if (!q) return companies;
+    return companies.filter((c) => {
+      const companyStaff = staff.filter((s) => s.company_id === c.id);
+      const ownerEmail = ownerEmails[c.owner_id] || "";
+      return (
+        c.name.toLowerCase().includes(q) ||
+        c.slug.toLowerCase().includes(q) ||
+        (c.email || "").toLowerCase().includes(q) ||
+        ownerEmail.toLowerCase().includes(q) ||
+        companyStaff.some((s) =>
+          s.full_name.toLowerCase().includes(q) ||
+          s.staff_code.toLowerCase().includes(q) ||
+          s.role.toLowerCase().includes(q) ||
+          s.department?.some((d) => d.toLowerCase().includes(q))
+        )
+      );
+    });
+  }, [q, companies, staff, ownerEmails]);
+
+  const filteredPending = useMemo(() => {
+    if (!q) return pendingUsers;
+    return pendingUsers.filter(
+      (u) =>
+        u.email.toLowerCase().includes(q) ||
+        (u.full_name || "").toLowerCase().includes(q)
+    );
+  }, [q, pendingUsers]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -153,11 +185,22 @@ export default function SuperAdmin() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold font-display">Super Admin Dashboard</h1>
-        <p className="text-muted-foreground text-sm">
-          Overview of all registered companies and their staff
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold font-display">Super Admin Dashboard</h1>
+          <p className="text-muted-foreground text-sm">
+            Overview of all registered companies and their staff
+          </p>
+        </div>
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search companies, staff, emails…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
       </div>
 
       {/* Summary cards */}
@@ -210,12 +253,12 @@ export default function SuperAdmin() {
       </div>
 
       {/* Pending approvals */}
-      {pendingUsers.length > 0 && (
+      {filteredPending.length > 0 && (
         <Card className="border-amber-500/30">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Clock className="h-5 w-5 text-amber-600" />
-              Pending Approvals ({pendingUsers.length})
+              Pending Approvals ({filteredPending.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -230,7 +273,7 @@ export default function SuperAdmin() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pendingUsers.map((u) => (
+                  {filteredPending.map((u) => (
                     <TableRow key={u.user_id}>
                       <TableCell className="font-medium">{u.full_name || "—"}</TableCell>
                       <TableCell className="font-mono text-xs">{u.email}</TableCell>
@@ -270,7 +313,7 @@ export default function SuperAdmin() {
 
       {/* Companies accordion */}
       <Accordion type="multiple" className="space-y-3">
-        {companies.map((company) => {
+        {filteredCompanies.map((company) => {
           const companyStaff = staff.filter((s) => s.company_id === company.id);
           const companyMembers = members.filter((m) => m.company_id === company.id);
           const ownerEmail = ownerEmails[company.owner_id];
