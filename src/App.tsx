@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import Rooms from "./pages/Rooms";
 import Restaurant from "./pages/Restaurant";
 import Bar from "./pages/Bar";
+import BarAdmin from "./pages/BarAdmin";
 import Kitchen from "./pages/Kitchen";
 import Conference from "./pages/Conference";
 import Bookings from "./pages/Bookings";
@@ -87,6 +88,7 @@ const App = () => (
                               <Route path="/rooms" element={<Rooms />} />
                               <Route path="/restaurant" element={<Restaurant />} />
                               <Route path="/bar" element={<Bar />} />
+                              <Route path="/bar-admin" element={<BarAdmin />} />
                               <Route path="/kitchen" element={<Kitchen />} />
                               <Route path="/conference" element={<Conference />} />
                               <Route path="/bookings" element={<Bookings />} />

@@ -32,6 +32,7 @@ const departments = [
   { value: "hotel", label: "Hotel", icon: Building2 },
   { value: "restaurant", label: "Restaurant", icon: UtensilsCrossed },
   { value: "bar", label: "Bar", icon: Wine },
+  { value: "bar_admin", label: "Bar Admin", icon: ShieldCheck },
   { value: "kitchen", label: "Kitchen", icon: ChefHat },
   { value: "accountant", label: "Accountant", icon: Calculator },
 ];
@@ -46,6 +47,7 @@ const deptIcons: Record<string, typeof Building2> = {
   hotel: Building2,
   restaurant: UtensilsCrossed,
   bar: Wine,
+  bar_admin: ShieldCheck,
   kitchen: ChefHat,
   accountant: Calculator,
 };
@@ -54,6 +56,7 @@ const deptColors: Record<string, string> = {
   hotel: "bg-primary/10 text-primary",
   restaurant: "bg-warning/10 text-warning",
   bar: "bg-accent/10 text-accent",
+  bar_admin: "bg-accent/20 text-accent-foreground",
   kitchen: "bg-destructive/10 text-destructive",
   accountant: "bg-success/10 text-success",
 };
@@ -491,6 +494,7 @@ export default function StaffManagement() {
                       {dept.value === "hotel" && "Front desk, housekeeping, reception"}
                       {dept.value === "restaurant" && "Serving, hosting, waitstaff"}
                       {dept.value === "bar" && "Bartenders, lounge staff"}
+                      {dept.value === "bar_admin" && "Bar management, menu & inventory"}
                       {dept.value === "kitchen" && "Chefs, sous chefs, prep cooks"}
                       {dept.value === "accountant" && "Finance, billing, payroll"}
                     </p>
