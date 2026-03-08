@@ -10,8 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, TrendingUp, BarChart3, Loader2, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Plus, TrendingUp, BarChart3, Loader2, ArrowUpRight, ArrowDownRight, Download, FileText } from "lucide-react";
 import { KshIcon } from "@/components/KshIcon";
+import { downloadCSV, downloadPDF } from "@/lib/export";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { formatKES } from "@/lib/currency";
@@ -126,15 +127,50 @@ export default function Sales() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <motion.div variants={item} className="flex items-center justify-between">
+      <motion.div variants={item} className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-2xl font-bold font-display">Sales</h1>
           <p className="text-sm text-muted-foreground mt-1">Revenue reports & transaction ledger</p>
         </div>
-        <Dialog open={addOpen} onOpenChange={setAddOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Record Sale</Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => {
+            const cols = [
+              { key: "sale_date", header: "Date" },
+              { key: "department", header: "Department" },
+              { key: "category", header: "Category" },
+              { key: "description", header: "Description" },
+              { key: "payment_method", header: "Payment" },
+              { key: "amount", header: "Amount (KSh)" },
+            ];
+            downloadCSV(sales.map(s => ({ ...s, amount: Number(s.amount).toFixed(2) })), cols, `sales-${format(new Date(), "yyyy-MM-dd")}`);
+            toast.success("CSV downloaded!");
+          }}>
+            <Download className="h-4 w-4 mr-1" /> CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => {
+            const cols = [
+              { key: "sale_date", header: "Date" },
+              { key: "department", header: "Department" },
+              { key: "category", header: "Category" },
+              { key: "description", header: "Description" },
+              { key: "payment_method", header: "Payment" },
+              { key: "amount", header: "Amount (KSh)" },
+            ];
+            downloadPDF("Sales Report", currentCompany?.name || "Company", cols,
+              sales.map(s => ({ ...s, amount: formatKES(Number(s.amount)) })),
+              [
+                { label: "Today", value: formatKES(stats.todaySales) },
+                { label: "This Month", value: formatKES(stats.monthSales) },
+                { label: "Total (90d)", value: formatKES(stats.totalSales) },
+              ]
+            );
+          }}>
+            <FileText className="h-4 w-4 mr-1" /> PDF
+          </Button>
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Record Sale</Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle className="font-display">Record Sale</DialogTitle></DialogHeader>
             <form onSubmit={handleAdd} className="space-y-4 mt-2">
