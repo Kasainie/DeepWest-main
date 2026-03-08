@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Upload, X, Loader2, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import BrandingSettings from "@/components/settings/BrandingSettings";
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
@@ -253,6 +254,8 @@ export default function SettingsPage() {
           </Card>
         </form>
       </motion.div>
+
+      <BrandingSettings />
 
       <motion.div variants={item}>
         <Card className="shadow-card border-0">
