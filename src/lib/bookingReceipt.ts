@@ -115,3 +115,18 @@ export function printBookingReceipt(
   w.focus();
   w.print();
 }
+
+export function downloadBookingReceipt(
+  booking: BookingReceiptData,
+  company: { name?: string; address?: string; phone?: string; email?: string } | null,
+  type: "check_in" | "check_out"
+): void {
+  const html = generateBookingReceiptHtml(booking, company, type);
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `booking-${type}-receipt-${booking.guest_name.replace(/\s+/g, "-")}.html`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
