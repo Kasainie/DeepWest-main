@@ -40,12 +40,12 @@ const mainItems = [
 ];
 
 const managementItems = [
-  { title: "Bookings", url: "/bookings", icon: CalendarDays, departments: ["hotel", "accountant"] },
-  { title: "Guests", url: "/guests", icon: Users, departments: ["hotel"] },
-  { title: "Staff", url: "/staff", icon: ShieldCheck, departments: null },
-  { title: "Website", url: "/website", icon: Globe, departments: null },
-  { title: "Settings", url: "/settings", icon: Settings, departments: null },
-  { title: "About", url: "/about", icon: Info, departments: null },
+  { title: "Bookings", url: "/bookings", icon: CalendarDays, departments: ["hotel", "accountant"], adminOnly: false },
+  { title: "Guests", url: "/guests", icon: Users, departments: ["hotel"], adminOnly: false },
+  { title: "Staff", url: "/staff", icon: ShieldCheck, departments: null, adminOnly: true },
+  { title: "Website", url: "/website", icon: Globe, departments: null, adminOnly: true },
+  { title: "Settings", url: "/settings", icon: Settings, departments: null, adminOnly: true },
+  { title: "About", url: "/about", icon: Info, departments: null, adminOnly: false },
 ];
 
 export function AppSidebar() {
