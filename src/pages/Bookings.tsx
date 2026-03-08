@@ -137,13 +137,10 @@ export default function Bookings() {
 
   const handleCheckout = async (booking: Booking) => {
     const today = format(new Date(), "yyyy-MM-dd");
-    const updates: Promise<any>[] = [
-      supabase.from("bookings").update({ status: "checked_out", check_out: booking.check_out || today }).eq("id", booking.id),
-    ];
+    await supabase.from("bookings").update({ status: "checked_out", check_out: booking.check_out || today }).eq("id", booking.id);
     if (booking.room_id) {
-      updates.push(supabase.from("rooms").update({ status: "available" }).eq("id", booking.room_id));
+      await supabase.from("rooms").update({ status: "available" }).eq("id", booking.room_id);
     }
-    await Promise.all(updates);
     toast.success("Guest checked out successfully");
     fetchData();
   };
