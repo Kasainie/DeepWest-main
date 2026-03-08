@@ -11,6 +11,9 @@ const ROUTE_DEPARTMENTS: Record<string, string[]> = {
   "/conference": ["hotel"],
   "/bookings": ["hotel", "accountant"],
   "/guests": ["hotel"],
+  "/sales": ["accountant"],
+  "/tenders": ["accountant"],
+  "/expenses": ["accountant"],
 };
 
 // Routes only accessible to owner/admin/manager
