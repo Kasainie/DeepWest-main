@@ -170,7 +170,7 @@ export default function Kitchen() {
             </div>
           )}
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {order.status === "pending" && (
               <Button
                 size="sm"
@@ -205,6 +205,15 @@ export default function Kitchen() {
                 Mark Served
               </Button>
             )}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleDownload(order)}
+              className="text-xs"
+            >
+              <Download className="h-3 w-3 mr-1" />
+              {order.payment_status === "paid" ? "Receipt" : "Bill"}
+            </Button>
           </div>
         </CardContent>
       </Card>
