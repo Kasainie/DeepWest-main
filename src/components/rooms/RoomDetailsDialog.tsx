@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Loader2, Pencil, Trash2, BedDouble } from "lucide-react";
+import { Loader2, Pencil, Trash2, BedDouble, CalendarDays, History } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import type { Room } from "./RoomCard";
 
@@ -21,6 +23,24 @@ const statusColors: Record<string, string> = {
   maintenance: "bg-warning/10 text-warning border-warning/20",
 };
 
+const bookingStatusColors: Record<string, string> = {
+  confirmed: "bg-primary/10 text-primary",
+  checked_in: "bg-success/10 text-success",
+  checked_out: "bg-muted text-muted-foreground",
+  cancelled: "bg-destructive/10 text-destructive",
+};
+
+interface Booking {
+  id: string;
+  status: string;
+  check_in: string | null;
+  check_out: string | null;
+  amount: number;
+  booking_type: string;
+  created_at: string;
+  guests?: { full_name: string } | null;
+}
+
 interface RoomDetailsDialogProps {
   room: Room | null;
   open: boolean;
@@ -32,6 +52,8 @@ export function RoomDetailsDialog({ room, open, onOpenChange, onUpdated }: RoomD
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState(false);
   const [form, setForm] = useState({
     room_number: "",
     type: "Standard",
@@ -41,6 +63,24 @@ export function RoomDetailsDialog({ room, open, onOpenChange, onUpdated }: RoomD
     status: "available",
     amenities: [] as string[],
   });
+
+  useEffect(() => {
+    if (open && room) {
+      fetchBookings(room.id);
+    }
+  }, [open, room?.id]);
+
+  const fetchBookings = async (roomId: string) => {
+    setLoadingBookings(true);
+    const { data } = await supabase
+      .from("bookings")
+      .select("id, status, check_in, check_out, amount, booking_type, created_at, guests(full_name)")
+      .eq("room_id", roomId)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    setBookings((data || []) as Booking[]);
+    setLoadingBookings(false);
+  };
 
   const startEdit = () => {
     if (!room) return;
@@ -112,7 +152,7 @@ export function RoomDetailsDialog({ room, open, onOpenChange, onUpdated }: RoomD
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="font-display flex items-center gap-2">
             <BedDouble className="h-5 w-5 text-primary" />
