@@ -301,11 +301,19 @@ export default function Guests() {
                       {guest.id_number && <p className="text-[10px] text-muted-foreground">ID: {guest.id_number}</p>}
                     </div>
                   </div>
-                  {guest.is_vip && (
-                    <Badge className="bg-warning/10 text-warning border-0 text-[10px]">
-                      <Star className="h-2.5 w-2.5 mr-0.5 fill-current" /> VIP
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {guest.is_vip && (
+                      <Badge className="bg-warning/10 text-warning border-0 text-[10px]">
+                        <Star className="h-2.5 w-2.5 mr-0.5 fill-current" /> VIP
+                      </Badge>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openEdit(guest); }}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteGuest(guest); }}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center bg-secondary/50 rounded-lg p-3">
                   <div>
