@@ -104,6 +104,18 @@ export default function Kitchen() {
     setUpdating(null);
   };
 
+  const handleDownload = (order: OrderWithItems) => {
+    const blob = generateReceipt(order, currentCompany);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const label = order.payment_status === "paid" ? "receipt" : "bill";
+    a.download = `${label}-order-${order.order_number}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${order.payment_status === "paid" ? "Receipt" : "Bill"} downloaded!`);
+  };
+
   const pendingOrders = orders.filter((o) => o.status === "pending");
   const preparingOrders = orders.filter((o) => o.status === "preparing");
   const readyOrders = orders.filter((o) => o.status === "ready");
