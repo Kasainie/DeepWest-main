@@ -8,6 +8,7 @@ import { useCompany } from "@/contexts/CompanyContext";
 import { formatKES } from "@/lib/currency";
 import { AddRoomDialog } from "@/components/conference/AddRoomDialog";
 import { BookSpaceDialog } from "@/components/conference/BookSpaceDialog";
+import { EditRoomDialog } from "@/components/conference/EditRoomDialog";
 import { RoomStatusSelect } from "@/components/conference/RoomStatusSelect";
 import { EventCalendar } from "@/components/conference/EventCalendar";
 import { Button } from "@/components/ui/button";
