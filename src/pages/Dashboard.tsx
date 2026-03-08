@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
+import { useBranding } from "@/contexts/BrandingContext";
 import { StatCard } from "@/components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,7 @@ interface RoomStats {
 
 export default function Dashboard() {
   const { currentCompany } = useCompany();
+  const { branding } = useBranding();
   const [recentBookings, setRecentBookings] = useState<any[]>([]);
   const [roomStats, setRoomStats] = useState<RoomStats[]>([]);
   const [totalRooms, setTotalRooms] = useState(0);
@@ -102,6 +104,17 @@ export default function Dashboard() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
+      {branding?.welcome_message && (
+        <motion.div
+          variants={item}
+          className="rounded-xl bg-primary/10 border border-primary/20 px-5 py-4"
+        >
+          <p className="text-sm font-medium text-primary font-display">
+            {branding.welcome_message}
+          </p>
+        </motion.div>
+      )}
+
       <motion.div variants={item}>
         <h1 className="text-2xl font-bold font-display">Dashboard</h1>
         <p className="text-sm text-muted-foreground mt-1">Welcome back. Here's your property overview.</p>
