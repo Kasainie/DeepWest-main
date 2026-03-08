@@ -114,6 +114,7 @@ export default function Bookings() {
     const { error } = await supabase.from("bookings").insert({
       company_id: currentCompany.id,
       guest_id: form.guest_id || null,
+      room_id: form.room_id || null,
       booking_type: form.booking_type,
       details: form.details || null,
       check_in: form.check_in || null,
@@ -126,7 +127,7 @@ export default function Bookings() {
       toast.error(error.message);
     } else {
       toast.success("Booking created!");
-      setForm({ guest_id: "", booking_type: "room", details: "", check_in: "", check_out: "", status: "confirmed", amount: "" });
+      setForm({ guest_id: "", room_id: "", booking_type: "room", details: "", check_in: "", check_out: "", status: "confirmed", amount: "" });
       setAddOpen(false);
       fetchData();
     }
