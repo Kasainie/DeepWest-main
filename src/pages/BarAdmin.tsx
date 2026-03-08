@@ -77,7 +77,7 @@ export default function BarAdmin() {
     if (!currentCompany) return;
     setLoading(true);
 
-    const [menuRes, staffRes, ordersRes] = await Promise.all([
+    const [menuRes, staffRes, ordersRes, invRes] = await Promise.all([
       supabase.from("menu_items").select("*").eq("company_id", currentCompany.id).order("category"),
       supabase.from("company_staff").select("id, full_name, staff_code, role, is_active")
         .eq("company_id", currentCompany.id)
@@ -86,11 +86,13 @@ export default function BarAdmin() {
         .eq("company_id", currentCompany.id)
         .order("created_at", { ascending: false })
         .limit(20),
+      supabase.from("bar_inventory").select("*").eq("company_id", currentCompany.id).order("category"),
     ]);
 
     setMenuItems((menuRes.data || []) as MenuItem[]);
     setBarStaff((staffRes.data || []) as StaffMember[]);
     setOrders(ordersRes.data || []);
+    setInventory((invRes.data || []) as InventoryItem[]);
     setLoading(false);
   };
 
@@ -139,7 +141,7 @@ export default function BarAdmin() {
   const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
   const totalOrders = orders.length;
   const avgCheck = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-  const lowStockItems = mockInventory.filter((i) => i.stock <= i.lowThreshold);
+  const lowStockItems = inventory.filter((i) => i.stock <= i.low_threshold);
 
   const categoryIcon = (cat: string) => {
     switch (cat) {
