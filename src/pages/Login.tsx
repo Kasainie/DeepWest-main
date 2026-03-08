@@ -89,6 +89,10 @@ export default function Login() {
       if (data?.error) throw new Error(data.error);
 
       if (data?.session) {
+        // Store the target company so CompanyContext picks the right one
+        if (data.staff?.company_id) {
+          sessionStorage.setItem("staff_login_company_id", data.staff.company_id);
+        }
         await supabase.auth.setSession({
           access_token: data.session.access_token,
           refresh_token: data.session.refresh_token,
