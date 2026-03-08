@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import { subDays, format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { DateRangeFilter, DateRange } from "@/components/DateRangeFilter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,24 +53,27 @@ export default function Restaurant() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [activeTab, setActiveTab] = useState("new-order");
   const [stats, setStats] = useState({ ordersToday: 0, revenueToday: 0, activeOrders: 0, menuCount: 0 });
+  const [dateRange, setDateRange] = useState<DateRange>({ from: subDays(new Date(), 29), to: new Date() });
 
   useEffect(() => {
     if (currentCompany) {
       fetchMenu();
       fetchStats();
     }
-  }, [currentCompany?.id]);
+  }, [currentCompany?.id, dateRange]);
 
   const fetchStats = async () => {
     if (!currentCompany) return;
-    const today = new Date().toISOString().split("T")[0];
+    const fromDate = format(dateRange.from, "yyyy-MM-dd");
+    const toDate = format(dateRange.to, "yyyy-MM-dd");
 
     const [ordersRes, activeRes, menuRes] = await Promise.all([
       supabase
         .from("orders")
         .select("total")
         .eq("company_id", currentCompany.id)
-        .gte("created_at", today + "T00:00:00"),
+        .gte("created_at", fromDate + "T00:00:00")
+        .lte("created_at", toDate + "T23:59:59"),
       supabase
         .from("orders")
         .select("id", { count: "exact", head: true })
@@ -207,6 +212,10 @@ export default function Restaurant() {
       <motion.div variants={item}>
         <h1 className="text-2xl font-bold font-display">Restaurant</h1>
         <p className="text-sm text-muted-foreground mt-1">Manage orders, menu & kitchen flow</p>
+      </motion.div>
+
+      <motion.div variants={item} className="flex items-center justify-end">
+        <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
       </motion.div>
 
       <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-4">

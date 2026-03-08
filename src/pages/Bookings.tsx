@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
+import { subDays, format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
+import { DateRangeFilter, DateRange } from "@/components/DateRangeFilter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,18 +57,24 @@ export default function Bookings() {
     amount: "",
   });
 
+  const [dateRange, setDateRange] = useState<DateRange>({ from: subDays(new Date(), 29), to: new Date() });
+
   useEffect(() => {
     if (currentCompany) fetchData();
-  }, [currentCompany?.id]);
+  }, [currentCompany?.id, dateRange]);
 
   const fetchData = async () => {
     if (!currentCompany) return;
     setLoading(true);
+    const fromDate = format(dateRange.from, "yyyy-MM-dd");
+    const toDate = format(dateRange.to, "yyyy-MM-dd");
     const [bRes, gRes] = await Promise.all([
       supabase
         .from("bookings")
         .select("*, guests(full_name)")
         .eq("company_id", currentCompany.id)
+        .gte("created_at", fromDate + "T00:00:00")
+        .lte("created_at", toDate + "T23:59:59")
         .order("created_at", { ascending: false }),
       supabase
         .from("guests")
@@ -202,6 +210,10 @@ export default function Bookings() {
             </form>
           </DialogContent>
         </Dialog>
+      </motion.div>
+
+      <motion.div variants={item} className="flex items-center justify-end">
+        <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
       </motion.div>
 
       <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
