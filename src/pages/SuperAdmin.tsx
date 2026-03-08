@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, ShieldCheck, Eye, EyeOff, Pause, Play, Mail, UserCheck, UserX, Clock, Search, Trash2 } from "lucide-react";
+import { Building2, Users, ShieldCheck, Eye, EyeOff, Pause, Play, Mail, UserCheck, UserX, Clock, Search, Trash2, Download } from "lucide-react";
+import { downloadCSV } from "@/lib/export";
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -382,33 +383,46 @@ export default function SuperAdmin() {
                   />
                 </div>
 
-                {/* Delete company */}
+                {/* Export & Delete company */}
                 {!isSuperAdminCompany && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="sm" className="gap-1.5">
-                        <Trash2 className="h-3.5 w-3.5" />
-                        Delete Company
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete {company.name}?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will permanently delete the company, all its staff, members, orders, bookings, and all associated data. This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => deleteCompany(company.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Delete permanently
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => exportCompanyData(company, companyStaff, companyMembers)}
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      Export Data
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm" className="gap-1.5">
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete Company
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete {company.name}?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete the company, all its staff, members, orders, bookings, and all associated data. This action cannot be undone.
+                            <br /><br />
+                            <strong>Tip:</strong> Use "Export Data" first to save a backup before deleting.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteCompany(company.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete permanently
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 )}
 
                 <div className="rounded-md border p-3 bg-muted/50">
