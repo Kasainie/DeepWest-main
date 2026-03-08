@@ -135,24 +135,6 @@ export default function SuperAdmin() {
     });
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading super admin data…</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-destructive font-medium">{error}</p>
-      </div>
-    );
-  }
-
-  const pausedCount = companies.filter((c) => c.is_paused).length;
-
   const q = search.toLowerCase().trim();
   const filteredCompanies = useMemo(() => {
     if (!q) return companies;
@@ -182,6 +164,24 @@ export default function SuperAdmin() {
         (u.full_name || "").toLowerCase().includes(q)
     );
   }, [q, pendingUsers]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Loading super admin data…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-destructive font-medium">{error}</p>
+      </div>
+    );
+  }
+
+  const pausedCount = companies.filter((c) => c.is_paused).length;
 
   return (
     <div className="space-y-6">
