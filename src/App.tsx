@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CompanyProvider } from "@/contexts/CompanyContext";
+import { BrandingProvider } from "@/contexts/BrandingContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { CompanyGuard } from "@/components/CompanyGuard";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -76,7 +77,8 @@ const App = () => (
                 <ProtectedRoute>
                   <CompanyProvider>
                     <CompanyGuard>
-                      <DashboardLayout>
+                      <BrandingProvider>
+                        <DashboardLayout>
                         <Routes>
                           <Route path="/" element={<Dashboard />} />
                           <Route path="/rooms" element={<Rooms />} />
@@ -91,7 +93,8 @@ const App = () => (
                           <Route path="/settings" element={<SettingsPage />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
-                      </DashboardLayout>
+                        </DashboardLayout>
+                      </BrandingProvider>
                     </CompanyGuard>
                   </CompanyProvider>
                 </ProtectedRoute>
