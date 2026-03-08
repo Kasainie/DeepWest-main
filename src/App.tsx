@@ -51,6 +51,16 @@ const App = () => (
               }
             />
             <Route
+              path="/register-success"
+              element={
+                <ProtectedRoute>
+                  <CompanyProvider>
+                    <RegisterSuccess />
+                  </CompanyProvider>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/accept-invite"
               element={
                 <ProtectedRoute>
