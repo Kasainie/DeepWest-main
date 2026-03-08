@@ -59,12 +59,18 @@ const managementItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, setOpenMobile, isMobile } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { currentCompany, companyRole, staffDepartment } = useCompany();
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+
+  const handleNavClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   // Owners/admins see everything; staff only see their department pages
   const isFullAccess = !companyRole || ["owner", "admin", "manager"].includes(companyRole);
@@ -122,6 +128,7 @@ export function AppSidebar() {
                       to={item.url}
                       end={item.url === "/"}
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
+                      onClick={handleNavClick}
                     >
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
@@ -149,6 +156,7 @@ export function AppSidebar() {
                         to={item.url}
                         end
                         activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
+                        onClick={handleNavClick}
                       >
                         <item.icon className="h-4 w-4" />
                         {!collapsed && <span>{item.title}</span>}
@@ -176,6 +184,7 @@ export function AppSidebar() {
                       to={item.url}
                       end
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
+                      onClick={handleNavClick}
                     >
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
