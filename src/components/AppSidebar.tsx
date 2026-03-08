@@ -128,6 +128,7 @@ export function AppSidebar() {
                       to={item.url}
                       end={item.url === "/"}
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
+                      onClick={handleNavClick}
                     >
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
@@ -155,6 +156,7 @@ export function AppSidebar() {
                         to={item.url}
                         end
                         activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
+                        onClick={handleNavClick}
                       >
                         <item.icon className="h-4 w-4" />
                         {!collapsed && <span>{item.title}</span>}
@@ -182,6 +184,7 @@ export function AppSidebar() {
                       to={item.url}
                       end
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
+                      onClick={handleNavClick}
                     >
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
