@@ -97,6 +97,69 @@ function hexToHslString(hex: string): string {
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
 
+const THEME_PRESETS = [
+  {
+    name: "Copper Luxe",
+    description: "Default warm hotel theme",
+    primary: "28 60% 42%",
+    accent: "160 40% 40%",
+    sidebar: "220 20% 8%",
+    heading: "Playfair Display",
+    body: "DM Sans",
+    mode: "light" as const,
+  },
+  {
+    name: "Midnight Gold",
+    description: "Dark elegance with gold accents",
+    primary: "45 80% 50%",
+    accent: "210 60% 55%",
+    sidebar: "230 25% 6%",
+    heading: "Cormorant Garamond",
+    body: "Inter",
+    mode: "dark" as const,
+  },
+  {
+    name: "Ocean Breeze",
+    description: "Cool coastal blues and teals",
+    primary: "200 70% 40%",
+    accent: "170 55% 45%",
+    sidebar: "210 30% 10%",
+    heading: "Montserrat",
+    body: "DM Sans",
+    mode: "light" as const,
+  },
+  {
+    name: "Rose Garden",
+    description: "Soft pinks with warm undertones",
+    primary: "345 55% 48%",
+    accent: "25 70% 55%",
+    sidebar: "340 20% 10%",
+    heading: "Lora",
+    body: "Raleway",
+    mode: "light" as const,
+  },
+  {
+    name: "Forest Estate",
+    description: "Deep greens and earthy warmth",
+    primary: "150 45% 30%",
+    accent: "35 60% 50%",
+    sidebar: "160 25% 8%",
+    heading: "Libre Baskerville",
+    body: "DM Sans",
+    mode: "light" as const,
+  },
+  {
+    name: "Royal Plum",
+    description: "Rich purples with silver highlights",
+    primary: "270 45% 42%",
+    accent: "210 30% 60%",
+    sidebar: "265 25% 8%",
+    heading: "Merriweather",
+    body: "Poppins",
+    mode: "dark" as const,
+  },
+];
+
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
 export default function BrandingSettings() {
@@ -136,6 +199,18 @@ export default function BrandingSettings() {
 
   const handleReset = () => {
     setForm({ ...DEFAULTS, welcome_message: "" });
+  };
+
+  const applyPreset = (preset: typeof THEME_PRESETS[number]) => {
+    setForm((f) => ({
+      ...f,
+      primary_color: preset.primary,
+      accent_color: preset.accent,
+      sidebar_color: preset.sidebar,
+      font_heading: preset.heading,
+      font_body: preset.body,
+      theme_mode: preset.mode,
+    }));
   };
 
   const handleSave = async () => {
@@ -224,6 +299,47 @@ export default function BrandingSettings() {
               disabled={!canEdit}
             />
           </div>
+
+          {/* Theme Presets */}
+          {canEdit && (
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Theme Presets</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {THEME_PRESETS.map((preset) => (
+                  <button
+                    key={preset.name}
+                    type="button"
+                    onClick={() => applyPreset(preset)}
+                    className="group rounded-lg border border-border p-3 text-left hover:border-primary/50 hover:bg-muted/30 transition-all"
+                  >
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <div
+                        className="h-4 w-4 rounded-full border border-border/50"
+                        style={{ backgroundColor: `hsl(${preset.primary})` }}
+                      />
+                      <div
+                        className="h-4 w-4 rounded-full border border-border/50"
+                        style={{ backgroundColor: `hsl(${preset.accent})` }}
+                      />
+                      <div
+                        className="h-4 w-4 rounded-full border border-border/50"
+                        style={{ backgroundColor: `hsl(${preset.sidebar})` }}
+                      />
+                    </div>
+                    <p className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
+                      {preset.name}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                      {preset.description}
+                    </p>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Click a preset to apply it, then save to keep your changes
+              </p>
+            </div>
+          )}
 
           {/* Colors */}
           <div className="space-y-3">
