@@ -98,27 +98,18 @@ export function OrdersList() {
     const url = URL.createObjectURL(blob);
     const filename = `receipt-order-${order.order_number}.html`;
 
-    // In embedded/sandboxed previews, browser downloads are often blocked.
-    // Open in a new tab so users can still save/download manually.
-    if (window.self !== window.top) {
-      window.open(url, "_blank", "noopener,noreferrer");
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      toast.success("Receipt opened in a new tab");
-      return;
-    }
-
     const link = document.createElement("a");
     link.href = url;
     link.download = filename;
     link.rel = "noopener";
+    link.style.display = "none";
     document.body.appendChild(link);
 
     try {
       link.click();
-      toast.success("Receipt downloaded!");
+      toast.success("Receipt download started");
     } catch {
-      window.open(url, "_blank", "noopener,noreferrer");
-      toast.success("Receipt opened in a new tab");
+      toast.error("Download blocked by browser. Please allow downloads and try again.");
     } finally {
       setTimeout(() => {
         URL.revokeObjectURL(url);
