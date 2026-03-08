@@ -300,6 +300,47 @@ export default function BrandingSettings() {
             />
           </div>
 
+          {/* Theme Presets */}
+          {canEdit && (
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Theme Presets</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {THEME_PRESETS.map((preset) => (
+                  <button
+                    key={preset.name}
+                    type="button"
+                    onClick={() => applyPreset(preset)}
+                    className="group rounded-lg border border-border p-3 text-left hover:border-primary/50 hover:bg-muted/30 transition-all"
+                  >
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <div
+                        className="h-4 w-4 rounded-full border border-border/50"
+                        style={{ backgroundColor: `hsl(${preset.primary})` }}
+                      />
+                      <div
+                        className="h-4 w-4 rounded-full border border-border/50"
+                        style={{ backgroundColor: `hsl(${preset.accent})` }}
+                      />
+                      <div
+                        className="h-4 w-4 rounded-full border border-border/50"
+                        style={{ backgroundColor: `hsl(${preset.sidebar})` }}
+                      />
+                    </div>
+                    <p className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
+                      {preset.name}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                      {preset.description}
+                    </p>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Click a preset to apply it, then save to keep your changes
+              </p>
+            </div>
+          )}
+
           {/* Colors */}
           <div className="space-y-3">
             <Label className="text-sm font-semibold">Brand Colors</Label>
