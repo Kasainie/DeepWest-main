@@ -1,23 +1,16 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Users, ShieldCheck, Eye, EyeOff } from "lucide-react";
+import { Building2, Users, ShieldCheck, Eye, EyeOff, Pause, Play, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
+  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
 
 interface Company {
@@ -30,6 +23,7 @@ interface Company {
   logo_url: string | null;
   owner_id: string;
   created_at: string;
+  is_paused: boolean;
 }
 
 interface Staff {
@@ -52,34 +46,55 @@ interface Member {
 }
 
 export default function SuperAdmin() {
-  const { user } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [ownerEmails, setOwnerEmails] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [revealedCodes, setRevealedCodes] = useState<Set<string>>(new Set());
+  const [togglingPause, setTogglingPause] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      const { data, error: fnError } = await supabase.functions.invoke(
-        "super-admin-companies"
-      );
-      if (fnError) {
-        setError(fnError.message || "Access denied");
-      } else if (data?.error) {
-        setError(data.error);
-      } else {
-        setCompanies(data.companies || []);
-        setStaff(data.staff || []);
-        setMembers(data.members || []);
-      }
-      setLoading(false);
-    };
     fetchData();
   }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    const { data, error: fnError } = await supabase.functions.invoke("super-admin-companies");
+    if (fnError) {
+      setError(fnError.message || "Access denied");
+    } else if (data?.error) {
+      setError(data.error);
+    } else {
+      setCompanies(data.companies || []);
+      setStaff(data.staff || []);
+      setMembers(data.members || []);
+      setOwnerEmails(data.ownerEmails || {});
+    }
+    setLoading(false);
+  };
+
+  const togglePause = async (companyId: string, isPaused: boolean) => {
+    setTogglingPause((prev) => new Set(prev).add(companyId));
+    const { data, error } = await supabase.functions.invoke("super-admin-companies?action=toggle_pause", {
+      body: { company_id: companyId, is_paused: isPaused },
+    });
+    if (error || data?.error) {
+      toast.error("Failed to update company status");
+    } else {
+      setCompanies((prev) =>
+        prev.map((c) => (c.id === companyId ? { ...c, is_paused: isPaused } : c))
+      );
+      toast.success(isPaused ? "Company paused" : "Company resumed");
+    }
+    setTogglingPause((prev) => {
+      const next = new Set(prev);
+      next.delete(companyId);
+      return next;
+    });
+  };
 
   const toggleCode = (staffId: string) => {
     setRevealedCodes((prev) => {
@@ -106,6 +121,8 @@ export default function SuperAdmin() {
     );
   }
 
+  const pausedCount = companies.filter((c) => c.is_paused).length;
+
   return (
     <div className="space-y-6">
       <div>
@@ -116,7 +133,7 @@ export default function SuperAdmin() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Companies</CardTitle>
@@ -144,6 +161,15 @@ export default function SuperAdmin() {
             <div className="text-2xl font-bold">{members.length}</div>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Paused</CardTitle>
+            <Pause className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{pausedCount}</div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Companies accordion */}
@@ -151,6 +177,7 @@ export default function SuperAdmin() {
         {companies.map((company) => {
           const companyStaff = staff.filter((s) => s.company_id === company.id);
           const companyMembers = members.filter((m) => m.company_id === company.id);
+          const ownerEmail = ownerEmails[company.owner_id];
 
           return (
             <AccordionItem
@@ -172,7 +199,14 @@ export default function SuperAdmin() {
                     </div>
                   )}
                   <div>
-                    <p className="font-semibold">{company.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold">{company.name}</p>
+                      {company.is_paused && (
+                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                          Paused
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       {company.email || "No email"} · {companyStaff.length} staff · {companyMembers.length} members
                     </p>
@@ -180,6 +214,42 @@ export default function SuperAdmin() {
                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
+                {/* Pause toggle */}
+                <div className="flex items-center justify-between rounded-md border p-3 bg-muted/50">
+                  <div className="flex items-center gap-2">
+                    {company.is_paused ? (
+                      <Pause className="h-4 w-4 text-destructive" />
+                    ) : (
+                      <Play className="h-4 w-4 text-green-600" />
+                    )}
+                    <span className="text-sm font-medium">
+                      {company.is_paused ? "Company is paused" : "Company is active"}
+                    </span>
+                  </div>
+                  <Switch
+                    checked={company.is_paused}
+                    disabled={togglingPause.has(company.id)}
+                    onCheckedChange={(checked) => togglePause(company.id, checked)}
+                  />
+                </div>
+
+                {/* Admin login details */}
+                <div className="rounded-md border p-3 bg-muted/50">
+                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                    <Mail className="h-4 w-4" /> Admin / Owner Login
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Owner Email</span>
+                      <p className="font-medium font-mono text-xs">{ownerEmail || "—"}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Owner ID</span>
+                      <p className="font-medium font-mono text-xs">{company.owner_id.slice(0, 12)}…</p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Company info */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                   <div>
@@ -240,23 +310,15 @@ export default function SuperAdmin() {
                         <TableBody>
                           {companyStaff.map((s) => (
                             <TableRow key={s.id}>
-                              <TableCell className="font-medium">
-                                {s.full_name}
-                              </TableCell>
+                              <TableCell className="font-medium">{s.full_name}</TableCell>
                               <TableCell>
-                                <Badge variant="outline" className="capitalize">
-                                  {s.role}
-                                </Badge>
+                                <Badge variant="outline" className="capitalize">{s.role}</Badge>
                               </TableCell>
-                              <TableCell>
-                                {s.department?.join(", ") || "—"}
-                              </TableCell>
+                              <TableCell>{s.department?.join(", ") || "—"}</TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-1">
                                   <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
-                                    {revealedCodes.has(s.id)
-                                      ? s.staff_code
-                                      : "••••••"}
+                                    {revealedCodes.has(s.id) ? s.staff_code : "••••••"}
                                   </code>
                                   <Button
                                     variant="ghost"
@@ -264,19 +326,13 @@ export default function SuperAdmin() {
                                     className="h-6 w-6"
                                     onClick={() => toggleCode(s.id)}
                                   >
-                                    {revealedCodes.has(s.id) ? (
-                                      <EyeOff className="h-3 w-3" />
-                                    ) : (
-                                      <Eye className="h-3 w-3" />
-                                    )}
+                                    {revealedCodes.has(s.id) ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                                   </Button>
                                 </div>
                               </TableCell>
                               <TableCell>{s.phone || "—"}</TableCell>
                               <TableCell>
-                                <Badge
-                                  variant={s.is_active ? "default" : "destructive"}
-                                >
+                                <Badge variant={s.is_active ? "default" : "destructive"}>
                                   {s.is_active ? "Active" : "Inactive"}
                                 </Badge>
                               </TableCell>
