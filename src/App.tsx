@@ -81,21 +81,23 @@ const App = () => (
                     <CompanyGuard>
                       <BrandingProvider>
                         <DashboardLayout>
-                        <Routes>
-                          <Route path="/" element={<Dashboard />} />
-                          <Route path="/rooms" element={<Rooms />} />
-                          <Route path="/restaurant" element={<Restaurant />} />
-                          <Route path="/bar" element={<Bar />} />
-                          <Route path="/kitchen" element={<Kitchen />} />
-                          <Route path="/conference" element={<Conference />} />
-                          <Route path="/bookings" element={<Bookings />} />
-                          <Route path="/guests" element={<Guests />} />
-                          <Route path="/staff" element={<StaffManagement />} />
-                          <Route path="/website" element={<Website />} />
-                          <Route path="/settings" element={<SettingsPage />} />
-                          <Route path="/about" element={<About />} />
-                          <Route path="*" element={<NotFound />} />
-                        </Routes>
+                          <DepartmentGuard>
+                            <Routes>
+                              <Route path="/" element={<Dashboard />} />
+                              <Route path="/rooms" element={<Rooms />} />
+                              <Route path="/restaurant" element={<Restaurant />} />
+                              <Route path="/bar" element={<Bar />} />
+                              <Route path="/kitchen" element={<Kitchen />} />
+                              <Route path="/conference" element={<Conference />} />
+                              <Route path="/bookings" element={<Bookings />} />
+                              <Route path="/guests" element={<Guests />} />
+                              <Route path="/staff" element={<StaffManagement />} />
+                              <Route path="/website" element={<Website />} />
+                              <Route path="/settings" element={<SettingsPage />} />
+                              <Route path="/about" element={<About />} />
+                              <Route path="*" element={<NotFound />} />
+                            </Routes>
+                          </DepartmentGuard>
                         </DashboardLayout>
                       </BrandingProvider>
                     </CompanyGuard>
