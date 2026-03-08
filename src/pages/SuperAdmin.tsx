@@ -253,12 +253,12 @@ export default function SuperAdmin() {
       </div>
 
       {/* Pending approvals */}
-      {pendingUsers.length > 0 && (
+      {filteredPending.length > 0 && (
         <Card className="border-amber-500/30">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Clock className="h-5 w-5 text-amber-600" />
-              Pending Approvals ({pendingUsers.length})
+              Pending Approvals ({filteredPending.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -273,7 +273,7 @@ export default function SuperAdmin() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pendingUsers.map((u) => (
+                  {filteredPending.map((u) => (
                     <TableRow key={u.user_id}>
                       <TableCell className="font-medium">{u.full_name || "—"}</TableCell>
                       <TableCell className="font-mono text-xs">{u.email}</TableCell>
@@ -313,7 +313,7 @@ export default function SuperAdmin() {
 
       {/* Companies accordion */}
       <Accordion type="multiple" className="space-y-3">
-        {companies.map((company) => {
+        {filteredCompanies.map((company) => {
           const companyStaff = staff.filter((s) => s.company_id === company.id);
           const companyMembers = members.filter((m) => m.company_id === company.id);
           const ownerEmail = ownerEmails[company.owner_id];
