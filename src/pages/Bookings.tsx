@@ -205,6 +205,28 @@ export default function Bookings() {
                   </Select>
                 </div>
               </div>
+              {form.booking_type === "room" && (
+                <div className="space-y-2">
+                  <Label>Room</Label>
+                  <Select value={form.room_id} onValueChange={(v) => {
+                    const room = availableRooms.find(r => r.id === v);
+                    setForm((f) => ({ ...f, room_id: v, details: room ? `Room ${room.room_number} · ${room.type}` : f.details }));
+                  }}>
+                    <SelectTrigger><SelectValue placeholder="Select available room" /></SelectTrigger>
+                    <SelectContent>
+                      {availableRooms.length === 0 ? (
+                        <SelectItem value="none" disabled>No available rooms</SelectItem>
+                      ) : (
+                        availableRooms.map((r) => (
+                          <SelectItem key={r.id} value={r.id}>
+                            Room {r.room_number} · {r.type} · KSh {Number(r.price_per_night).toLocaleString()}/night
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Details</Label>
                 <Input value={form.details} onChange={(e) => setForm((f) => ({ ...f, details: e.target.value }))} placeholder="Suite #101 · 3 nights" />
