@@ -64,6 +64,35 @@ const deptColors: Record<string, string> = {
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
+function StaffCodeCell({ code, onCopy }: { code: string; onCopy: (code: string) => void }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="flex items-center gap-1">
+      <code className="text-xs font-mono bg-secondary px-2 py-1 rounded hidden sm:inline-block min-w-[70px] text-center">
+        {visible ? code : "••••••••"}
+      </code>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7"
+        onClick={() => setVisible((v) => !v)}
+        title={visible ? "Hide code" : "Reveal code"}
+      >
+        {visible ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7"
+        onClick={() => onCopy(code)}
+        title="Copy code"
+      >
+        <Copy className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
+
 function generateStaffCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "STF-";
