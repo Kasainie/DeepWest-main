@@ -1,15 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { generateReceipt } from "@/lib/receipt";
-
-// Helper to extract HTML string from blob since jsdom Blob doesn't support .text()
-function blobToString(blob: Blob): string {
-  // The generateReceipt function creates Blob([html]), so we can reconstruct
-  // by calling the function and inspecting the HTML directly
-  return "";
-}
-
-// We'll test by modifying generateReceipt to also export the HTML, or test via the function internals
-// Instead, let's just verify the blob creation and test the HTML generation separately
+import { generateReceipt, generateReceiptHtml } from "@/lib/receipt";
 
 const mockOrder = {
   order_number: 42,
@@ -34,42 +24,50 @@ const mockCompany = {
 };
 
 describe("generateReceipt", () => {
-  it("generates a receipt blob for paid orders", () => {
+  it("generates a receipt blob", () => {
     const blob = generateReceipt(mockOrder, mockCompany);
     expect(blob).toBeInstanceOf(Blob);
     expect(blob.type).toBe("text/html");
   });
 
-  it("includes company name in receipt", async () => {
-    const blob = generateReceipt(mockOrder, mockCompany);
-    const text = await blob.text();
-    expect(text).toContain("Test Hotel");
-    expect(text).toContain("123 Main St");
-    expect(text).toContain("*** RECEIPT ***");
-    expect(text).toContain("PAID");
+  it("includes company info in paid receipt", () => {
+    const html = generateReceiptHtml(mockOrder, mockCompany);
+    expect(html).toContain("Test Hotel");
+    expect(html).toContain("123 Main St");
+    expect(html).toContain("+254700000000");
+    expect(html).toContain("*** RECEIPT ***");
+    expect(html).toContain("PAID");
   });
 
-  it("generates a bill for unpaid orders", async () => {
+  it("generates a bill for unpaid orders", () => {
     const unpaidOrder = { ...mockOrder, payment_status: "unpaid", paid_at: null };
-    const blob = generateReceipt(unpaidOrder, mockCompany);
-    const text = await blob.text();
-    expect(text).toContain("*** ORDER BILL ***");
-    expect(text).toContain("UNPAID");
+    const html = generateReceiptHtml(unpaidOrder, mockCompany);
+    expect(html).toContain("*** ORDER BILL ***");
+    expect(html).toContain("UNPAID");
   });
 
-  it("includes order items and totals", async () => {
-    const blob = generateReceipt(mockOrder, mockCompany);
-    const text = await blob.text();
-    expect(text).toContain("Maize");
-    expect(text).toContain("$50.00");
-    expect(text).toContain("$5.00");
-    expect(text).toContain("$55.00");
+  it("includes order items and totals", () => {
+    const html = generateReceiptHtml(mockOrder, mockCompany);
+    expect(html).toContain("Maize");
+    expect(html).toContain("$50.00");
+    expect(html).toContain("$5.00");
+    expect(html).toContain("$55.00");
   });
 
-  it("includes order number and table", async () => {
-    const blob = generateReceipt(mockOrder, mockCompany);
-    const text = await blob.text();
-    expect(text).toContain("Order #42");
-    expect(text).toContain("Table: T1");
+  it("includes order number and table", () => {
+    const html = generateReceiptHtml(mockOrder, mockCompany);
+    expect(html).toContain("Order #42");
+    expect(html).toContain("Table: T1");
+  });
+
+  it("shows payment method on paid receipt", () => {
+    const html = generateReceiptHtml(mockOrder, mockCompany);
+    expect(html).toContain("CASH");
+  });
+
+  it("handles missing company gracefully", () => {
+    const html = generateReceiptHtml(mockOrder, null);
+    expect(html).toContain("Restaurant");
+    expect(html).toContain("Order #42");
   });
 });
