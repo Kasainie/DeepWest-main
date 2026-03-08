@@ -320,8 +320,8 @@ export default function Sales() {
           <motion.div variants={item}>
             <Card className="shadow-card border-0">
               <CardContent className="pt-6">
-                {sales.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No sales recorded yet</p>
+                {filtered.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">No sales in this period</p>
                 ) : (
                   <div className="overflow-x-auto">
                     <Table>
@@ -336,7 +336,7 @@ export default function Sales() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {sales.map((s) => (
+                        {filtered.map((s) => (
                           <TableRow key={s.id}>
                             <TableCell className="text-sm">{format(new Date(s.sale_date), "MMM d, yyyy")}</TableCell>
                             <TableCell><Badge variant="outline" className="capitalize text-xs">{s.department}</Badge></TableCell>
