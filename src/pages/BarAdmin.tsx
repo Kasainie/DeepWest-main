@@ -41,23 +41,16 @@ interface StaffMember {
 }
 
 interface InventoryItem {
+  id: string;
   name: string;
+  category: string;
   stock: number;
   unit: string;
-  lowThreshold: number;
+  low_threshold: number;
+  cost_per_unit: number;
 }
 
-// Mock inventory data (would be a real table in production)
-const mockInventory: InventoryItem[] = [
-  { name: "Vodka (750ml)", stock: 12, unit: "bottles", lowThreshold: 5 },
-  { name: "Whiskey (750ml)", stock: 3, unit: "bottles", lowThreshold: 5 },
-  { name: "Craft IPA Kegs", stock: 2, unit: "kegs", lowThreshold: 3 },
-  { name: "House Red Wine", stock: 18, unit: "bottles", lowThreshold: 8 },
-  { name: "Tonic Water", stock: 4, unit: "cases", lowThreshold: 6 },
-  { name: "Lime Juice", stock: 8, unit: "bottles", lowThreshold: 4 },
-  { name: "Simple Syrup", stock: 6, unit: "bottles", lowThreshold: 3 },
-  { name: "Champagne", stock: 7, unit: "bottles", lowThreshold: 4 },
-];
+const inventoryCategories = ["spirit", "wine", "beer", "mixer", "garnish", "other"];
 
 export default function BarAdmin() {
   const { currentCompany } = useCompany();
