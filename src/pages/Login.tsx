@@ -19,6 +19,10 @@ const loginSchema = z.object({
 
 const signupSchema = loginSchema.extend({
   fullName: z.string().trim().min(1, "Name is required").max(100),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 });
 
 interface CompanyInfo {
@@ -37,6 +41,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [staffCode, setStaffCode] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [staffLoading, setStaffLoading] = useState(false);
   const [company, setCompany] = useState<CompanyInfo | null>(null);
   const [companyLoading, setCompanyLoading] = useState(!!slug);
@@ -67,7 +72,7 @@ export default function Login() {
 
     try {
       if (isSignUp) {
-        const parsed = signupSchema.parse({ email, password, fullName });
+        const parsed = signupSchema.parse({ email, password, fullName, confirmPassword });
         const { error } = await supabase.auth.signUp({
           email: parsed.email,
           password: parsed.password,
@@ -223,6 +228,19 @@ export default function Login() {
                     required
                   />
                 </div>
+                {isSignUp && (
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                    />
+                  </div>
+                )}
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isSignUp ? "Create Account" : "Sign In"}
