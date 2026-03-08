@@ -44,7 +44,14 @@ const typeColors: Record<string, string> = {
   booking: "bg-secondary text-secondary-foreground",
 };
 
-const NOTIFICATION_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
+const NOTIFICATION_SOUNDS: Record<string, string> = {
+  order: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",      // cash register ding
+  booking: "https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3",    // gentle chime
+  warning: "https://assets.mixkit.co/active_storage/sfx/2868/2868-preview.mp3",    // alert tone
+  staff: "https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3",      // soft notification
+  info: "https://assets.mixkit.co/active_storage/sfx/2356/2356-preview.mp3",       // subtle pop
+  default: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",
+};
 
 function loadSoundSettings() {
   try {
