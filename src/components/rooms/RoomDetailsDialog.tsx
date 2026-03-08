@@ -196,6 +196,47 @@ export function RoomDetailsDialog({ room, open, onOpenChange, onUpdated }: RoomD
               </div>
             )}
 
+            <Separator />
+
+            {/* Booking History */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <History className="h-4 w-4 text-muted-foreground" />
+                <p className="text-sm font-semibold font-display">Booking History</p>
+              </div>
+              {loadingBookings ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : bookings.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">No bookings for this room yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {bookings.map((b) => (
+                    <div key={b.id} className="rounded-lg border p-3 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium">
+                          {b.guests?.full_name || "Guest"}
+                        </span>
+                        <Badge className={`${bookingStatusColors[b.status] || "bg-muted text-muted-foreground"} text-[10px] border-0 capitalize`}>
+                          {b.status.replace("_", " ")}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <CalendarDays className="h-3 w-3" />
+                          {b.check_in ? new Date(b.check_in).toLocaleDateString() : "—"}
+                          {" → "}
+                          {b.check_out ? new Date(b.check_out).toLocaleDateString() : "—"}
+                        </span>
+                        <span className="font-medium text-foreground">KSh {Number(b.amount).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <DialogFooter className="gap-2 sm:gap-0">
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -226,6 +267,7 @@ export function RoomDetailsDialog({ room, open, onOpenChange, onUpdated }: RoomD
               </Button>
             </DialogFooter>
           </div>
+          </ScrollArea>
         ) : (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
