@@ -4,9 +4,10 @@ import { Hotel, BarChart3, Users, Shield, ChefHat, CalendarCheck, ArrowRight, Za
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 
-const fadeUp = { hidden: { opacity: 0, y: 40 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } } };
+const ease = [0.22, 1, 0.36, 1] as [number, number, number, number];
+const fadeUp = { hidden: { opacity: 0, y: 40 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease } } };
 const stagger = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.12 } } };
-const scaleIn = { hidden: { opacity: 0, scale: 0.8 }, show: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } } };
+const scaleIn = { hidden: { opacity: 0, scale: 0.8 }, show: { opacity: 1, scale: 1, transition: { duration: 0.5, ease } } };
 
 const features = [
   { icon: Hotel, title: "Room Management", desc: "Track availability, bookings, and housekeeping in real time.", color: "from-primary/20 to-primary/5" },
