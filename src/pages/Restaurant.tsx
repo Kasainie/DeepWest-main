@@ -14,6 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Minus, ShoppingCart, Send, Loader2, UtensilsCrossed, Trash2, ClipboardList, DollarSign, Utensils } from "lucide-react";
+import { BottomTabBar } from "@/components/BottomTabBar";
+import { OrderHistory } from "@/components/OrderHistory";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { OrdersList } from "@/components/orders/OrdersList";
@@ -209,204 +211,156 @@ export default function Restaurant() {
   }
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <motion.div variants={item}>
-        <h1 className="text-2xl font-bold font-display">Restaurant</h1>
-        <p className="text-sm text-muted-foreground mt-1">Manage orders, menu & kitchen flow</p>
-      </motion.div>
+    <div className="pb-16">
+      {bottomTab === "home" ? (
+        <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
+          <motion.div variants={item}>
+            <h1 className="text-2xl font-bold font-display">Restaurant</h1>
+            <p className="text-sm text-muted-foreground mt-1">Manage orders, menu & kitchen flow</p>
+          </motion.div>
 
-      <motion.div variants={item} className="flex items-center justify-end">
-        <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
-      </motion.div>
+          <motion.div variants={item} className="flex items-center justify-end">
+            <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+          </motion.div>
 
-      <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard title="Orders Today" value={stats.ordersToday} icon={ClipboardList} />
-        <StatCard title="Revenue Today" value={`KSh ${stats.revenueToday.toLocaleString()}`} iconNode={<KshIcon className="h-5 w-5 text-primary" />} />
-        <StatCard title="Active Orders" value={stats.activeOrders} change="In progress" changeType="neutral" icon={Utensils} />
-        <StatCard title="Menu Items" value={stats.menuCount} change="Available" changeType="neutral" icon={UtensilsCrossed} />
-      </motion.div>
+          <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <StatCard title="Orders Today" value={stats.ordersToday} icon={ClipboardList} />
+            <StatCard title="Revenue Today" value={`KSh ${stats.revenueToday.toLocaleString()}`} iconNode={<KshIcon className="h-5 w-5 text-primary" />} />
+            <StatCard title="Active Orders" value={stats.activeOrders} change="In progress" changeType="neutral" icon={Utensils} />
+            <StatCard title="Menu Items" value={stats.menuCount} change="Available" changeType="neutral" icon={UtensilsCrossed} />
+          </motion.div>
 
-      <motion.div variants={item}>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="new-order">New Order</TabsTrigger>
-            <TabsTrigger value="orders">Active Orders</TabsTrigger>
-            <TabsTrigger value="menu">Manage Menu</TabsTrigger>
-          </TabsList>
+          <motion.div variants={item}>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList>
+                <TabsTrigger value="new-order">New Order</TabsTrigger>
+                <TabsTrigger value="orders">Active Orders</TabsTrigger>
+                <TabsTrigger value="menu">Manage Menu</TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="new-order" className="mt-4">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Menu */}
-              <div className="lg:col-span-2 space-y-4">
-                <div className="flex gap-2 flex-wrap">
-                  {categories.map((cat) => (
-                    <Button
-                      key={cat}
-                      variant={selectedCategory === cat ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedCategory(cat)}
-                      className="capitalize text-xs"
-                    >
-                      {cat}
-                    </Button>
-                  ))}
-                </div>
-
-                {filteredMenu.length === 0 ? (
-                  <Card className="shadow-card border-0">
-                    <CardContent className="text-center py-12">
-                      <UtensilsCrossed className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                      <p className="text-sm text-muted-foreground">
-                        {menuItems.length === 0
-                          ? "No menu items yet. Go to 'Manage Menu' to add items."
-                          : "No items in this category"}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {filteredMenu.map((mi) => {
-                      const inCart = cart.find((c) => c.menuItem.id === mi.id);
-                      return (
-                        <Card
-                          key={mi.id}
-                          className={`shadow-card border-0 cursor-pointer hover:shadow-elevated transition-all ${inCart ? "ring-2 ring-primary" : ""}`}
-                          onClick={() => addToCart(mi)}
+              <TabsContent value="new-order" className="mt-4">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Menu */}
+                  <div className="lg:col-span-2 space-y-4">
+                    <div className="flex gap-2 flex-wrap">
+                      {categories.map((cat) => (
+                        <Button
+                          key={cat}
+                          variant={selectedCategory === cat ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSelectedCategory(cat)}
+                          className="capitalize text-xs"
                         >
-                          <CardContent className="p-4">
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">{mi.name}</p>
-                                {mi.description && (
-                                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{mi.description}</p>
-                                )}
-                                <Badge variant="secondary" className="text-[10px] capitalize mt-1">
-                                  {mi.category}
-                                </Badge>
-                              </div>
-                              <div className="text-right ml-3">
-                                <p className="text-sm font-bold font-display">KSh {Number(mi.price).toFixed(2)}</p>
-                                {inCart && (
-                                  <Badge className="text-[10px] mt-1">×{inCart.quantity}</Badge>
-                                )}
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Cart */}
-              <div>
-                <Card className="shadow-card border-0 sticky top-6">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base font-display flex items-center gap-2">
-                      <ShoppingCart className="h-4 w-4" />
-                      Current Order
-                      {cart.length > 0 && (
-                        <Badge variant="secondary" className="text-[10px]">{cart.length}</Badge>
-                      )}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="space-y-2">
-                      <Label className="text-xs">Table Number</Label>
-                      <Input
-                        value={tableNumber}
-                        onChange={(e) => setTableNumber(e.target.value)}
-                        placeholder="e.g. T1"
-                        className="h-8 text-sm"
-                      />
+                          {cat}
+                        </Button>
+                      ))}
                     </div>
-
-                    {cart.length === 0 ? (
-                      <p className="text-xs text-muted-foreground text-center py-6">
-                        Tap menu items to add them
-                      </p>
-                    ) : (
-                      <>
-                        <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                          {cart.map((c) => (
-                            <div key={c.menuItem.id} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium truncate">{c.menuItem.name}</p>
-                                <p className="text-[10px] text-muted-foreground">
-                                  KSh {Number(c.menuItem.price).toFixed(2)} each
-                                </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {filteredMenu.map((mi) => {
+                        const inCart = cart.find((c) => c.menuItem.id === mi.id);
+                        return (
+                          <Card key={mi.id} className={`shadow-sm transition-all ${!mi.is_available ? "opacity-50" : ""}`}>
+                            <CardContent className="p-3">
+                              <div className="flex items-start justify-between mb-1">
+                                <div>
+                                  <p className="font-medium text-sm">{mi.name}</p>
+                                  <p className="text-xs text-muted-foreground capitalize">{mi.category}</p>
+                                </div>
+                                <span className="font-semibold text-sm">KSh {mi.price.toLocaleString()}</span>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); updateQuantity(c.menuItem.id, -1); }}>
-                                  <Minus className="h-3 w-3" />
-                                </Button>
-                                <span className="text-xs font-bold w-5 text-center">{c.quantity}</span>
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); updateQuantity(c.menuItem.id, 1); }}>
-                                  <Plus className="h-3 w-3" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={(e) => { e.stopPropagation(); removeFromCart(c.menuItem.id); }}>
+                              {mi.description && <p className="text-[10px] text-muted-foreground mb-2">{mi.description}</p>}
+                              <div className="flex items-center gap-2">
+                                {inCart ? (
+                                  <>
+                                    <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => updateCartQuantity(mi.id, (inCart.quantity || 1) - 1)}>
+                                      <Minus className="h-3 w-3" />
+                                    </Button>
+                                    <span className="text-sm font-medium w-6 text-center">{inCart.quantity}</span>
+                                    <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => updateCartQuantity(mi.id, inCart.quantity + 1)}>
+                                      <Plus className="h-3 w-3" />
+                                    </Button>
+                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 ml-auto text-destructive" onClick={() => removeFromCart(mi.id)}>
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Button size="sm" className="h-7 text-xs" disabled={!mi.is_available} onClick={() => addToCart(mi)}>
+                                    <Plus className="h-3 w-3 mr-1" /> Add
+                                  </Button>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Cart */}
+                  <div>
+                    <Card className="shadow-card sticky top-4">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <ShoppingCart className="h-4 w-4" /> Cart ({cart.reduce((s, c) => s + c.quantity, 0)})
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {cart.length === 0 ? (
+                          <p className="text-sm text-muted-foreground text-center py-4">No items in cart</p>
+                        ) : (
+                          <>
+                            {cart.map((c) => (
+                              <div key={c.menuItem.id} className="flex items-center justify-between text-sm">
+                                <div>
+                                  <p className="font-medium">{c.menuItem.name}</p>
+                                  <p className="text-xs text-muted-foreground">×{c.quantity} · KSh {(c.menuItem.price * c.quantity).toLocaleString()}</p>
+                                </div>
+                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={() => removeFromCart(c.menuItem.id)}>
                                   <Trash2 className="h-3 w-3" />
                                 </Button>
                               </div>
-                              <p className="text-xs font-bold w-14 text-right">
-                                KSh {(c.menuItem.price * c.quantity).toFixed(2)}
-                              </p>
+                            ))}
+                            <div className="border-t pt-2 space-y-1 text-sm">
+                              <div className="flex justify-between"><span>Subtotal</span><span>KSh {cartTotal.toLocaleString()}</span></div>
+                              <div className="flex justify-between text-muted-foreground"><span>Tax (10%)</span><span>KSh {tax.toLocaleString()}</span></div>
+                              <div className="flex justify-between font-bold"><span>Total</span><span>KSh {(cartTotal + tax).toLocaleString()}</span></div>
                             </div>
-                          ))}
-                        </div>
+                            <div className="space-y-2">
+                              <div>
+                                <Label className="text-xs">Table Number *</Label>
+                                <Input placeholder="e.g. 5" value={tableNumber} onChange={(e) => setTableNumber(e.target.value)} className="h-8 text-sm" />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Notes</Label>
+                                <Textarea placeholder="Special instructions..." value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} className="text-sm min-h-[60px]" />
+                              </div>
+                              <Button className="w-full" onClick={sendOrder} disabled={sending || cart.length === 0}>
+                                {sending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+                                Send to Kitchen
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </TabsContent>
 
-                        <div className="space-y-2">
-                          <Label className="text-xs">Notes for kitchen</Label>
-                          <Textarea
-                            value={orderNotes}
-                            onChange={(e) => setOrderNotes(e.target.value)}
-                            placeholder="Special requests..."
-                            rows={2}
-                            className="text-xs"
-                          />
-                        </div>
+              <TabsContent value="orders" className="mt-4">
+                <OrdersList />
+              </TabsContent>
 
-                        <div className="border-t pt-2 space-y-1">
-                          <div className="flex justify-between text-xs">
-                            <span className="text-muted-foreground">Subtotal</span>
-                            <span>KSh {cartTotal.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between text-xs">
-                            <span className="text-muted-foreground">Tax (10%)</span>
-                            <span>KSh {tax.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between text-sm font-bold">
-                            <span>Total</span>
-                            <span>KSh {(cartTotal + tax).toFixed(2)}</span>
-                          </div>
-                        </div>
-
-                        <Button onClick={sendOrder} className="w-full" disabled={sending}>
-                          {sending ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <Send className="h-4 w-4 mr-2" />
-                          )}
-                          Send to Kitchen
-                        </Button>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="orders" className="mt-4">
-            <OrdersList />
-          </TabsContent>
-
-          <TabsContent value="menu" className="mt-4">
-            <MenuManager onMenuChange={fetchMenu} />
-          </TabsContent>
-        </Tabs>
-      </motion.div>
-    </motion.div>
+              <TabsContent value="menu" className="mt-4">
+                <MenuManager onMenuChange={fetchMenu} />
+              </TabsContent>
+            </Tabs>
+          </motion.div>
+        </motion.div>
+      ) : (
+        <OrderHistory />
+      )}
+      <BottomTabBar activeTab={bottomTab} onTabChange={setBottomTab} />
+    </div>
   );
 }
