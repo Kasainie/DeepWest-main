@@ -94,5 +94,6 @@ export const EventCalendar = forwardRef<HTMLDivElement, Props>(({ bookings }, re
         </div>
       </CardContent>
     </Card>
-  );
-}
+});
+
+EventCalendar.displayName = "EventCalendar";
