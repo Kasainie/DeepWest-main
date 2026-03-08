@@ -64,7 +64,7 @@ const deptColors: Record<string, string> = {
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
-function StaffCodeCell({ code, onCopy }: { code: string; onCopy: (code: string) => void }) {
+const StaffCodeCell = ({ code, onCopy }: { code: string; onCopy: (code: string) => void }) => {
   const [visible, setVisible] = useState(false);
   return (
     <div className="flex items-center gap-1">
