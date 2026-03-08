@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Search, Plus, Loader2, CalendarDays, CheckCircle, XCircle } from "lucide-react";
+import { Search, Plus, Loader2, CalendarDays, CheckCircle, XCircle, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 
@@ -44,6 +44,7 @@ const statusStyles: Record<string, string> = {
   confirmed: "bg-primary/10 text-primary",
   pending: "bg-warning/10 text-warning",
   cancelled: "bg-destructive/10 text-destructive",
+  checked_out: "bg-muted text-muted-foreground",
 };
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.04 } } };
@@ -132,6 +133,16 @@ export default function Bookings() {
       fetchData();
     }
     setSaving(false);
+  };
+
+  const handleCheckout = async (booking: Booking) => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    await supabase.from("bookings").update({ status: "checked_out", check_out: booking.check_out || today }).eq("id", booking.id);
+    if (booking.room_id) {
+      await supabase.from("rooms").update({ status: "available" }).eq("id", booking.room_id);
+    }
+    toast.success("Guest checked out successfully");
+    fetchData();
   };
 
   const filtered = bookings.filter((b) => {
@@ -296,6 +307,7 @@ export default function Bookings() {
                       <th className="text-left text-xs font-medium text-muted-foreground p-3 hidden lg:table-cell">Dates</th>
                       <th className="text-left text-xs font-medium text-muted-foreground p-3">Status</th>
                       <th className="text-right text-xs font-medium text-muted-foreground p-3">Amount</th>
+                      <th className="text-right text-xs font-medium text-muted-foreground p-3">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -313,6 +325,13 @@ export default function Bookings() {
                           <Badge className={`${statusStyles[b.status] || ""} text-[10px] border-0`}>{b.status}</Badge>
                         </td>
                         <td className="p-3 text-sm font-semibold text-right">KSh {Number(b.amount).toFixed(2)}</td>
+                        <td className="p-3 text-right">
+                          {["confirmed", "active"].includes(b.status) && (
+                            <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleCheckout(b)}>
+                              <LogOut className="h-3 w-3 mr-1" /> Checkout
+                            </Button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
