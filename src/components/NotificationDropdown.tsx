@@ -144,6 +144,15 @@ export function NotificationDropdown() {
                         {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true })}
                       </p>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                      onClick={(e) => deleteNotification(e, notif.id)}
+                      title="Delete notification"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
                   </button>
                 );
               })}
