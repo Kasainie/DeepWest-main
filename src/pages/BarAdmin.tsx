@@ -138,6 +138,51 @@ export default function BarAdmin() {
     }
   };
 
+  const handleAddInventory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentCompany) return;
+    setSaving(true);
+
+    const { error } = await supabase.from("bar_inventory").insert({
+      company_id: currentCompany.id,
+      name: invForm.name.trim(),
+      category: invForm.category,
+      stock: parseFloat(invForm.stock) || 0,
+      unit: invForm.unit.trim(),
+      low_threshold: parseFloat(invForm.low_threshold) || 5,
+      cost_per_unit: parseFloat(invForm.cost_per_unit) || 0,
+    });
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Inventory item added!");
+      setInvForm({ name: "", category: "spirit", stock: "", unit: "bottles", low_threshold: "5", cost_per_unit: "" });
+      setAddInventoryOpen(false);
+      fetchAll();
+    }
+    setSaving(false);
+  };
+
+  const handleUpdateStock = async (itemId: string, newStock: number) => {
+    const { error } = await supabase.from("bar_inventory").update({ stock: newStock }).eq("id", itemId);
+    if (!error) {
+      setInventory((prev) => prev.map((i) => i.id === itemId ? { ...i, stock: newStock } : i));
+    } else {
+      toast.error("Failed to update stock");
+    }
+  };
+
+  const handleDeleteInventory = async (itemId: string) => {
+    const { error } = await supabase.from("bar_inventory").delete().eq("id", itemId);
+    if (!error) {
+      setInventory((prev) => prev.filter((i) => i.id !== itemId));
+      toast.success("Inventory item removed");
+    } else {
+      toast.error("Failed to remove item");
+    }
+  };
+
   const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
   const totalOrders = orders.length;
   const avgCheck = totalOrders > 0 ? totalRevenue / totalOrders : 0;
