@@ -11,6 +11,7 @@ import {
   Building2,
   ShieldCheck,
   ChefHat,
+  Info,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -44,6 +45,7 @@ const managementItems = [
   { title: "Staff", url: "/staff", icon: ShieldCheck },
   { title: "Website", url: "/website", icon: Globe },
   { title: "Settings", url: "/settings", icon: Settings },
+  { title: "About", url: "/about", icon: Info },
 ];
 
 export function AppSidebar() {
