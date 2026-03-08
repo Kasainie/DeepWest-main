@@ -1,8 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState, forwardRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO, isWithinInterval, isSameMonth } from "date-fns";
-import { useState } from "react";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO, isWithinInterval } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -25,7 +23,7 @@ const statusDot: Record<string, string> = {
   cancelled: "bg-destructive",
 };
 
-export function EventCalendar({ bookings }: Props) {
+export const EventCalendar = forwardRef<HTMLDivElement, Props>(({ bookings }, ref) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const days = useMemo(() => {
     const start = startOfMonth(currentMonth);
@@ -97,4 +95,6 @@ export function EventCalendar({ bookings }: Props) {
       </CardContent>
     </Card>
   );
-}
+});
+
+EventCalendar.displayName = "EventCalendar";
