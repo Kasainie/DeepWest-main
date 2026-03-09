@@ -56,6 +56,10 @@ export default function Dashboard() {
   useEffect(() => {
     if (!currentCompany) return;
     fetchDashboardData();
+    const interval = setInterval(() => {
+      fetchDashboardData();
+    }, 30000);
+    return () => clearInterval(interval);
   }, [currentCompany?.id, dateRange]);
 
   const fetchDashboardData = async () => {
