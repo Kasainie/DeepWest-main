@@ -63,8 +63,8 @@ export default function Dashboard() {
   }, [currentCompany?.id, dateRange]);
 
   const fetchDashboardData = async () => {
-    if (!currentCompany) return;
-    setLoading(true);
+    const isInitial = recentBookings.length === 0 && totalRooms === 0;
+    if (isInitial) setLoading(true);
 
     const { start: rangeStart } = getLocalDayBoundsUTC(dateRange.from);
     const { end: rangeEnd } = getLocalDayBoundsUTC(dateRange.to);
