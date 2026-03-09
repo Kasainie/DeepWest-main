@@ -76,17 +76,48 @@ Deno.serve(async (req: Request) => {
       .delete()
       .eq("staff_code", sanitizedCode);
 
-    // Check if a user account already exists for this staff member
     const staffEmail = `staff-${staff.staff_id}@internal.local`;
-    const staffPassword = `staff-${staff.staff_id}-${sanitizedCode}`;
 
-    // Try to sign in first
-    const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
-      email: staffEmail,
-      password: staffPassword,
-    });
+    // Generate a cryptographically random password for each login
+    // This ensures no deterministic password can be derived from staff_code
+    const randomBytes = new Uint8Array(32);
+    crypto.getRandomValues(randomBytes);
+    const randomPassword = Array.from(randomBytes, b => b.toString(16).padStart(2, '0')).join('');
 
-    if (signInData?.session) {
+    // Check if user already exists by looking up user_id on the staff record
+    const { data: staffRecord } = await supabaseAdmin
+      .from("company_staff")
+      .select("user_id")
+      .eq("id", staff.staff_id)
+      .single();
+
+    if (staffRecord?.user_id) {
+      // Existing user: rotate password to a fresh random value, then sign in
+      const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        staffRecord.user_id,
+        { password: randomPassword }
+      );
+
+      if (updateError) {
+        console.error("Failed to rotate password:", updateError);
+        return new Response(
+          JSON.stringify({ error: "Failed to authenticate" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+        email: staffEmail,
+        password: randomPassword,
+      });
+
+      if (signInError || !signInData?.session) {
+        return new Response(
+          JSON.stringify({ error: "Failed to authenticate" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       await supabaseAdmin
         .from("profiles")
         .update({ current_company_id: staff.company_id })
@@ -107,10 +138,10 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // User doesn't exist yet, create one
+    // User doesn't exist yet, create one with random password
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email: staffEmail,
-      password: staffPassword,
+      password: randomPassword,
       email_confirm: true,
       user_metadata: { full_name: staff.full_name },
     });
@@ -145,7 +176,7 @@ Deno.serve(async (req: Request) => {
     // Now sign in
     const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.signInWithPassword({
       email: staffEmail,
-      password: staffPassword,
+      password: randomPassword,
     });
 
     if (sessionError || !sessionData.session) {
