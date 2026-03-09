@@ -613,6 +613,27 @@ export type Database = {
           },
         ]
       }
+      login_attempts: {
+        Row: {
+          attempted_at: string
+          id: string
+          ip_address: string | null
+          staff_code: string
+        }
+        Insert: {
+          attempted_at?: string
+          id?: string
+          ip_address?: string | null
+          staff_code: string
+        }
+        Update: {
+          attempted_at?: string
+          id?: string
+          ip_address?: string | null
+          staff_code?: string
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           category: string
