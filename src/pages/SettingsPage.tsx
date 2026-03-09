@@ -70,7 +70,9 @@ export default function SettingsPage() {
     if (!currentCompany || !user) return;
     setRegenerating(true);
     try {
-      const newCode = "ADM-" + String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+      const arr = new Uint8Array(4);
+      crypto.getRandomValues(arr);
+      const newCode = "ADM-" + Array.from(arr).map(b => b.toString(36).padStart(2, '0')).join('').toUpperCase().slice(0, 8);
       const userName = user.user_metadata?.full_name || user.email || "Admin";
       const { error } = await supabase
         .from("company_staff")
@@ -98,7 +100,9 @@ export default function SettingsPage() {
     if (!currentCompany || !user) return;
     setRegenerating(true);
     try {
-      const newCode = "ADM-" + String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+      const arr = new Uint8Array(4);
+      crypto.getRandomValues(arr);
+      const newCode = "ADM-" + Array.from(arr).map(b => b.toString(36).padStart(2, '0')).join('').toUpperCase().slice(0, 8);
       const { error } = await supabase
         .from("company_staff")
         .update({ staff_code: newCode })

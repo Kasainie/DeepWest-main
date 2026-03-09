@@ -6,6 +6,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -21,18 +24,37 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    const sanitizedCode = staff_code.trim().toUpperCase();
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Rate limiting: check recent failed attempts for this code
+    const cutoff = new Date(Date.now() - LOCKOUT_MINUTES * 60 * 1000).toISOString();
+    const { count } = await supabaseAdmin
+      .from("login_attempts")
+      .select("*", { count: "exact", head: true })
+      .eq("staff_code", sanitizedCode)
+      .gte("attempted_at", cutoff);
+
+    if (count !== null && count >= MAX_ATTEMPTS) {
+      return new Response(
+        JSON.stringify({ error: "Too many failed attempts. Please try again later." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Look up staff by code
     const { data: staffData, error: lookupError } = await supabaseAdmin.rpc(
       "lookup_staff_by_code",
-      { _staff_code: staff_code.trim().toUpperCase() }
+      { _staff_code: sanitizedCode }
     );
 
     if (lookupError || !staffData || staffData.length === 0) {
+      // Record failed attempt
+      await supabaseAdmin.from("login_attempts").insert({ staff_code: sanitizedCode });
       return new Response(
         JSON.stringify({ error: "Invalid staff code" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -48,10 +70,15 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Clear failed attempts on success
+    await supabaseAdmin
+      .from("login_attempts")
+      .delete()
+      .eq("staff_code", sanitizedCode);
+
     // Check if a user account already exists for this staff member
-    // We use a deterministic email based on staff_id
     const staffEmail = `staff-${staff.staff_id}@internal.local`;
-    const staffPassword = `staff-${staff.staff_id}-${staff_code}`;
+    const staffPassword = `staff-${staff.staff_id}-${sanitizedCode}`;
 
     // Try to sign in first
     const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
@@ -60,7 +87,6 @@ Deno.serve(async (req: Request) => {
     });
 
     if (signInData?.session) {
-      // Update profile with current company
       await supabaseAdmin
         .from("profiles")
         .update({ current_company_id: staff.company_id })
