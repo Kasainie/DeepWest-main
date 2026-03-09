@@ -1220,6 +1220,21 @@ export type Database = {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
+      list_company_staff: {
+        Args: { _company_id: string }
+        Returns: {
+          company_id: string
+          created_at: string
+          department: string[]
+          full_name: string
+          id: string
+          is_active: boolean
+          phone: string
+          role: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       lookup_staff_by_code: {
         Args: { _staff_code: string }
         Returns: {
