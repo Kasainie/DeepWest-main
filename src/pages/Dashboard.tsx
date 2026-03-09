@@ -56,11 +56,15 @@ export default function Dashboard() {
   useEffect(() => {
     if (!currentCompany) return;
     fetchDashboardData();
+    const interval = setInterval(() => {
+      fetchDashboardData();
+    }, 30000);
+    return () => clearInterval(interval);
   }, [currentCompany?.id, dateRange]);
 
   const fetchDashboardData = async () => {
-    if (!currentCompany) return;
-    setLoading(true);
+    const isInitial = recentBookings.length === 0 && totalRooms === 0;
+    if (isInitial) setLoading(true);
 
     const { start: rangeStart } = getLocalDayBoundsUTC(dateRange.from);
     const { end: rangeEnd } = getLocalDayBoundsUTC(dateRange.to);
