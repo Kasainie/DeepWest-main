@@ -10,14 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { formatDistanceToNow } from "date-fns";
 
-// Map notification types to the departments that should see them
-const typeToDepartments: Record<string, string[] | null> = {
-  order: ["restaurant", "bar", "kitchen"],
-  booking: ["hotel", "accountant"],
-  staff: null,       // admin-only (null = visible to full-access users only)
-  warning: undefined as any, // visible to all
-  info: undefined as any,    // visible to all
-};
+// No more static type-to-department mapping — we use the `department` column from DB
 
 interface Notification {
   id: string;
