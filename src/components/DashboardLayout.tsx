@@ -81,6 +81,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) { // notific
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <SuperAdminApprovals />
               <NotificationDropdown />
               <Button
                 variant="ghost"
