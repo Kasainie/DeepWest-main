@@ -163,16 +163,22 @@ export default function SettingsPage() {
         logo_url = urlData.publicUrl;
       }
 
+      const updateData: Record<string, any> = {
+        name: form.name.trim(),
+        phone: form.phone.trim() || null,
+        address: form.address.trim() || null,
+        description: form.description.trim() || null,
+        logo_url,
+      };
+
+      // Only super admin can change company email
+      if (isSuperAdmin) {
+        updateData.email = form.email.trim() || null;
+      }
+
       const { error } = await supabase
         .from("companies")
-        .update({
-          name: form.name.trim(),
-          email: form.email.trim() || null,
-          phone: form.phone.trim() || null,
-          address: form.address.trim() || null,
-          description: form.description.trim() || null,
-          logo_url,
-        })
+        .update(updateData)
         .eq("id", currentCompany.id);
 
       if (error) {
