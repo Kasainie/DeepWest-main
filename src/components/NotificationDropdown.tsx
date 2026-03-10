@@ -17,6 +17,7 @@ interface Notification {
   title: string;
   message: string;
   type: string;
+  department: string | null;
   is_read: boolean;
   created_at: string;
 }
