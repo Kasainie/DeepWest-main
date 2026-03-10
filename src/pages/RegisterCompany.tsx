@@ -131,14 +131,9 @@ export default function RegisterCompany() {
       }
 
       // Send admin access code email via edge function
-      if (adminCode && parsed.email) {
+      if (adminCode) {
         supabase.functions.invoke("send-admin-code", {
-          body: {
-            email: parsed.email,
-            admin_code: adminCode,
-            company_name: parsed.name,
-            full_name: user.user_metadata?.full_name || parsed.name,
-          },
+          body: { company_id: company.id },
         }).catch((err) => console.warn("Failed to send admin code email:", err));
       }
 
