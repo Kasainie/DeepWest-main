@@ -116,11 +116,8 @@ export function NotificationDropdown() {
           setAllNotifications((prev) => [payload.new as Notification, ...prev]);
           // Only play sound if the notification passes the department filter
           const newNotif = payload.new as Notification;
-          const allowedDepts = typeToDepartments[newNotif.type];
           const shouldShow = isFullAccess || 
-            !(newNotif.type in typeToDepartments) || 
-            allowedDepts === undefined ||
-            (allowedDepts !== null && staffDepartment?.some(d => allowedDepts.includes(d.toLowerCase())));
+            (newNotif.department && staffDepartment?.some(d => d.toLowerCase() === newNotif.department?.toLowerCase()));
           if (shouldShow) playNotificationSound(newNotif.type);
         }
       )
