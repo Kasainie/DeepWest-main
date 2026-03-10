@@ -64,19 +64,16 @@ export function NotificationDropdown() {
 
   const isFullAccess = !companyRole || ["owner", "admin", "manager"].includes(companyRole);
 
-  // Filter notifications based on staff department access
+  // Filter notifications based on staff department access using the department column
   const notifications = useMemo(() => {
     if (isFullAccess) return allNotifications;
     return allNotifications.filter((n) => {
-      const allowedDepts = typeToDepartments[n.type];
-      // undefined means visible to all (info, warning)
-      if (!(n.type in typeToDepartments)) return true;
-      if (allowedDepts === undefined) return true;
-      // null means admin-only
-      if (allowedDepts === null) return false;
-      // Check if staff has any matching department
+      // No department set = admin-only (e.g. staff notifications)
+      if (!n.department) return false;
+      // If staff has no departments assigned, show nothing department-specific
       if (!staffDepartment || staffDepartment.length === 0) return false;
-      return staffDepartment.some(d => allowedDepts.includes(d.toLowerCase()));
+      // Match notification department against staff's departments
+      return staffDepartment.some(d => d.toLowerCase() === n.department?.toLowerCase());
     });
   }, [allNotifications, isFullAccess, staffDepartment]);
 
