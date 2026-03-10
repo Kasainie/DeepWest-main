@@ -17,10 +17,13 @@ import BrandingSettings from "@/components/settings/BrandingSettings";
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
+const SUPER_ADMIN_EMAIL = "kochjomboz04@gmail.com";
+
 export default function SettingsPage() {
   const { currentCompany, companyRole, refreshCompanies } = useCompany();
   const { user } = useAuth();
   const canEdit = companyRole === "owner" || companyRole === "admin";
+  const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
 
   const [saving, setSaving] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -160,16 +163,22 @@ export default function SettingsPage() {
         logo_url = urlData.publicUrl;
       }
 
+      const updateData: Record<string, any> = {
+        name: form.name.trim(),
+        phone: form.phone.trim() || null,
+        address: form.address.trim() || null,
+        description: form.description.trim() || null,
+        logo_url,
+      };
+
+      // Only super admin can change company email
+      if (isSuperAdmin) {
+        updateData.email = form.email.trim() || null;
+      }
+
       const { error } = await supabase
         .from("companies")
-        .update({
-          name: form.name.trim(),
-          email: form.email.trim() || null,
-          phone: form.phone.trim() || null,
-          address: form.address.trim() || null,
-          description: form.description.trim() || null,
-          logo_url,
-        })
+        .update(updateData)
         .eq("id", currentCompany.id);
 
       if (error) {
@@ -303,13 +312,28 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Email</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Label>Email</Label>
+                    {!isSuperAdmin && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Only super admin can change the company email</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
                   <Input
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                    disabled={!canEdit}
+                    disabled={!isSuperAdmin}
                     placeholder="info@company.com"
+                    className={!isSuperAdmin ? "bg-muted/50 cursor-not-allowed" : ""}
                   />
                 </div>
               </div>

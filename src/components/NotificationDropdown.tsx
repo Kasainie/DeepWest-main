@@ -10,20 +10,14 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { formatDistanceToNow } from "date-fns";
 
-// Map notification types to the departments that should see them
-const typeToDepartments: Record<string, string[] | null> = {
-  order: ["restaurant", "bar", "kitchen"],
-  booking: ["hotel", "accountant"],
-  staff: null,       // admin-only (null = visible to full-access users only)
-  warning: undefined as any, // visible to all
-  info: undefined as any,    // visible to all
-};
+// No more static type-to-department mapping — we use the `department` column from DB
 
 interface Notification {
   id: string;
   title: string;
   message: string;
   type: string;
+  department: string | null;
   is_read: boolean;
   created_at: string;
 }
@@ -70,19 +64,16 @@ export function NotificationDropdown() {
 
   const isFullAccess = !companyRole || ["owner", "admin", "manager"].includes(companyRole);
 
-  // Filter notifications based on staff department access
+  // Filter notifications based on staff department access using the department column
   const notifications = useMemo(() => {
     if (isFullAccess) return allNotifications;
     return allNotifications.filter((n) => {
-      const allowedDepts = typeToDepartments[n.type];
-      // undefined means visible to all (info, warning)
-      if (!(n.type in typeToDepartments)) return true;
-      if (allowedDepts === undefined) return true;
-      // null means admin-only
-      if (allowedDepts === null) return false;
-      // Check if staff has any matching department
+      // No department set = admin-only (e.g. staff notifications)
+      if (!n.department) return false;
+      // If staff has no departments assigned, show nothing department-specific
       if (!staffDepartment || staffDepartment.length === 0) return false;
-      return staffDepartment.some(d => allowedDepts.includes(d.toLowerCase()));
+      // Match notification department against staff's departments
+      return staffDepartment.some(d => d.toLowerCase() === n.department?.toLowerCase());
     });
   }, [allNotifications, isFullAccess, staffDepartment]);
 
@@ -125,11 +116,8 @@ export function NotificationDropdown() {
           setAllNotifications((prev) => [payload.new as Notification, ...prev]);
           // Only play sound if the notification passes the department filter
           const newNotif = payload.new as Notification;
-          const allowedDepts = typeToDepartments[newNotif.type];
           const shouldShow = isFullAccess || 
-            !(newNotif.type in typeToDepartments) || 
-            allowedDepts === undefined ||
-            (allowedDepts !== null && staffDepartment?.some(d => allowedDepts.includes(d.toLowerCase())));
+            (newNotif.department && staffDepartment?.some(d => d.toLowerCase() === newNotif.department?.toLowerCase()));
           if (shouldShow) playNotificationSound(newNotif.type);
         }
       )
@@ -142,7 +130,7 @@ export function NotificationDropdown() {
     if (!currentCompany) return;
     const { data } = await supabase
       .from("notifications")
-      .select("id, title, message, type, is_read, created_at")
+      .select("id, title, message, type, department, is_read, created_at")
       .eq("company_id", currentCompany.id)
       .order("created_at", { ascending: false })
       .limit(20);
