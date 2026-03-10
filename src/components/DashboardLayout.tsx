@@ -2,6 +2,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Search, LogOut, Building2, Sun, Moon } from "lucide-react";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
+import { SuperAdminApprovals } from "@/components/SuperAdminApprovals";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
@@ -80,6 +81,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) { // notific
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <SuperAdminApprovals />
               <NotificationDropdown />
               <Button
                 variant="ghost"

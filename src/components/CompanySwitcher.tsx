@@ -1,4 +1,5 @@
 import { useCompany } from "@/contexts/CompanyContext";
+import { useNavigate } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -6,18 +7,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2 } from "lucide-react";
+import { Building2, Plus } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+
+const ADD_COMPANY_VALUE = "__add_new_company__";
 
 export function CompanySwitcher() {
   const { companies, currentCompany, switchCompany } = useCompany();
+  const navigate = useNavigate();
 
   if (companies.length === 0) return null;
+
+  const handleValueChange = (value: string) => {
+    if (value === ADD_COMPANY_VALUE) {
+      navigate("/register-company");
+    } else {
+      switchCompany(value);
+    }
+  };
 
   return (
     <div className="flex items-center gap-2">
       <Select
         value={currentCompany?.id || ""}
-        onValueChange={switchCompany}
+        onValueChange={handleValueChange}
       >
         <SelectTrigger className="w-[200px] h-9 bg-secondary border-0">
           <div className="flex items-center gap-2">
@@ -46,6 +59,13 @@ export function CompanySwitcher() {
               </div>
             </SelectItem>
           ))}
+          <Separator className="my-1" />
+          <SelectItem value={ADD_COMPANY_VALUE}>
+            <div className="flex items-center gap-2 text-primary">
+              <Plus className="h-3 w-3" />
+              Register New Company
+            </div>
+          </SelectItem>
         </SelectContent>
       </Select>
     </div>
