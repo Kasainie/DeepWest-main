@@ -133,7 +133,7 @@ export function NotificationDropdown() {
     if (!currentCompany) return;
     const { data } = await supabase
       .from("notifications")
-      .select("id, title, message, type, is_read, created_at")
+      .select("id, title, message, type, department, is_read, created_at")
       .eq("company_id", currentCompany.id)
       .order("created_at", { ascending: false })
       .limit(20);
