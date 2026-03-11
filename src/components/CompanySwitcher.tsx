@@ -13,8 +13,10 @@ import { Separator } from "@/components/ui/separator";
 const ADD_COMPANY_VALUE = "__add_new_company__";
 
 export function CompanySwitcher() {
-  const { companies, currentCompany, switchCompany } = useCompany();
+  const { companies, currentCompany, companyRole, switchCompany } = useCompany();
   const navigate = useNavigate();
+
+  const isOwner = companyRole === "owner";
 
   if (companies.length === 0) return null;
 
