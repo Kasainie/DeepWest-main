@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ShieldCheck, UserCheck, UserX, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+
+const APPROVAL_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3";
 
 const SUPER_ADMIN_EMAIL = "kochjomboz04@gmail.com";
 
@@ -26,6 +28,19 @@ export function SuperAdminApprovals() {
 
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
 
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const playSound = useCallback(() => {
+    try {
+      if (!audioRef.current) {
+        audioRef.current = new Audio(APPROVAL_SOUND_URL);
+      }
+      audioRef.current.volume = 0.5;
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {});
+    } catch {}
+  }, []);
+
   const fetchPending = useCallback(async () => {
     if (!isSuperAdmin) return;
     setLoading(true);
@@ -39,6 +54,29 @@ export function SuperAdminApprovals() {
   useEffect(() => {
     fetchPending();
   }, [fetchPending]);
+
+  // Listen for new profile registrations in realtime
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+
+    const channel = supabase
+      .channel("super-admin-approvals")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "profiles" },
+        (payload) => {
+          const newProfile = payload.new as any;
+          if (!newProfile.is_approved) {
+            playSound();
+            toast("New company registration pending approval", { icon: "🛡️" });
+            fetchPending();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [isSuperAdmin, playSound, fetchPending]);
 
   const handleApproval = async (userId: string, approved: boolean) => {
     setProcessing((prev) => new Set(prev).add(userId));
