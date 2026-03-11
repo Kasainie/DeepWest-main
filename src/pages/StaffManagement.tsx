@@ -112,7 +112,7 @@ export default function StaffManagement() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [inviteRefreshKey, setInviteRefreshKey] = useState(0);
   const [resetting, setResetting] = useState<string | null>(null);
-  const canManage = companyRole === "owner" || companyRole === "admin";
+  const canManage = companyRole === "owner" || companyRole === "admin" || companyRole === "manager";
 
   const [form, setForm] = useState({
     full_name: "",
