@@ -36,6 +36,7 @@ export default function RegisterCompany() {
   const [loading, setLoading] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     name: "",
     slug: "",
