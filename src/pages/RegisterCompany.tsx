@@ -26,6 +26,7 @@ const companySchema = z.object({
   phone: z.string().trim().min(7, "Phone number must be at least 7 digits").max(30, "Phone number too long"),
   address: z.string().trim().max(255).optional().or(z.literal("")),
   description: z.string().trim().max(500).optional().or(z.literal("")),
+  switchPassword: z.string().min(4, "Password must be at least 4 characters").max(50),
 });
 
 export default function RegisterCompany() {
