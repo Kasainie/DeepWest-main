@@ -17,7 +17,7 @@ const ROUTE_DEPARTMENTS: Record<string, string[]> = {
 };
 
 // Routes only accessible to owner/admin/manager
-const ADMIN_ONLY_ROUTES = ["/website", "/settings"];
+const ADMIN_ONLY_ROUTES = ["/staff", "/website", "/settings"];
 
 export function DepartmentGuard({ children }: { children: React.ReactNode }) {
   const { companyRole, staffDepartment } = useCompany();
