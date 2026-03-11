@@ -28,6 +28,19 @@ export function SuperAdminApprovals() {
 
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
 
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const playSound = useCallback(() => {
+    try {
+      if (!audioRef.current) {
+        audioRef.current = new Audio(APPROVAL_SOUND_URL);
+      }
+      audioRef.current.volume = 0.5;
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => {});
+    } catch {}
+  }, []);
+
   const fetchPending = useCallback(async () => {
     if (!isSuperAdmin) return;
     setLoading(true);
@@ -41,6 +54,29 @@ export function SuperAdminApprovals() {
   useEffect(() => {
     fetchPending();
   }, [fetchPending]);
+
+  // Listen for new profile registrations in realtime
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+
+    const channel = supabase
+      .channel("super-admin-approvals")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "profiles" },
+        (payload) => {
+          const newProfile = payload.new as any;
+          if (!newProfile.is_approved) {
+            playSound();
+            toast("New company registration pending approval", { icon: "🛡️" });
+            fetchPending();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [isSuperAdmin, playSound, fetchPending]);
 
   const handleApproval = async (userId: string, approved: boolean) => {
     setProcessing((prev) => new Set(prev).add(userId));
