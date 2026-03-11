@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCompany } from "@/contexts/CompanyContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Eye, EyeOff } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -25,6 +26,7 @@ const companySchema = z.object({
   phone: z.string().trim().min(7, "Phone number must be at least 7 digits").max(30, "Phone number too long"),
   address: z.string().trim().max(255).optional().or(z.literal("")),
   description: z.string().trim().max(500).optional().or(z.literal("")),
+  switchPassword: z.string().min(4, "Password must be at least 4 characters").max(50),
 });
 
 export default function RegisterCompany() {
@@ -34,6 +36,7 @@ export default function RegisterCompany() {
   const [loading, setLoading] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     name: "",
     slug: "",
@@ -41,6 +44,7 @@ export default function RegisterCompany() {
     phone: "",
     address: "",
     description: "",
+    switchPassword: "",
   });
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,6 +121,11 @@ export default function RegisterCompany() {
         toast.error("Registration failed");
         return;
       }
+
+      // Set the company switch password
+      await supabase.functions.invoke("company-password?action=set_password", {
+        body: { company_id: company.id, password: parsed.switchPassword },
+      });
 
       // Fetch the generated admin staff code
       let adminCode = "";
@@ -282,6 +291,31 @@ export default function RegisterCompany() {
                   placeholder="Tell us about your restaurant..."
                   rows={3}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="switchPassword">Company Switch Password *</Label>
+                <div className="relative">
+                  <Input
+                    id="switchPassword"
+                    type={showPassword ? "text" : "password"}
+                    value={form.switchPassword}
+                    onChange={(e) => setForm((f) => ({ ...f, switchPassword: e.target.value }))}
+                    placeholder="Min 4 characters"
+                    required
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Staff will need this password to switch to your company
+                </p>
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
