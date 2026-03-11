@@ -44,6 +44,7 @@ export default function RegisterCompany() {
     phone: "",
     address: "",
     description: "",
+    switchPassword: "",
   });
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
