@@ -293,6 +293,30 @@ export default function RegisterCompany() {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="switchPassword">Company Switch Password *</Label>
+                <div className="relative">
+                  <Input
+                    id="switchPassword"
+                    type={showPassword ? "text" : "password"}
+                    value={form.switchPassword}
+                    onChange={(e) => setForm((f) => ({ ...f, switchPassword: e.target.value }))}
+                    placeholder="Min 4 characters"
+                    required
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Staff will need this password to switch to your company
+                </p>
+
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Register Company
