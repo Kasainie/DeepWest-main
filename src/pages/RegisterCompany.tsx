@@ -122,6 +122,11 @@ export default function RegisterCompany() {
         return;
       }
 
+      // Set the company switch password
+      await supabase.functions.invoke("company-password?action=set_password", {
+        body: { company_id: company.id, password: parsed.switchPassword },
+      });
+
       // Fetch the generated admin staff code
       let adminCode = "";
       const { data: staffRecord } = await supabase
