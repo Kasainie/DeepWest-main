@@ -13,8 +13,10 @@ import { Separator } from "@/components/ui/separator";
 const ADD_COMPANY_VALUE = "__add_new_company__";
 
 export function CompanySwitcher() {
-  const { companies, currentCompany, switchCompany } = useCompany();
+  const { companies, currentCompany, companyRole, switchCompany } = useCompany();
   const navigate = useNavigate();
+
+  const isOwner = companyRole === "owner";
 
   if (companies.length === 0) return null;
 
@@ -59,13 +61,17 @@ export function CompanySwitcher() {
               </div>
             </SelectItem>
           ))}
-          <Separator className="my-1" />
-          <SelectItem value={ADD_COMPANY_VALUE}>
-            <div className="flex items-center gap-2 text-primary">
-              <Plus className="h-3 w-3" />
-              Register New Company
-            </div>
-          </SelectItem>
+          {isOwner && (
+            <>
+              <Separator className="my-1" />
+              <SelectItem value={ADD_COMPANY_VALUE}>
+                <div className="flex items-center gap-2 text-primary">
+                  <Plus className="h-3 w-3" />
+                  Register New Company
+                </div>
+              </SelectItem>
+            </>
+          )}
         </SelectContent>
       </Select>
     </div>
