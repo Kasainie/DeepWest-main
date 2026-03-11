@@ -61,13 +61,17 @@ export function CompanySwitcher() {
               </div>
             </SelectItem>
           ))}
-          <Separator className="my-1" />
-          <SelectItem value={ADD_COMPANY_VALUE}>
-            <div className="flex items-center gap-2 text-primary">
-              <Plus className="h-3 w-3" />
-              Register New Company
-            </div>
-          </SelectItem>
+          {isOwner && (
+            <>
+              <Separator className="my-1" />
+              <SelectItem value={ADD_COMPANY_VALUE}>
+                <div className="flex items-center gap-2 text-primary">
+                  <Plus className="h-3 w-3" />
+                  Register New Company
+                </div>
+              </SelectItem>
+            </>
+          )}
         </SelectContent>
       </Select>
     </div>
