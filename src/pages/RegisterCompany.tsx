@@ -316,6 +316,7 @@ export default function RegisterCompany() {
                 <p className="text-xs text-muted-foreground">
                   Staff will need this password to switch to your company
                 </p>
+              </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
