@@ -387,6 +387,14 @@ export default function Login() {
           </Tabs>
         </CardContent>
       </Card>
+      {slug && company && (
+        <p className="mt-6 text-center text-xs text-muted-foreground/60">
+          Powered by{" "}
+          <a href="/" className="font-semibold text-muted-foreground hover:text-foreground transition-colors">
+            LKTECH
+          </a>
+        </p>
+      )}
     </div>
   );
 }
