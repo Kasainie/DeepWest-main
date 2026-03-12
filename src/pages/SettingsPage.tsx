@@ -445,6 +445,94 @@ export default function SettingsPage() {
         </motion.div>
       )}
 
+      {/* Change Switch Password - Owner only */}
+      {companyRole === "owner" && (
+        <motion.div variants={item}>
+          <Card className="shadow-card border-0">
+            <CardHeader>
+              <CardTitle className="text-lg font-display flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5" />
+                Company Switch Password
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                This password is required when users switch to this company. Update it here.
+              </p>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!currentCompany) return;
+                  if (switchPassword.length < 4) {
+                    toast.error("Password must be at least 4 characters");
+                    return;
+                  }
+                  if (switchPassword !== confirmSwitchPassword) {
+                    toast.error("Passwords do not match");
+                    return;
+                  }
+                  setSavingSwitchPw(true);
+                  try {
+                    const { data, error } = await supabase.functions.invoke(
+                      "company-password?action=set_password",
+                      { body: { company_id: currentCompany.id, password: switchPassword } }
+                    );
+                    if (error) throw error;
+                    if (data?.error) throw new Error(data.error);
+                    toast.success("Switch password updated!");
+                    setSwitchPassword("");
+                    setConfirmSwitchPassword("");
+                  } catch (err: any) {
+                    toast.error(err.message || "Failed to update password");
+                  } finally {
+                    setSavingSwitchPw(false);
+                  }
+                }}
+                className="space-y-4 max-w-sm"
+              >
+                <div className="space-y-2">
+                  <Label htmlFor="switchPw">New Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="switchPw"
+                      type={showSwitchPw ? "text" : "password"}
+                      value={switchPassword}
+                      onChange={(e) => setSwitchPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="pr-10"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSwitchPw(!showSwitchPw)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showSwitchPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmSwitchPw">Confirm Password</Label>
+                  <Input
+                    id="confirmSwitchPw"
+                    type={showSwitchPw ? "text" : "password"}
+                    value={confirmSwitchPassword}
+                    onChange={(e) => setConfirmSwitchPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+                <Button type="submit" disabled={savingSwitchPw} className="gap-1.5">
+                  {savingSwitchPw && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Update Switch Password
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
       <BrandingSettings />
 
       <motion.div variants={item}>
