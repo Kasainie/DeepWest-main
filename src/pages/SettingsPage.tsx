@@ -32,6 +32,10 @@ export default function SettingsPage() {
   const [staffCode, setStaffCode] = useState<string | null>(null);
   const [codeRevealed, setCodeRevealed] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [switchPassword, setSwitchPassword] = useState("");
+  const [confirmSwitchPassword, setConfirmSwitchPassword] = useState("");
+  const [savingSwitchPw, setSavingSwitchPw] = useState(false);
+  const [showSwitchPw, setShowSwitchPw] = useState(false);
   const [form, setForm] = useState({
     name: "",
     slug: "",
