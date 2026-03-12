@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Upload, X, Loader2, Building2, Lock, KeyRound, RefreshCw, Copy, Eye, EyeOff } from "lucide-react";
+import { Upload, X, Loader2, Building2, Lock, KeyRound, RefreshCw, Copy, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
