@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Navigate, Link, useParams } from "react-router-dom";
+import { Navigate, Link, useParams, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/contexts/AuthContext";
