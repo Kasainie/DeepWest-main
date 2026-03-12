@@ -38,6 +38,7 @@ import HomeRoute from "./components/HomeRoute";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+import CompanySlugRedirect from "./components/CompanySlugRedirect";
 
 const queryClient = new QueryClient();
 
