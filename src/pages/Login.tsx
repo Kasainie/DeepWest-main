@@ -64,14 +64,19 @@ export default function Login() {
   const [company, setCompany] = useState<CompanyInfo | null>(null);
   const [companyLoading, setCompanyLoading] = useState(!!slug);
 
+  const [companyNotFound, setCompanyNotFound] = useState(false);
+
   useEffect(() => {
     if (!slug) return;
     setCompanyLoading(true);
+    setCompanyNotFound(false);
     const fetchCompany = async () => {
       try {
         const { data } = await supabase.rpc("get_company_by_slug", { _slug: slug });
         if (data && Array.isArray(data) && data.length > 0) {
           setCompany(data[0] as CompanyInfo);
+        } else {
+          setCompanyNotFound(true);
         }
       } finally {
         setCompanyLoading(false);
