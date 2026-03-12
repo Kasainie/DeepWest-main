@@ -54,6 +54,7 @@ const App = () => {
             <Route path="/" element={<HomeRoute />} />
             <Route path="/login" element={<Login />} />
             <Route path="/login/:slug" element={<Login />} />
+            <Route path="/:slug" element={<CompanySlugRedirect />} />
             <Route path="/pending-approval" element={<PendingApproval />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
