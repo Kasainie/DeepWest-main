@@ -89,6 +89,10 @@ export default function Login() {
     return <Navigate to="/dashboard" replace />;
   }
 
+  if (slug && companyNotFound && !companyLoading) {
+    return <Navigate to="/login" replace />;
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
