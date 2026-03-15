@@ -7,7 +7,29 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Simple hash using Web Crypto (SHA-256 + salt)
+// In-memory rate limiter: key → { count, resetAt }
+const rateLimits = new Map<string, { count: number; resetAt: number }>();
+const MAX_ATTEMPTS = 5;
+const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+function checkRateLimit(key: string): { allowed: boolean; retryAfterSecs: number } {
+  const now = Date.now();
+  const entry = rateLimits.get(key);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimits.set(key, { count: 1, resetAt: now + WINDOW_MS });
+    return { allowed: true, retryAfterSecs: 0 };
+  }
+
+  if (entry.count >= MAX_ATTEMPTS) {
+    const retryAfterSecs = Math.ceil((entry.resetAt - now) / 1000);
+    return { allowed: false, retryAfterSecs };
+  }
+
+  entry.count++;
+  return { allowed: true, retryAfterSecs: 0 };
+}
+
 async function hashPassword(password: string, salt?: string): Promise<{ hash: string; salt: string }> {
   const s = salt || crypto.randomUUID();
   const data = new TextEncoder().encode(s + password);
@@ -44,13 +66,12 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const action = url.searchParams.get("action");
 
-    // ACTION: set_password — called during company registration
+    // ACTION: set_password
     if (action === "set_password") {
       const { company_id, password } = await req.json();
       if (!company_id || !password) throw new Error("Missing company_id or password");
       if (password.length < 4) throw new Error("Password must be at least 4 characters");
 
-      // Verify the user is the owner
       const { data: company } = await admin
         .from("companies")
         .select("owner_id")
@@ -72,12 +93,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ACTION: verify_password — called when switching companies
+    // ACTION: verify_password — rate-limited
     if (action === "verify_password") {
       const { company_id, password } = await req.json();
       if (!company_id || !password) throw new Error("Missing company_id or password");
 
-      // Verify the user is a member
+      // Rate limit by user + company combo
+      const rateKey = `${user.id}:${company_id}`;
+      const { allowed, retryAfterSecs } = checkRateLimit(rateKey);
+
+      if (!allowed) {
+        return new Response(
+          JSON.stringify({ error: `Too many attempts. Try again in ${Math.ceil(retryAfterSecs / 60)} minutes.` }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": String(retryAfterSecs) },
+          }
+        );
+      }
+
       const { data: member } = await admin
         .from("company_members")
         .select("id")
@@ -94,7 +128,6 @@ Deno.serve(async (req) => {
         .single();
 
       if (!company?.switch_password_hash) {
-        // No password set — allow
         return new Response(JSON.stringify({ verified: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
