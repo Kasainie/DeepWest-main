@@ -114,6 +114,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) { // notific
           <main className="flex-1 overflow-auto p-6">
             {children}
           </main>
+          <PWAInstallBanner />
         </div>
       </div>
     </SidebarProvider>
