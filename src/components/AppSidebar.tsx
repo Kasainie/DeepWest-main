@@ -58,6 +58,7 @@ const managementItems = [
   { title: "Staff", url: "/staff", icon: ShieldCheck, departments: null, adminOnly: true },
   { title: "Website", url: "/website", icon: Globe, departments: null, adminOnly: true },
   { title: "Settings", url: "/settings", icon: Settings, departments: null, adminOnly: true },
+  { title: "Install App", url: "/install", icon: Download, departments: null, adminOnly: false },
   { title: "About", url: "/about", icon: Info, departments: null, adminOnly: false },
 ];
 
