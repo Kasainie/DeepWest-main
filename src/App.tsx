@@ -132,6 +132,7 @@ const App = () => {
                               <Route path="/website" element={<Website />} />
                               <Route path="/settings" element={<SettingsPage />} />
                               <Route path="/about" element={<About />} />
+                              <Route path="/install" element={<InstallApp />} />
                               <Route path="/super-admin" element={<SuperAdminGuard><SuperAdmin /></SuperAdminGuard>} />
                               <Route path="*" element={<NotFound />} />
                             </Routes>
