@@ -38,6 +38,7 @@ import HomeRoute from "./components/HomeRoute";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+import InstallApp from "./pages/InstallApp";
 
 const queryClient = new QueryClient();
 
@@ -131,6 +132,7 @@ const App = () => {
                               <Route path="/website" element={<Website />} />
                               <Route path="/settings" element={<SettingsPage />} />
                               <Route path="/about" element={<About />} />
+                              <Route path="/install" element={<InstallApp />} />
                               <Route path="/super-admin" element={<SuperAdminGuard><SuperAdmin /></SuperAdminGuard>} />
                               <Route path="*" element={<NotFound />} />
                             </Routes>
