@@ -38,6 +38,7 @@ import HomeRoute from "./components/HomeRoute";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+import InstallApp from "./pages/InstallApp";
 
 const queryClient = new QueryClient();
 
