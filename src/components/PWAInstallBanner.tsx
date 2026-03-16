@@ -36,15 +36,7 @@ export function PWAInstallBanner() {
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
-  // Only show on narrow viewports (mobile)
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  if (isInstalled || dismissed || !isMobile) return null;
+  if (isInstalled || dismissed) return null;
   // Show only if there's a native prompt OR on iOS (which doesn't fire beforeinstallprompt)
   if (!deferredPrompt && !isIOS) return null;
 
