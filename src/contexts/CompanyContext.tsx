@@ -37,7 +37,7 @@ const CompanyContext = createContext<CompanyContextType>({
 export const useCompany = () => useContext(CompanyContext);
 
 export function CompanyProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
   const [companyRole, setCompanyRole] = useState<string | null>(null);
@@ -50,7 +50,9 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       setCurrentCompany(null);
       setCompanyRole(null);
       setStaffDepartment(null);
-      setLoading(false);
+      // Don't set loading=false when there's no user yet — 
+      // AuthContext may still be loading. Only clear loading if 
+      // we're sure there won't be a user (handled by the effect).
       return;
     }
 
@@ -123,8 +125,14 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   useEffect(() => {
+    if (authLoading) return; // Wait for auth to finish first
+    if (!user) {
+      // Auth is done and there's no user — safe to stop loading
+      setLoading(false);
+      return;
+    }
     fetchCompanies();
-  }, [fetchCompanies]);
+  }, [fetchCompanies, authLoading, user]);
 
   const switchCompany = async (companyId: string) => {
     if (!user) return;
