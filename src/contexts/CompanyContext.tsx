@@ -125,8 +125,14 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   useEffect(() => {
+    if (authLoading) return; // Wait for auth to finish first
+    if (!user) {
+      // Auth is done and there's no user — safe to stop loading
+      setLoading(false);
+      return;
+    }
     fetchCompanies();
-  }, [fetchCompanies]);
+  }, [fetchCompanies, authLoading, user]);
 
   const switchCompany = async (companyId: string) => {
     if (!user) return;
