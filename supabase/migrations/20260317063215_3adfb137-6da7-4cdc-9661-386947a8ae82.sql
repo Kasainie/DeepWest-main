@@ -1,1 +1,0 @@
-REVOKE INSERT, UPDATE, DELETE ON public.companies FROM anon;

@@ -38,7 +38,6 @@ import HomeRoute from "./components/HomeRoute";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
-import InstallApp from "./pages/InstallApp";
 
 const queryClient = new QueryClient();
 
@@ -55,7 +54,6 @@ const App = () => {
             <Route path="/" element={<HomeRoute />} />
             <Route path="/login" element={<Login />} />
             <Route path="/login/:slug" element={<Login />} />
-            <Route path="/:slug" element={<Login />} />
             <Route path="/pending-approval" element={<PendingApproval />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -132,7 +130,6 @@ const App = () => {
                               <Route path="/website" element={<Website />} />
                               <Route path="/settings" element={<SettingsPage />} />
                               <Route path="/about" element={<About />} />
-                              <Route path="/install" element={<InstallApp />} />
                               <Route path="/super-admin" element={<SuperAdminGuard><SuperAdmin /></SuperAdminGuard>} />
                               <Route path="*" element={<NotFound />} />
                             </Routes>

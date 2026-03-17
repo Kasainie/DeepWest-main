@@ -9,7 +9,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCompany } from "@/contexts/CompanyContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { CompanySwitcher } from "@/components/CompanySwitcher";
-import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
@@ -114,7 +113,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) { // notific
           <main className="flex-1 overflow-auto p-6">
             {children}
           </main>
-          <PWAInstallBanner />
         </div>
       </div>
     </SidebarProvider>

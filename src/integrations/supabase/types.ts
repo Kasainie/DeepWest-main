@@ -141,7 +141,6 @@ export type Database = {
           owner_id: string
           phone: string | null
           slug: string
-          switch_password_hash: string | null
           updated_at: string
         }
         Insert: {
@@ -156,7 +155,6 @@ export type Database = {
           owner_id: string
           phone?: string | null
           slug: string
-          switch_password_hash?: string | null
           updated_at?: string
         }
         Update: {
@@ -171,7 +169,6 @@ export type Database = {
           owner_id?: string
           phone?: string | null
           slug?: string
-          switch_password_hash?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1189,7 +1186,6 @@ export type Database = {
           owner_id: string
           phone: string | null
           slug: string
-          switch_password_hash: string | null
           updated_at: string
         }
         SetofOptions: {

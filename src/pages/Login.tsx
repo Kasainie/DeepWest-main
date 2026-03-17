@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Navigate, Link, useParams, useLocation } from "react-router-dom";
+import { Navigate, Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/contexts/AuthContext";
@@ -64,19 +64,14 @@ export default function Login() {
   const [company, setCompany] = useState<CompanyInfo | null>(null);
   const [companyLoading, setCompanyLoading] = useState(!!slug);
 
-  const [companyNotFound, setCompanyNotFound] = useState(false);
-
   useEffect(() => {
     if (!slug) return;
     setCompanyLoading(true);
-    setCompanyNotFound(false);
     const fetchCompany = async () => {
       try {
         const { data } = await supabase.rpc("get_company_by_slug", { _slug: slug });
         if (data && Array.isArray(data) && data.length > 0) {
           setCompany(data[0] as CompanyInfo);
-        } else {
-          setCompanyNotFound(true);
         }
       } finally {
         setCompanyLoading(false);
@@ -87,10 +82,6 @@ export default function Login() {
 
   if (session) {
     return <Navigate to="/dashboard" replace />;
-  }
-
-  if (slug && companyNotFound && !companyLoading) {
-    return <Navigate to="/login" replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -387,14 +378,6 @@ export default function Login() {
           </Tabs>
         </CardContent>
       </Card>
-      {slug && company && (
-        <p className="mt-6 text-center text-xs text-muted-foreground/60">
-          Powered by{" "}
-          <a href="/" className="font-semibold text-muted-foreground hover:text-foreground transition-colors">
-            LKTECH
-          </a>
-        </p>
-      )}
     </div>
   );
 }
