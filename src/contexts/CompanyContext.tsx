@@ -50,7 +50,9 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       setCurrentCompany(null);
       setCompanyRole(null);
       setStaffDepartment(null);
-      setLoading(false);
+      // Don't set loading=false when there's no user yet — 
+      // AuthContext may still be loading. Only clear loading if 
+      // we're sure there won't be a user (handled by the effect).
       return;
     }
 
