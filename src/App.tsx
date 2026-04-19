@@ -38,114 +38,89 @@ import HomeRoute from "./components/HomeRoute";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+import { ReactNode } from "react";
 
 const queryClient = new QueryClient();
+
+// Wrapper for all dashboard pages: auth + company + branding + layout + department guard
+const Shell = ({ children }: { children: ReactNode }) => (
+  <ProtectedRoute>
+    <CompanyProvider>
+      <CompanyGuard>
+        <BrandingProvider>
+          <DashboardLayout>
+            <DepartmentGuard>{children}</DepartmentGuard>
+          </DashboardLayout>
+        </BrandingProvider>
+      </CompanyGuard>
+    </CompanyProvider>
+  </ProtectedRoute>
+);
+
+// Wrapper for company-scoped pages without dashboard layout (register/invite/success)
+const Bare = ({ children }: { children: ReactNode }) => (
+  <ProtectedRoute>
+    <CompanyProvider>{children}</CompanyProvider>
+  </ProtectedRoute>
+);
 
 const App = () => {
   usePushNotifications();
   return (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<HomeRoute />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/login/:slug" element={<Login />} />
-            <Route path="/pending-approval" element={<PendingApproval />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route
-              path="/register-company"
-              element={
-                <ProtectedRoute>
-                  <CompanyProvider>
-                    <RegisterCompany />
-                  </CompanyProvider>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/register-success"
-              element={
-                <ProtectedRoute>
-                  <CompanyProvider>
-                    <RegisterSuccess />
-                  </CompanyProvider>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/accept-invite"
-              element={
-                <ProtectedRoute>
-                  <CompanyProvider>
-                    <AcceptInvite />
-                  </CompanyProvider>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <CompanyProvider>
-                    <CompanyGuard>
-                      <BrandingProvider>
-                        <DashboardLayout>
-                          <DepartmentGuard>
-                            <Dashboard />
-                          </DepartmentGuard>
-                        </DashboardLayout>
-                      </BrandingProvider>
-                    </CompanyGuard>
-                  </CompanyProvider>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/*"
-              element={
-                <ProtectedRoute>
-                  <CompanyProvider>
-                    <CompanyGuard>
-                      <BrandingProvider>
-                        <DashboardLayout>
-                          <DepartmentGuard>
-                            <Routes>
-                              <Route path="/rooms" element={<Rooms />} />
-                              <Route path="/restaurant" element={<Restaurant />} />
-                              <Route path="/bar" element={<Bar />} />
-                              <Route path="/bar-admin" element={<BarAdmin />} />
-                              <Route path="/kitchen" element={<Kitchen />} />
-                              <Route path="/conference" element={<Conference />} />
-                              <Route path="/bookings" element={<Bookings />} />
-                              <Route path="/guests" element={<Guests />} />
-                              <Route path="/sales" element={<Sales />} />
-                              <Route path="/tenders" element={<Tenders />} />
-                              <Route path="/expenses" element={<Expenses />} />
-                              <Route path="/staff" element={<StaffManagement />} />
-                              <Route path="/website" element={<Website />} />
-                              <Route path="/settings" element={<SettingsPage />} />
-                              <Route path="/about" element={<About />} />
-                              <Route path="/super-admin" element={<SuperAdminGuard><SuperAdmin /></SuperAdminGuard>} />
-                              <Route path="*" element={<NotFound />} />
-                            </Routes>
-                          </DepartmentGuard>
-                        </DashboardLayout>
-                      </BrandingProvider>
-                    </CompanyGuard>
-                  </CompanyProvider>
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Public */}
+              <Route path="/" element={<HomeRoute />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/login/:slug" element={<Login />} />
+              <Route path="/pending-approval" element={<PendingApproval />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+
+              {/* Authenticated, no dashboard chrome */}
+              <Route path="/register-company" element={<Bare><RegisterCompany /></Bare>} />
+              <Route path="/register-success" element={<Bare><RegisterSuccess /></Bare>} />
+              <Route path="/accept-invite" element={<Bare><AcceptInvite /></Bare>} />
+
+              {/* Dashboard pages */}
+              <Route path="/dashboard" element={<Shell><Dashboard /></Shell>} />
+              <Route path="/rooms" element={<Shell><Rooms /></Shell>} />
+              <Route path="/restaurant" element={<Shell><Restaurant /></Shell>} />
+              <Route path="/bar" element={<Shell><Bar /></Shell>} />
+              <Route path="/bar-admin" element={<Shell><BarAdmin /></Shell>} />
+              <Route path="/kitchen" element={<Shell><Kitchen /></Shell>} />
+              <Route path="/conference" element={<Shell><Conference /></Shell>} />
+              <Route path="/bookings" element={<Shell><Bookings /></Shell>} />
+              <Route path="/guests" element={<Shell><Guests /></Shell>} />
+              <Route path="/sales" element={<Shell><Sales /></Shell>} />
+              <Route path="/tenders" element={<Shell><Tenders /></Shell>} />
+              <Route path="/expenses" element={<Shell><Expenses /></Shell>} />
+              <Route path="/staff" element={<Shell><StaffManagement /></Shell>} />
+              <Route path="/website" element={<Shell><Website /></Shell>} />
+              <Route path="/settings" element={<Shell><SettingsPage /></Shell>} />
+              <Route path="/about" element={<Shell><About /></Shell>} />
+              <Route
+                path="/super-admin"
+                element={
+                  <Shell>
+                    <SuperAdminGuard>
+                      <SuperAdmin />
+                    </SuperAdminGuard>
+                  </Shell>
+                }
+              />
+
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 
