@@ -71,12 +71,36 @@ export function InviteStaffDialog({ onInviteSent }: InviteStaffDialogProps) {
       // Generate invite link
       const inviteLink = `${window.location.origin}/accept-invite?token=${data.token}`;
 
-      // Copy to clipboard
-      await navigator.clipboard.writeText(inviteLink);
-      toast.success("Invitation created! Link copied to clipboard.", {
-        description: `Share this link with ${parsed.email}`,
-        duration: 6000,
-      });
+      // Send email via Resend
+      const { error: emailError } = await supabase.functions.invoke(
+        "send-invitation-email",
+        {
+          body: {
+            email: parsed.email,
+            role: parsed.role,
+            companyName: currentCompany.name,
+            inviteLink,
+            inviterName: user.email,
+          },
+        },
+      );
+
+      // Copy link as fallback
+      try {
+        await navigator.clipboard.writeText(inviteLink);
+      } catch {}
+
+      if (emailError) {
+        toast.warning("Invite created, but email failed to send", {
+          description: "Link copied to clipboard — share it manually.",
+          duration: 7000,
+        });
+      } else {
+        toast.success(`Invitation emailed to ${parsed.email}`, {
+          description: "Link also copied to clipboard as a backup.",
+          duration: 6000,
+        });
+      }
 
       setEmail("");
       setRole("staff");
