@@ -137,6 +137,11 @@ export default function RegisterCompany() {
         }).catch((err) => console.warn("Failed to send admin code email:", err));
       }
 
+      // Notify all admins (new company owner + platform super admins) about the new registration
+      supabase.functions.invoke("notify-new-registration", {
+        body: { company_id: company.id },
+      }).catch((err) => console.warn("Failed to send registration notifications:", err));
+
       await refreshCompanies();
       navigate("/register-success", { state: { slug: company.slug, adminCode } });
     } catch (err: any) {
