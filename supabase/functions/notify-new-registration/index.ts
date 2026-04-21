@@ -174,7 +174,9 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             from: `LKTECH <onboarding@resend.dev>`,
             to: [r.email],
-            subject: `New company registered: ${company.name}`,
+            subject: isOwner
+              ? `Welcome to LKTECH — ${company.name} is live${adminCode ? " (your admin code inside)" : ""}`
+              : `New company registered: ${company.name}`,
             html,
           }),
         });
