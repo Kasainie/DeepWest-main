@@ -60,6 +60,15 @@ Deno.serve(async (req) => {
       .eq("id", company_id)
       .single();
 
+    // Fetch admin code for the owner (so we can include it in their email)
+    const { data: ownerStaff } = await admin
+      .from("company_staff")
+      .select("staff_code")
+      .eq("company_id", company_id)
+      .eq("user_id", company?.owner_id)
+      .maybeSingle();
+    const adminCode = ownerStaff?.staff_code as string | undefined;
+
     if (!company || company.owner_id !== userId) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
@@ -86,7 +95,7 @@ Deno.serve(async (req) => {
     superAdmins?.forEach((s) => userIds.add(s.user_id));
 
     // Resolve emails via auth.admin
-    const recipients: { email: string; name: string }[] = [];
+    const recipients: { email: string; name: string; userId: string }[] = [];
     for (const uid of userIds) {
       const { data: u } = await admin.auth.admin.getUserById(uid);
       if (u?.user?.email) {
@@ -95,6 +104,7 @@ Deno.serve(async (req) => {
           name:
             (u.user.user_metadata?.full_name as string) ||
             u.user.email.split("@")[0],
+          userId: uid,
         });
       }
     }
@@ -111,15 +121,20 @@ Deno.serve(async (req) => {
 
     const results: { email: string; ok: boolean; error?: string }[] = [];
 
+    // Get owner user id to determine which recipient is the owner
+    const ownerUserId = company.owner_id;
+
     for (const r of recipients) {
+      const isOwner = r.userId === ownerUserId;
+      const showCode = isOwner && adminCode;
       const html = `
         <!DOCTYPE html>
         <html><body style="font-family:Arial,sans-serif;background:#f5f5f5;padding:24px;margin:0;">
           <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-            <h1 style="color:#0f1b3d;margin:0 0 16px;font-size:22px;">New Company Registered 🎉</h1>
+            <h1 style="color:#0f1b3d;margin:0 0 16px;font-size:22px;">${isOwner ? `Welcome to LKTECH! 🎉` : `New Company Registered 🎉`}</h1>
             <p style="color:#333;line-height:1.6;font-size:15px;margin:0 0 12px;">Hi ${r.name},</p>
             <p style="color:#333;line-height:1.6;font-size:15px;margin:0 0 16px;">
-              A new company has just been registered on the platform:
+              ${isOwner ? `Your company has been successfully registered on the platform:` : `A new company has just been registered on the platform:`}
             </p>
             <div style="background:#f8f9fb;border-radius:8px;padding:16px;margin:16px 0;">
               <p style="margin:0 0 6px;font-size:14px;color:#666;">Company</p>
@@ -128,8 +143,21 @@ Deno.serve(async (req) => {
               ${company.phone ? `<p style="margin:0 0 4px;font-size:13px;color:#555;">📞 ${company.phone}</p>` : ""}
               <p style="margin:8px 0 0;font-size:13px;color:#555;">🔗 lktech.life/${company.slug}</p>
             </div>
+            ${showCode ? `
+              <p style="color:#333;line-height:1.6;font-size:15px;margin:16px 0 8px;">
+                Here is your <strong>Admin Access Code</strong>. Use it to sign in via the Staff Code login:
+              </p>
+              <div style="background:#f4f4f5;border-radius:8px;padding:20px;text-align:center;margin:12px 0 20px;">
+                <p style="font-size:28px;font-family:monospace;font-weight:bold;letter-spacing:4px;color:#0f1b3d;margin:0;">
+                  ${adminCode}
+                </p>
+              </div>
+              <p style="color:#666;font-size:12px;line-height:1.5;margin:0 0 16px;">
+                Keep this code safe and confidential. Anyone with this code can sign in as an administrator.
+              </p>
+            ` : ""}
             <p style="color:#666;font-size:13px;line-height:1.5;margin:24px 0 0;">
-              You're receiving this because you're an administrator on the platform.
+              ${isOwner ? `You can manage your business at any time from your dashboard.` : `You're receiving this because you're an administrator on the platform.`}
             </p>
           </div>
         </body></html>
