@@ -56,7 +56,11 @@ export default defineConfig(({ mode }) => ({
           },
         ],
       },
+      // Default (LKTECH) manifest. Per-tenant manifests are injected at runtime
+      // by `useTenantManifest` when a /:slug or /login/:slug URL is visited,
+      // so each company installs as its own branded PWA (unique id/scope/start_url).
       manifest: {
+        id: "/",
         name: "LKTECH Hospitality",
         short_name: "LKTECH",
         description: "All-in-one hospitality management platform",
@@ -65,7 +69,7 @@ export default defineConfig(({ mode }) => ({
         display: "standalone",
         orientation: "portrait",
         scope: "/",
-        start_url: "/dashboard",
+        start_url: "/",
         icons: [
           {
             src: "/pwa-192.png",
