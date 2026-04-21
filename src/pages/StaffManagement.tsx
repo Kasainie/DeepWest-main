@@ -119,6 +119,7 @@ export default function StaffManagement() {
     departments: ["hotel"] as string[],
     role: "staff",
     phone: "",
+    email: "",
     staff_code: generateStaffCode(),
   });
 
@@ -148,14 +149,18 @@ export default function StaffManagement() {
     }
     setSaving(true);
 
-    const { error } = await supabase.from("company_staff").insert({
-      company_id: currentCompany.id,
-      full_name: form.full_name.trim(),
-      staff_code: form.staff_code.trim().toUpperCase(),
-      department: form.departments,
-      role: form.role,
-      phone: form.phone.trim() || null,
-    });
+    const { data: inserted, error } = await supabase
+      .from("company_staff")
+      .insert({
+        company_id: currentCompany.id,
+        full_name: form.full_name.trim(),
+        staff_code: form.staff_code.trim().toUpperCase(),
+        department: form.departments,
+        role: form.role,
+        phone: form.phone.trim() || null,
+      })
+      .select("id")
+      .single();
 
     if (error) {
       if (error.code === "23505") toast.error("Staff code already exists in this company");
@@ -165,7 +170,28 @@ export default function StaffManagement() {
         description: `Code: ${form.staff_code}`,
         duration: 5000,
       });
-      setForm({ full_name: "", departments: ["hotel"], role: "staff", phone: "", staff_code: generateStaffCode() });
+
+      // Email the staff member their access code (if email given) and notify owner/admins.
+      if (inserted?.id) {
+        supabase.functions
+          .invoke("send-staff-code", {
+            body: {
+              staff_id: inserted.id,
+              staff_email: form.email.trim() || undefined,
+            },
+          })
+          .then(({ error: emailErr }) => {
+            if (emailErr) {
+              console.warn("send-staff-code error:", emailErr);
+              toast.warning("Staff added, but email could not be sent.");
+            } else if (form.email.trim()) {
+              toast.success(`Access code emailed to ${form.email.trim()}`);
+            }
+          })
+          .catch((err) => console.warn("send-staff-code failed:", err));
+      }
+
+      setForm({ full_name: "", departments: ["hotel"], role: "staff", phone: "", email: "", staff_code: generateStaffCode() });
       setAddOpen(false);
       fetchStaff();
     }
@@ -324,6 +350,15 @@ export default function StaffManagement() {
                         value={form.phone}
                         onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                         placeholder="+1 555-0123"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Email <span className="text-muted-foreground font-normal">(optional — sends them their access code)</span></Label>
+                      <Input
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                        placeholder="staff@example.com"
                       />
                     </div>
                     <div className="space-y-2">
