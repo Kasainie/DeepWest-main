@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 const MAX_COMPANY_LOGO_SIZE = 2 * 1024 * 1024;
 const ALLOWED_COMPANY_LOGO_TYPES = new Set([
   "image/png",
@@ -44,8 +46,6 @@ export async function uploadCompanyLogo(file: File, folder: string) {
   }
 
   const filePath = `${safeFolder}/${crypto.randomUUID()}.${extension}`;
-  const { supabase } = await import("@/integrations/supabase/client");
-
   const { error: uploadError } = await supabase.storage
     .from("company-logos")
     .upload(filePath, file, {
