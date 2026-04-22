@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import BrandingSettings from "@/components/settings/BrandingSettings";
+import { uploadCompanyLogo, validateCompanyLogoFile } from "@/lib/companyLogo";
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
@@ -125,10 +126,13 @@ export default function SettingsPage() {
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Logo must be under 2MB");
+    try {
+      validateCompanyLogoFile(file);
+    } catch (error: any) {
+      toast.error(error.message || "Invalid logo file");
       return;
     }
+
     setLogoFile(file);
     setLogoPreview(URL.createObjectURL(file));
     setRemoveLogo(false);
@@ -151,16 +155,8 @@ export default function SettingsPage() {
       if (removeLogo) {
         logo_url = null;
       } else if (logoFile) {
-        const ext = logoFile.name.split(".").pop();
-        const path = `${currentCompany.id}/${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from("company-logos")
-          .upload(path, logoFile);
-        if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage
-          .from("company-logos")
-          .getPublicUrl(path);
-        logo_url = urlData.publicUrl;
+        const upload = await uploadCompanyLogo(logoFile, currentCompany.id);
+        logo_url = upload.publicUrl;
       }
 
       const updateData: Record<string, any> = {

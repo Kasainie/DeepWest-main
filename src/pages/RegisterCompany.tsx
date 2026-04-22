@@ -12,6 +12,7 @@ import { Building2, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { motion } from "framer-motion";
+import { uploadCompanyLogo, validateCompanyLogoFile } from "@/lib/companyLogo";
 
 const companySchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
@@ -46,10 +47,13 @@ export default function RegisterCompany() {
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Logo must be under 2MB");
+    try {
+      validateCompanyLogoFile(file);
+    } catch (error: any) {
+      toast.error(error.message || "Invalid logo file");
       return;
     }
+
     setLogoFile(file);
     setLogoPreview(URL.createObjectURL(file));
   };
@@ -73,25 +77,8 @@ export default function RegisterCompany() {
 
       let logo_url: string | null = null;
       if (logoFile) {
-        try {
-          const ext = logoFile.name.split(".").pop();
-          const path = `${user.id}/${Date.now()}.${ext}`;
-          const { error: uploadError } = await supabase.storage
-            .from("company-logos")
-            .upload(path, logoFile, { upsert: true });
-          if (uploadError) {
-            console.warn("Logo upload failed, continuing without logo:", uploadError);
-            toast.warning("Logo upload failed, but company will be created without it.");
-          } else {
-            const { data: urlData } = supabase.storage
-              .from("company-logos")
-              .getPublicUrl(path);
-            logo_url = urlData.publicUrl;
-          }
-        } catch (uploadErr) {
-          console.warn("Logo upload error:", uploadErr);
-          toast.warning("Logo upload failed, continuing without logo.");
-        }
+        const upload = await uploadCompanyLogo(logoFile, user.id);
+        logo_url = upload.publicUrl;
       }
 
       const { data: company, error } = await supabase.rpc("create_company_with_owner", {
