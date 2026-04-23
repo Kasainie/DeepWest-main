@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { Navigate, Link, useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Navigate, Link, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,7 +51,8 @@ interface CompanyInfo {
 export default function Login() {
   const { session } = useAuth();
   const { slug } = useParams<{ slug?: string }>();
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [isSignUp, setIsSignUp] = useState(searchParams.get("mode") === "signup");
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -79,6 +80,10 @@ export default function Login() {
     };
     fetchCompany();
   }, [slug]);
+
+  useEffect(() => {
+    setIsSignUp(searchParams.get("mode") === "signup");
+  }, [searchParams]);
 
   if (session) {
     return <Navigate to="/dashboard" replace />;
@@ -338,7 +343,18 @@ export default function Login() {
               <div className="mt-4 text-center">
                 <button
                   type="button"
-                  onClick={() => setIsSignUp(!isSignUp)}
+                  onClick={() => {
+                    const nextMode = isSignUp ? null : "signup";
+                    const nextParams = new URLSearchParams(searchParams);
+
+                    if (nextMode) {
+                      nextParams.set("mode", nextMode);
+                    } else {
+                      nextParams.delete("mode");
+                    }
+
+                    setSearchParams(nextParams, { replace: true });
+                  }}
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {isSignUp ? "Already have an account? Sign in" : "Need an account? Sign up"}
