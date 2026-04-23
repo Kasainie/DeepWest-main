@@ -37,6 +37,7 @@ import AcceptInvite from "./pages/AcceptInvite";
 import Login from "./pages/Login";
 import HomeRoute from "./components/HomeRoute";
 import ForgotPassword from "./pages/ForgotPassword";
+import Install from "./pages/Install";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import { ReactNode } from "react";
@@ -76,6 +77,7 @@ const AppRoutes = () => {
       <Route path="/pending-approval" element={<PendingApproval />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/install" element={<Install />} />
 
       {/* Authenticated, no dashboard chrome */}
       <Route path="/register-company" element={<Bare><RegisterCompany /></Bare>} />
