@@ -114,7 +114,7 @@ export default function LandingPage() {
                 <motion.span className="inline-block" whileHover={{ x: 3 }}>→</motion.span>
               </Button>
             </Link>
-            <Link to="/register-company">
+            <Link to="/login?mode=signup">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
                 <Button size="sm" className="gap-1.5 shadow-lg shadow-primary/25">
                   Get Started <ArrowRight className="h-3.5 w-3.5" />
@@ -184,7 +184,7 @@ export default function LandingPage() {
             </motion.p>
 
             <motion.div variants={fadeUp} className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/register-company">
+              <Link to="/login?mode=signup">
                 <motion.div
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.98 }}
@@ -489,7 +489,7 @@ export default function LandingPage() {
               Join hospitality businesses already using LKTECH to manage their properties efficiently.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/register-company">
+              <Link to="/login?mode=signup">
                 <motion.div
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.98 }}
