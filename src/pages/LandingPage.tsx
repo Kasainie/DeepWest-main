@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Hotel, BarChart3, Users, Shield, ChefHat, CalendarCheck, ArrowRight, Zap, Globe, Headphones, Star, Sparkles, BedDouble, Wine, CreditCard, Clock } from "lucide-react";
+import { Hotel, BarChart3, Users, Shield, ChefHat, CalendarCheck, ArrowRight, Zap, Globe, Headphones, Star, Sparkles, BedDouble, Wine, CreditCard, Clock, Download } from "lucide-react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 
@@ -83,6 +83,8 @@ export default function LandingPage() {
   const { scrollYProgress } = useScroll({ target: containerRef });
   const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -80]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.25], [1, 0]);
+  const apkAvailable = __APK_AVAILABLE__;
+  const apkDownloadUrl = __APK_DOWNLOAD_URL__;
 
   return (
     <div ref={containerRef} className="min-h-screen bg-background text-foreground overflow-hidden">
@@ -499,6 +501,24 @@ export default function LandingPage() {
                   </Button>
                 </motion.div>
               </Link>
+              {apkAvailable ? (
+                <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.98 }}>
+                  <Button asChild size="lg" variant="outline" className="text-base px-8 h-12 gap-2 bg-background/10 text-primary-foreground border-primary-foreground/30 hover:bg-background/20 hover:text-primary-foreground">
+                    <a href={apkDownloadUrl} download>
+                      <Download className="h-4 w-4" />
+                      Download APK
+                    </a>
+                  </Button>
+                </motion.div>
+              ) : (
+                <div className="space-y-2 text-center">
+                  <Button size="lg" variant="outline" className="text-base px-8 h-12 gap-2 bg-background/10 text-primary-foreground border-primary-foreground/20 opacity-70 hover:bg-background/10 hover:text-primary-foreground" disabled>
+                    <Download className="h-4 w-4" />
+                    Download APK
+                  </Button>
+                  <p className="text-sm text-primary-foreground/80">APK download will appear here once the build asset is added.</p>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
