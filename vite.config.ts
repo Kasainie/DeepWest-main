@@ -6,13 +6,29 @@ import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
 const apkPublicPath = "downloads/lktech.apk";
-const apkExists = fs.existsSync(path.resolve(__dirname, "public", apkPublicPath));
+const apkExpectedFilename = /^lktech\.apk$/i;
+const apkMinimumBytes = 1024 * 100; // 100 KB sanity floor — APKs are MB-sized
+const apkAbsolutePath = path.resolve(__dirname, "public", apkPublicPath);
+
+const apkAvailable = (() => {
+  if (!fs.existsSync(apkAbsolutePath)) return false;
+  if (!apkExpectedFilename.test(path.basename(apkAbsolutePath))) {
+    console.warn(`[apk] Filename does not match expected pattern: ${path.basename(apkAbsolutePath)}`);
+    return false;
+  }
+  const stats = fs.statSync(apkAbsolutePath);
+  if (!stats.isFile() || stats.size < apkMinimumBytes) {
+    console.warn(`[apk] File too small or not a file (size: ${stats.size} bytes). Disabling download button.`);
+    return false;
+  }
+  return true;
+})();
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   define: {
-    __APK_AVAILABLE__: JSON.stringify(apkExists),
-    __APK_DOWNLOAD_URL__: JSON.stringify(apkExists ? `/${apkPublicPath}` : ""),
+    __APK_AVAILABLE__: JSON.stringify(apkAvailable),
+    __APK_DOWNLOAD_URL__: JSON.stringify(apkAvailable ? `/${apkPublicPath}` : ""),
   },
   server: {
     host: "::",
