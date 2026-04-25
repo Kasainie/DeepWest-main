@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "prepare:apk": "node scripts/prepare-apk.mjs",
-    "build": "npm run prepare:apk && vite build",
-    "build:dev": "npm run prepare:apk && vite build --mode development",
+    "build": "vite build",
+    "build:dev": "vite build --mode development",
+    "build:with-apk": "npm run prepare:apk && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
