@@ -136,10 +136,20 @@ export default function Login() {
 
     try {
       const { data, error } = await supabase.functions.invoke("staff-login", {
-        body: { staff_code: staffCode.trim().toUpperCase() },
+        body: { staff_code: staffCode.replace(/\s+/g, "").toUpperCase() },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Surface the real message from the function's error response body
+        let message = "Invalid staff code";
+        try {
+          const body = await (error as any)?.context?.json?.();
+          if (body?.error) message = body.error;
+        } catch {
+          /* ignore parse errors */
+        }
+        throw new Error(message);
+      }
       if (data?.error) throw new Error(data.error);
 
       if (data?.session) {
