@@ -1,12 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const MAX_COMPANY_LOGO_SIZE = 2 * 1024 * 1024;
+// SVG is intentionally excluded: SVG files can embed scripts that execute when
+// the stored file is opened directly, which would allow stored XSS.
 const ALLOWED_COMPANY_LOGO_TYPES = new Set([
   "image/png",
   "image/jpeg",
   "image/jpg",
   "image/webp",
-  "image/svg+xml",
 ]);
 
 const EXTENSION_BY_TYPE: Record<string, string> = {
@@ -14,7 +15,6 @@ const EXTENSION_BY_TYPE: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/jpg": "jpg",
   "image/webp": "webp",
-  "image/svg+xml": "svg",
 };
 
 export function validateCompanyLogoFile(file: File) {
@@ -23,29 +23,30 @@ export function validateCompanyLogoFile(file: File) {
   }
 
   if (!ALLOWED_COMPANY_LOGO_TYPES.has(file.type)) {
-    throw new Error("Use a PNG, JPG, WEBP, or SVG logo");
+    throw new Error("Use a PNG, JPG, or WEBP logo");
   }
 }
 
 function getFileExtension(file: File) {
-  const fromType = EXTENSION_BY_TYPE[file.type];
-  if (fromType) return fromType;
-
-  const fromName = file.name.split(".").pop()?.toLowerCase();
-  return fromName && fromName.length <= 5 ? fromName : "png";
+  return EXTENSION_BY_TYPE[file.type] ?? "png";
 }
 
 export async function uploadCompanyLogo(file: File, folder: string) {
   validateCompanyLogoFile(file);
 
-  const extension = getFileExtension(file);
-  const safeFolder = folder.trim();
+  const { data: authData } = await supabase.auth.getUser();
+  const userId = authData.user?.id;
 
-  if (!safeFolder) {
-    throw new Error("Missing upload folder for company logo");
+  if (!userId) {
+    throw new Error("You must be signed in to upload a company logo");
   }
 
-  const filePath = `${safeFolder}/${crypto.randomUUID()}.${extension}`;
+  const extension = getFileExtension(file);
+  const subFolder = folder.trim().replace(/[^a-zA-Z0-9-_]/g, "");
+
+  // Storage policies restrict uploads to the signed-in user's own folder.
+  const filePath = `${userId}/${subFolder ? `${subFolder}/` : ""}${crypto.randomUUID()}.${extension}`;
+
   const { error: uploadError } = await supabase.storage
     .from("company-logos")
     .upload(filePath, file, {
