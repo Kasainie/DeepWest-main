@@ -1,13 +1,13 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-
-const SUPER_ADMIN_EMAIL = "kochjomboz04@gmail.com";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
 export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
+  const { isSuperAdmin, loading: checking } = useSuperAdmin();
 
-  if (loading) {
+  if (loading || checking) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -15,7 +15,7 @@ export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (user?.email !== SUPER_ADMIN_EMAIL) {
+  if (!isSuperAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
 

@@ -14,17 +14,17 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import BrandingSettings from "@/components/settings/BrandingSettings";
 import { uploadCompanyLogo, validateCompanyLogoFile } from "@/lib/companyLogo";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
-const SUPER_ADMIN_EMAIL = "kochjomboz04@gmail.com";
 
 export default function SettingsPage() {
   const { currentCompany, companyRole, refreshCompanies } = useCompany();
   const { user } = useAuth();
   const canEdit = companyRole === "owner" || companyRole === "admin";
-  const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
+  const { isSuperAdmin } = useSuperAdmin();
 
   const [saving, setSaving] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);

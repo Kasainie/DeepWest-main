@@ -98,7 +98,10 @@ Deno.serve(async (req: Request) => {
 
     // If the staff member has a linked auth user, update their password too
     if (staffRecord.user_id) {
-      const newPassword = `staff-${staff_id}-${new_staff_code.trim().toUpperCase()}`;
+      // Cryptographically random password — never derivable from the staff code
+      const randomBytes = new Uint8Array(32);
+      crypto.getRandomValues(randomBytes);
+      const newPassword = Array.from(randomBytes, (b) => b.toString(16).padStart(2, "0")).join("");
       const { error: pwError } = await supabaseAdmin.auth.admin.updateUserById(
         staffRecord.user_id,
         { password: newPassword }

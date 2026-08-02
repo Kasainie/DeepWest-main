@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,13 +18,57 @@ const SYSTEM_PROMPT = `You are a friendly and knowledgeable AI concierge for a h
 
 Be warm, professional, and concise. Use markdown formatting for lists and emphasis when helpful. If you don't know something specific about this hotel, suggest the guest contact the front desk for the most accurate information.`;
 
-serve(async (req) => {
+const MAX_MESSAGES = 30;
+const MAX_CONTENT_LENGTH = 4000;
+
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const json = (body: unknown, status: number) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
   try {
-    const { messages } = await req.json();
+    // Require an authenticated user — prevents anonymous AI quota drain
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return json({ error: "Unauthorized" }, 401);
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return json({ error: "Unauthorized" }, 401);
+
+    const body = await req.json();
+    const rawMessages = Array.isArray(body?.messages) ? body.messages : null;
+    if (!rawMessages || rawMessages.length === 0) {
+      return json({ error: "Invalid request" }, 400);
+    }
+
+    const messages = rawMessages
+      .slice(-MAX_MESSAGES)
+      .filter(
+        (m: any) =>
+          m &&
+          (m.role === "user" || m.role === "assistant") &&
+          typeof m.content === "string",
+      )
+      .map((m: any) => ({
+        role: m.role,
+        content: m.content.slice(0, MAX_CONTENT_LENGTH),
+      }));
+
+    if (messages.length === 0) return json({ error: "Invalid request" }, 400);
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -38,34 +82,21 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            ...messages,
-          ],
+          messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
           stream: true,
         }),
-      }
+      },
     );
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Too many requests. Please try again in a moment." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return json({ error: "Too many requests. Please try again in a moment." }, 429);
       }
       if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI service quota reached. Please try again later." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return json({ error: "AI service quota reached. Please try again later." }, 402);
       }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      return new Response(
-        JSON.stringify({ error: "AI service unavailable" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      console.error("AI gateway error:", response.status, await response.text());
+      return json({ error: "AI service unavailable" }, 500);
     }
 
     return new Response(response.body, {
@@ -73,9 +104,6 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("chat error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return json({ error: "Internal server error" }, 500);
   }
 });

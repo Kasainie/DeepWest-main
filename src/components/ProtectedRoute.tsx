@@ -3,21 +3,21 @@ import { Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-
-const SUPER_ADMIN_EMAIL = "kochjomboz04@gmail.com";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, user, loading } = useAuth();
+  const { isSuperAdmin, loading: checkingSuperAdmin } = useSuperAdmin();
   const [approvalStatus, setApprovalStatus] = useState<"loading" | "approved" | "pending">("loading");
 
   useEffect(() => {
-    if (!user) {
+    if (!user || checkingSuperAdmin) {
       setApprovalStatus("loading");
       return;
     }
 
-    // Super admin always approved
-    if (user.email === SUPER_ADMIN_EMAIL) {
+    // Super admin (verified server-side) is always approved
+    if (isSuperAdmin) {
       setApprovalStatus("approved");
       return;
     }
@@ -32,7 +32,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       setApprovalStatus(data?.is_approved ? "approved" : "pending");
     };
     checkApproval();
-  }, [user]);
+  }, [user, isSuperAdmin, checkingSuperAdmin]);
 
   if (loading || (session && approvalStatus === "loading")) {
     return (

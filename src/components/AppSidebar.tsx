@@ -18,6 +18,7 @@ import {
   Crown,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useLocation } from "react-router-dom";
 import { useCompany } from "@/contexts/CompanyContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -66,7 +67,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { currentCompany, companyRole, staffDepartment } = useCompany();
   const { user } = useAuth();
-  const isSuperAdmin = user?.email === "kochjomboz04@gmail.com";
+  const { isSuperAdmin } = useSuperAdmin();
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 

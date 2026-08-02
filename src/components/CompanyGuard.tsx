@@ -1,15 +1,13 @@
 import { useCompany } from "@/contexts/CompanyContext";
-import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { Loader2, PauseCircle } from "lucide-react";
-
-const SUPER_ADMIN_EMAIL = "kochjomboz04@gmail.com";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
 export function CompanyGuard({ children }: { children: React.ReactNode }) {
   const { currentCompany, loading } = useCompany();
-  const { user } = useAuth();
+  const { isSuperAdmin, loading: checking } = useSuperAdmin();
 
-  if (loading) {
+  if (loading || checking) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -20,9 +18,6 @@ export function CompanyGuard({ children }: { children: React.ReactNode }) {
   if (!currentCompany) {
     return <Navigate to="/register-company" replace />;
   }
-
-  // Allow super admin to bypass pause
-  const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
 
   if ((currentCompany as any).is_paused && !isSuperAdmin) {
     return (

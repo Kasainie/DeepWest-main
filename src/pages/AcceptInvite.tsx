@@ -74,34 +74,13 @@ export default function AcceptInvite() {
     setStatus("accepting");
 
     try {
-      // Add as company member
-      const { error: memberError } = await supabase
-        .from("company_members")
-        .insert({
-          company_id: invitation.company_id,
-          user_id: user.id,
-          role: invitation.role,
-        });
+      // Acceptance is validated server-side (token, email match, expiry, role)
+      const { error: acceptError } = await (supabase.rpc as any)("accept_invitation", {
+        _token: invitation.token,
+      });
 
-      if (memberError) {
-        if (memberError.code === "23505") {
-          toast.info("You're already a member of this company");
-        } else {
-          throw memberError;
-        }
-      }
+      if (acceptError) throw acceptError;
 
-      // Mark invitation as accepted
-      await supabase
-        .from("company_invitations")
-        .update({ status: "accepted" })
-        .eq("id", invitation.id);
-
-      // Set as current company
-      await supabase
-        .from("profiles")
-        .update({ current_company_id: invitation.company_id })
-        .eq("user_id", user.id);
 
       setStatus("success");
       toast.success(`Welcome to ${company?.name || "the team"}!`);

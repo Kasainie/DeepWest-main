@@ -7,10 +7,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ShieldCheck, UserCheck, UserX, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
 const APPROVAL_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3";
 
-const SUPER_ADMIN_EMAIL = "kochjomboz04@gmail.com";
 
 interface PendingUser {
   user_id: string;
@@ -26,7 +26,7 @@ export function SuperAdminApprovals() {
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState<Set<string>>(new Set());
 
-  const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
+  const { isSuperAdmin } = useSuperAdmin();
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
