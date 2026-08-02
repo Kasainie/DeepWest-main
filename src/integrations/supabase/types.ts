@@ -141,7 +141,6 @@ export type Database = {
           owner_id: string
           phone: string | null
           slug: string
-          switch_password_hash: string | null
           updated_at: string
         }
         Insert: {
@@ -156,7 +155,6 @@ export type Database = {
           owner_id: string
           phone?: string | null
           slug: string
-          switch_password_hash?: string | null
           updated_at?: string
         }
         Update: {
@@ -171,7 +169,6 @@ export type Database = {
           owner_id?: string
           phone?: string | null
           slug?: string
-          switch_password_hash?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -905,6 +902,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_approved: boolean
+          is_super_admin: boolean
           updated_at: string
           user_id: string
         }
@@ -915,6 +913,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_approved?: boolean
+          is_super_admin?: boolean
           updated_at?: string
           user_id: string
         }
@@ -925,6 +924,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_approved?: boolean
+          is_super_admin?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -1167,6 +1167,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invitation: { Args: { _token: string }; Returns: string }
       create_company_with_owner: {
         Args: {
           _address?: string
@@ -1189,7 +1190,6 @@ export type Database = {
           owner_id: string
           phone: string | null
           slug: string
-          switch_password_hash: string | null
           updated_at: string
         }
         SetofOptions: {
@@ -1227,6 +1227,11 @@ export type Database = {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
+      is_company_member_raw: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       list_company_staff: {
         Args: { _company_id: string }
         Returns: {
@@ -1254,6 +1259,7 @@ export type Database = {
           staff_id: string
         }[]
       }
+      role_rank: { Args: { _role: string }; Returns: number }
     }
     Enums: {
       app_role: "admin" | "manager" | "staff"
