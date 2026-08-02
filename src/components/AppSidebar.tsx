@@ -18,6 +18,7 @@ import {
   Crown,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useLocation } from "react-router-dom";
 import { useCompany } from "@/contexts/CompanyContext";
 import { useAuth } from "@/contexts/AuthContext";
