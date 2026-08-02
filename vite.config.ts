@@ -71,6 +71,7 @@ export default defineConfig(({ mode }) => ({
           {
             urlPattern: ({ url }) => url.origin.includes("supabase.co"),
             handler: "NetworkFirst",
+            method: "GET",
             options: {
               cacheName: "supabase-api-cache",
               networkTimeoutSeconds: 10,
@@ -78,6 +79,20 @@ export default defineConfig(({ mode }) => ({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          // Background Sync: failed offline writes are replayed by the browser
+          // once connectivity returns, even if the app is closed.
+          ...(["POST", "PATCH", "PUT", "DELETE"] as const).map((method) => ({
+            urlPattern: ({ url }: { url: URL }) =>
+              url.origin.includes("supabase.co") && url.pathname.startsWith("/rest/v1/"),
+            handler: "NetworkOnly" as const,
+            method,
+            options: {
+              backgroundSync: {
+                name: `lktech-writes-${method.toLowerCase()}`,
+                options: { maxRetentionTime: 24 * 60 },
+              },
+            },
+          })),
         ],
       },
       // Default (LKTECH) manifest. Per-tenant manifests are injected at runtime
