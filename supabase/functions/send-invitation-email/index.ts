@@ -8,10 +8,26 @@ const corsHeaders = {
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 
+const ALLOWED_ORIGIN_PATTERNS = [
+  /^https:\/\/([a-z0-9-]+\.)*lovable\.app$/i,
+  /^https:\/\/([a-z0-9-]+\.)*lktech\.life$/i,
+  /^http:\/\/localhost:\d+$/,
+];
+
+function isAllowedOrigin(origin: string) {
+  return ALLOWED_ORIGIN_PATTERNS.some((p) => p.test(origin));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -19,16 +35,10 @@ Deno.serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
     if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY is not configured");
 
-    // Verify user is authenticated
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!authHeader) return json({ error: "Unauthorized" }, 401);
 
-    const supabase = createClient(
+    const supabaseUser = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } },
@@ -36,47 +46,74 @@ Deno.serve(async (req) => {
 
     const {
       data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    } = await supabaseUser.auth.getUser();
+    if (!user) return json({ error: "Unauthorized" }, 401);
+
+    const { invitation_token, origin } = await req.json();
+
+    if (!invitation_token || typeof invitation_token !== "string") {
+      return json({ error: "Missing invitation token" }, 400);
+    }
+    if (typeof origin !== "string" || !isAllowedOrigin(origin)) {
+      return json({ error: "Invalid origin" }, 400);
     }
 
-    const body = await req.json();
-    const { email, role, companyName, inviteLink, inviterName } = body;
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
 
-    if (!email || !inviteLink || !companyName) {
-      return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+    // Everything shown in the email comes from the database, never the client
+    const { data: invitation } = await supabaseAdmin
+      .from("company_invitations")
+      .select("id, company_id, email, role, token, status")
+      .eq("token", invitation_token)
+      .maybeSingle();
+
+    if (!invitation || invitation.status !== "pending") {
+      return json({ error: "Invitation not found" }, 404);
     }
+
+    // Caller must be an owner/admin/manager of the invitation's company
+    const { data: callerRole } = await supabaseAdmin.rpc("get_company_role", {
+      _user_id: user.id,
+      _company_id: invitation.company_id,
+    });
+    if (!callerRole || !["owner", "admin", "manager"].includes(callerRole)) {
+      return json({ error: "Insufficient permissions" }, 403);
+    }
+
+    const { data: company } = await supabaseAdmin
+      .from("companies")
+      .select("name")
+      .eq("id", invitation.company_id)
+      .single();
+
+    const companyName = company?.name ?? "Your company";
+    const inviteLink = `${origin}/accept-invite?token=${invitation.token}`;
+    const escape = (v: string) =>
+      v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const safeCompany = escape(companyName);
+    const safeRole = escape(invitation.role);
+    const safeLink = escape(inviteLink);
 
     const html = `
       <!DOCTYPE html>
       <html>
         <body style="font-family: Arial, sans-serif; background:#f5f5f5; padding:24px; margin:0;">
           <div style="max-width:560px; margin:0 auto; background:#ffffff; border-radius:12px; padding:32px; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-            <h1 style="color:#0f1b3d; margin:0 0 16px; font-size:22px;">You're invited to join ${companyName}</h1>
+            <h1 style="color:#0f1b3d; margin:0 0 16px; font-size:22px;">You're invited to join ${safeCompany}</h1>
             <p style="color:#333; line-height:1.6; font-size:15px; margin:0 0 12px;">
-              ${inviterName ? `${inviterName} has invited you` : "You've been invited"} to join <strong>${companyName}</strong> as a <strong>${role}</strong>.
-            </p>
-            <p style="color:#333; line-height:1.6; font-size:15px; margin:0 0 24px;">
-              Click the button below to accept your invitation and create your account.
+              You've been invited to join <strong>${safeCompany}</strong> as a <strong>${safeRole}</strong>.
             </p>
             <div style="text-align:center; margin:28px 0;">
-              <a href="${inviteLink}" style="background:#0f1b3d; color:#ffffff; padding:14px 28px; text-decoration:none; border-radius:8px; font-weight:600; display:inline-block;">
+              <a href="${safeLink}" style="background:#0f1b3d; color:#ffffff; padding:14px 28px; text-decoration:none; border-radius:8px; font-weight:600; display:inline-block;">
                 Accept Invitation
               </a>
             </div>
             <p style="color:#666; font-size:13px; line-height:1.5; margin:24px 0 0;">
               Or copy and paste this link into your browser:<br>
-              <a href="${inviteLink}" style="color:#0f1b3d; word-break:break-all;">${inviteLink}</a>
+              <a href="${safeLink}" style="color:#0f1b3d; word-break:break-all;">${safeLink}</a>
             </p>
             <hr style="border:none; border-top:1px solid #eee; margin:24px 0;">
             <p style="color:#999; font-size:12px; margin:0;">
@@ -96,7 +133,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         from: `${companyName} <onboarding@resend.dev>`,
-        to: [email],
+        to: [invitation.email],
         subject: `You're invited to join ${companyName}`,
         html,
       }),
@@ -105,21 +142,12 @@ Deno.serve(async (req) => {
     const data = await response.json();
     if (!response.ok) {
       console.error("Resend error:", response.status, data);
-      throw new Error(
-        `Resend API failed [${response.status}]: ${JSON.stringify(data)}`,
-      );
+      return json({ success: false, error: "Failed to send invitation email" }, 502);
     }
 
-    return new Response(JSON.stringify({ success: true, data }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ success: true });
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : "Unknown error";
-    console.error("send-invitation-email error:", msg);
-    return new Response(JSON.stringify({ success: false, error: msg }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("send-invitation-email error:", error);
+    return json({ success: false, error: "Internal server error" }, 500);
   }
 });
