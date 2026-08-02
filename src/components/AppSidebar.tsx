@@ -66,7 +66,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { currentCompany, companyRole, staffDepartment } = useCompany();
   const { user } = useAuth();
-  const isSuperAdmin = user?.email === "kochjomboz04@gmail.com";
+  const { isSuperAdmin } = useSuperAdmin();
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
