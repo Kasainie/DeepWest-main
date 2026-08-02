@@ -2,6 +2,13 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { registerSW } from "virtual:pwa-register";
+import { installOfflineInterceptor } from "./lib/offline/interceptor";
+import { startSyncEngine } from "./lib/offline/sync";
+
+// Offline-first data layer: cache reads, queue writes, sync when back online.
+installOfflineInterceptor();
+startSyncEngine();
+
 
 // Iframe / preview-safe service worker registration.
 // In Lovable preview iframes service workers cause stale content + nav issues,
