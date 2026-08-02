@@ -10,6 +10,8 @@ export interface OutboxItem {
   createdAt: number;
   attempts: number;
   lastError?: string;
+  /** Handed to the service worker Background Sync queue; app-side replay is a fallback only. */
+  swQueued?: boolean;
 }
 
 export interface CacheEntry {
