@@ -76,11 +76,8 @@ export function InviteStaffDialog({ onInviteSent }: InviteStaffDialogProps) {
         "send-invitation-email",
         {
           body: {
-            email: parsed.email,
-            role: parsed.role,
-            companyName: currentCompany.name,
-            inviteLink,
-            inviterName: user.email,
+            invitation_token: data.token,
+            origin: window.location.origin,
           },
         },
       );
