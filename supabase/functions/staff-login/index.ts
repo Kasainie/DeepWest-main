@@ -24,7 +24,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const sanitizedCode = staff_code.trim().toUpperCase();
+    const sanitizedCode = staff_code.replace(/\s+/g, "").toUpperCase();
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
