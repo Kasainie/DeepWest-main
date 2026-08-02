@@ -8,6 +8,7 @@ import {
   type OutboxItem,
 } from "./store";
 import { scheduleSync } from "./sync";
+import { isBackgroundSyncAvailable } from "./swSync";
 
 const MUTATING = ["POST", "PATCH", "PUT", "DELETE"];
 
@@ -44,7 +45,15 @@ function newId() {
     : `off-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-async function queueMutation(url: string, method: string, request: Request): Promise<Response> {
+async function queueMutation(
+  url: string,
+  method: string,
+  request: Request,
+  originalFetch: typeof fetch,
+): Promise<Response> {
+  // If a service worker is controlling the page, let the request reach it so
+  // Workbox's Background Sync queue can retry it even while the app is closed.
+  const handOffToSW = isBackgroundSyncAvailable();
   const table = tableFromUrl(url);
   const rawBody = MUTATING.includes(method) && method !== "DELETE" ? await request.clone().text() : null;
 
@@ -79,8 +88,15 @@ async function queueMutation(url: string, method: string, request: Request): Pro
     table,
     createdAt: Date.now(),
     attempts: 0,
+    swQueued: handOffToSW,
   };
   await enqueue(item);
+
+  if (handOffToSW) {
+    void originalFetch(request.clone()).catch(() => {
+      /* expected while offline — the service worker has queued it */
+    });
+  }
 
   const matchIds = idsFromUrl(url);
   if (method === "POST") await patchCachedTable(table, "insert", optimisticRows, []);
@@ -146,11 +162,11 @@ export function installOfflineInterceptor() {
 
     // Writes: try the network, queue on failure.
     if (MUTATING.includes(method)) {
-      if (!navigator.onLine) return queueMutation(url, method, request);
+      if (!navigator.onLine) return queueMutation(url, method, request, originalFetch);
       try {
         return await originalFetch(request.clone());
       } catch {
-        return queueMutation(url, method, request);
+        return queueMutation(url, method, request, originalFetch);
       }
     }
 

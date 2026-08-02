@@ -2,6 +2,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { dequeue, listOutbox, updateOutboxItem, emitOutboxChange, type OutboxItem } from "./store";
 
 const MAX_ATTEMPTS = 5;
+/** Items handed to the service worker are only replayed in-app if the SW clearly failed. */
+const SHADOW_REPLAY_AFTER_MS = 6 * 60 * 60 * 1000;
 let syncing = false;
 let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -32,7 +34,10 @@ async function authHeaders(item: OutboxItem): Promise<Record<string, string>> {
 /** Replays every queued mutation in the order it was made (last write wins). */
 export async function syncNow(): Promise<{ synced: number; failed: number }> {
   if (syncing || !navigator.onLine) return { synced: 0, failed: 0 };
-  const queue = await listOutbox();
+  const all = await listOutbox();
+  const queue = all.filter(
+    (i) => !i.swQueued || Date.now() - i.createdAt > SHADOW_REPLAY_AFTER_MS,
+  );
   if (queue.length === 0) return { synced: 0, failed: 0 };
 
   syncing = true;
