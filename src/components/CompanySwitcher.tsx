@@ -23,7 +23,7 @@ export function CompanySwitcher() {
   const canSwitch = companyRole === "owner" || companyRole === "admin";
 
   // Staff are locked to the single company they belong to — no cross-tenant switching.
-  if (!canSwitch || companies.length === 1) {
+  if (!canSwitch) {
     return (
       <div className="flex items-center gap-2 min-w-0 max-w-[45vw] sm:max-w-none">
         <span className="truncate text-sm font-medium">{currentCompany?.name}</span>
