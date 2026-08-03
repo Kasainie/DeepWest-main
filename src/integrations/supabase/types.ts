@@ -307,6 +307,7 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean
+          password_hash: string | null
           phone: string | null
           role: string
           staff_code: string
@@ -320,6 +321,7 @@ export type Database = {
           full_name: string
           id?: string
           is_active?: boolean
+          password_hash?: string | null
           phone?: string | null
           role?: string
           staff_code: string
@@ -333,6 +335,7 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean
+          password_hash?: string | null
           phone?: string | null
           role?: string
           staff_code?: string
@@ -1260,6 +1263,15 @@ export type Database = {
         }[]
       }
       role_rank: { Args: { _role: string }; Returns: number }
+      set_staff_password: {
+        Args: { _password: string; _staff_id: string }
+        Returns: undefined
+      }
+      staff_has_password: { Args: { _staff_id: string }; Returns: boolean }
+      verify_staff_password: {
+        Args: { _password: string; _staff_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "manager" | "staff"
