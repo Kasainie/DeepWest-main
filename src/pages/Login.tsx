@@ -60,6 +60,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [staffCode, setStaffCode] = useState("");
+  const [staffPassword, setStaffPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [staffLoading, setStaffLoading] = useState(false);
   const [company, setCompany] = useState<CompanyInfo | null>(null);
@@ -136,7 +137,10 @@ export default function Login() {
 
     try {
       const { data, error } = await supabase.functions.invoke("staff-login", {
-        body: { staff_code: staffCode.replace(/\s+/g, "").toUpperCase() },
+        body: {
+          staff_code: staffCode.replace(/\s+/g, "").toUpperCase(),
+          staff_password: staffPassword || undefined,
+        },
       });
 
       if (error) {
@@ -376,7 +380,7 @@ export default function Login() {
               <form onSubmit={handleStaffLogin} className="space-y-4">
                 <div className="rounded-lg bg-secondary/50 p-3 mb-2">
                   <p className="text-xs text-muted-foreground">
-                    Enter the staff code provided by your manager to access the system.
+                    Enter the staff code and password provided by your manager. You will only see your own restaurant/company.
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -389,6 +393,19 @@ export default function Login() {
                     className="text-center text-lg font-mono tracking-widest"
                     maxLength={20}
                     required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="staffPassword">
+                    Password <span className="text-muted-foreground font-normal">(if your manager set one)</span>
+                  </Label>
+                  <Input
+                    id="staffPassword"
+                    type="password"
+                    value={staffPassword}
+                    onChange={(e) => setStaffPassword(e.target.value)}
+                    placeholder="Staff password"
+                    autoComplete="current-password"
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={staffLoading}>
