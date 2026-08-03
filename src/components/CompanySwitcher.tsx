@@ -20,6 +20,17 @@ export function CompanySwitcher() {
 
   if (companies.length === 0) return null;
 
+  const canSwitch = companyRole === "owner" || companyRole === "admin";
+
+  // Staff are locked to the single company they belong to — no cross-tenant switching.
+  if (!canSwitch || companies.length === 1) {
+    return (
+      <div className="flex items-center gap-2 min-w-0 max-w-[45vw] sm:max-w-none">
+        <span className="truncate text-sm font-medium">{currentCompany?.name}</span>
+      </div>
+    );
+  }
+
   const handleValueChange = (value: string) => {
     if (value === ADD_COMPANY_VALUE) {
       navigate("/register-company");
@@ -34,7 +45,7 @@ export function CompanySwitcher() {
         value={currentCompany?.id || ""}
         onValueChange={handleValueChange}
       >
-        <SelectTrigger className="w-[200px] h-9 bg-secondary border-0">
+        <SelectTrigger className="w-[150px] sm:w-[200px] h-9 bg-secondary border-0">
           <div className="flex items-center gap-2">
             {currentCompany?.logo_url ? (
               <img
