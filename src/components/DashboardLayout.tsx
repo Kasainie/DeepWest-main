@@ -3,7 +3,6 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Search, LogOut, Building2, Sun, Moon } from "lucide-react";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
 import { SuperAdminApprovals } from "@/components/SuperAdminApprovals";
-import { OfflineIndicator } from "@/components/OfflineIndicator";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,8 +58,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) { // notific
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center justify-between border-b px-4 bg-card">
-            <div className="flex items-center gap-3">
+          <header className="h-14 flex items-center justify-between gap-2 border-b px-2 sm:px-4 bg-card sticky top-0 z-30">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <SidebarTrigger />
               {currentCompany?.logo_url ? (
                 <img
@@ -82,8 +81,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) { // notific
                 />
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <OfflineIndicator />
+            <div className="flex items-center gap-1 sm:gap-2">
               <SuperAdminApprovals />
 
               <NotificationDropdown />
@@ -114,7 +112,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) { // notific
               </Button>
             </div>
           </header>
-          <main className="flex-1 overflow-auto p-6">
+          <main className="flex-1 overflow-auto p-3 sm:p-4 lg:p-6 max-w-[1600px] w-full mx-auto">
             {children}
           </main>
         </div>
