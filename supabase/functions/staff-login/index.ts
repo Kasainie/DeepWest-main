@@ -15,7 +15,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { staff_code } = await req.json();
+    const { staff_code, staff_password } = await req.json();
 
     if (!staff_code || typeof staff_code !== "string" || staff_code.length < 3 || staff_code.length > 20) {
       return new Response(
@@ -62,6 +62,31 @@ Deno.serve(async (req: Request) => {
     }
 
     const staff = staffData[0];
+
+    // Password check — required whenever a password has been set for this staff member
+    const { data: hasPassword } = await supabaseAdmin.rpc("staff_has_password", {
+      _staff_id: staff.staff_id,
+    });
+
+    if (hasPassword) {
+      if (!staff_password || typeof staff_password !== "string") {
+        return new Response(
+          JSON.stringify({ error: "Password required", password_required: true }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const { data: valid } = await supabaseAdmin.rpc("verify_staff_password", {
+        _staff_id: staff.staff_id,
+        _password: staff_password,
+      });
+      if (!valid) {
+        await supabaseAdmin.from("login_attempts").insert({ staff_code: sanitizedCode });
+        return new Response(
+          JSON.stringify({ error: "Incorrect password" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
 
     if (!staff.is_active) {
       return new Response(
