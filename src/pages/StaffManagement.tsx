@@ -120,8 +120,12 @@ export default function StaffManagement() {
     role: "staff",
     phone: "",
     email: "",
+    password: "",
     staff_code: generateStaffCode(),
   });
+  const [pwdTarget, setPwdTarget] = useState<StaffRecord | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [savingPwd, setSavingPwd] = useState(false);
 
   useEffect(() => {
     if (currentCompany) fetchStaff();
@@ -171,6 +175,14 @@ export default function StaffManagement() {
         duration: 5000,
       });
 
+      if (inserted?.id && form.password.trim()) {
+        const { error: pwdErr } = await supabase.rpc("set_staff_password", {
+          _staff_id: inserted.id,
+          _password: form.password.trim(),
+        });
+        if (pwdErr) toast.error(`Staff added, but password not set: ${pwdErr.message}`);
+      }
+
       // Email the staff member their access code (if email given) and notify owner/admins.
       if (inserted?.id) {
         supabase.functions
@@ -191,11 +203,31 @@ export default function StaffManagement() {
           .catch((err) => console.warn("send-staff-code failed:", err));
       }
 
-      setForm({ full_name: "", departments: ["hotel"], role: "staff", phone: "", email: "", staff_code: generateStaffCode() });
+      setForm({ full_name: "", departments: ["hotel"], role: "staff", phone: "", email: "", password: "", staff_code: generateStaffCode() });
       setAddOpen(false);
       fetchStaff();
     }
     setSaving(false);
+  };
+
+  const handleSetPassword = async () => {
+    if (!pwdTarget) return;
+    if (newPassword.trim().length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    setSavingPwd(true);
+    const { error } = await supabase.rpc("set_staff_password", {
+      _staff_id: pwdTarget.id,
+      _password: newPassword.trim(),
+    });
+    if (error) toast.error(error.message);
+    else {
+      toast.success(`Password updated for ${pwdTarget.full_name}`);
+      setPwdTarget(null);
+      setNewPassword("");
+    }
+    setSavingPwd(false);
   };
 
   const handleCopyCode = async (code: string) => {
@@ -269,7 +301,7 @@ export default function StaffManagement() {
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-      <motion.div variants={item} className="flex items-center justify-between">
+      <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold font-display">Staff Management</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -378,6 +410,16 @@ export default function StaffManagement() {
                         Staff will use this code to log in
                       </p>
                     </div>
+                    <div className="space-y-2">
+                      <Label>Password <span className="text-muted-foreground font-normal">(optional, min 6 chars)</span></Label>
+                      <Input
+                        type="password"
+                        value={form.password}
+                        onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                        placeholder="Staff login password"
+                        autoComplete="new-password"
+                      />
+                    </div>
                     <Button type="submit" className="w-full" disabled={saving}>
                       {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                       Add Staff Member
@@ -389,6 +431,30 @@ export default function StaffManagement() {
           )}
         </div>
       </motion.div>
+
+      <Dialog open={!!pwdTarget} onOpenChange={(o) => { if (!o) setPwdTarget(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display">Set Login Password</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {pwdTarget?.full_name} will sign in with their staff code and this password.
+            </p>
+            <Input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="New password (min 6 characters)"
+              autoComplete="new-password"
+            />
+            <Button className="w-full" onClick={handleSetPassword} disabled={savingPwd}>
+              {savingPwd && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save Password
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <motion.div variants={item}>
         <PendingInvitations refreshKey={inviteRefreshKey} />
@@ -439,7 +505,7 @@ export default function StaffManagement() {
                   return (
                     <div
                       key={member.id}
-                      className={`flex items-center justify-between py-3 px-3 rounded-lg hover:bg-secondary/50 transition-colors ${!member.is_active ? "opacity-50" : ""}`}
+                      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-3 px-3 rounded-lg hover:bg-secondary/50 transition-colors ${!member.is_active ? "opacity-50" : ""}`}
                     >
                       <div className="flex items-center gap-3">
                         <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-primary-foreground">
@@ -470,6 +536,15 @@ export default function StaffManagement() {
                         <StaffCodeCell code={member.staff_code} onCopy={handleCopyCode} />
                         {canManage && (
                           <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-primary"
+                              onClick={() => { setPwdTarget(member); setNewPassword(""); }}
+                              title="Set login password"
+                            >
+                              <KeyRound className="h-3 w-3" />
+                            </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button
