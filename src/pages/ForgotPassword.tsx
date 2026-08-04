@@ -24,12 +24,23 @@ export default function ForgotPassword() {
 
     try {
       const parsed = emailSchema.parse({ email });
-      const { error } = await supabase.auth.resetPasswordForEmail(parsed.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+
+      // Branded reset email sent instantly via our own mailer
+      const { data, error } = await supabase.functions.invoke("send-password-reset", {
+        body: { email: parsed.email, origin: window.location.origin },
       });
-      if (error) throw error;
+
+      if (error || (data && data.success === false)) {
+        // Fallback to the built-in mailer so the user is never blocked
+        const { error: fallbackError } = await supabase.auth.resetPasswordForEmail(
+          parsed.email,
+          { redirectTo: `${window.location.origin}/reset-password` },
+        );
+        if (fallbackError) throw fallbackError;
+      }
+
       setSent(true);
-      toast.success("Password reset email sent!");
+      toast.success("Password reset email sent");
     } catch (err: any) {
       if (err instanceof z.ZodError) {
         toast.error(err.errors[0].message);
@@ -40,6 +51,7 @@ export default function ForgotPassword() {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">

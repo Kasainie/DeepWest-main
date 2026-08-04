@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { renderEmail, escapeHtml, sendMail } from "../_shared/email-brand.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -91,59 +92,30 @@ Deno.serve(async (req) => {
 
     const companyName = company?.name ?? "Your company";
     const inviteLink = `${origin}/accept-invite?token=${invitation.token}`;
-    const escape = (v: string) =>
-      v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    const safeCompany = escape(companyName);
-    const safeRole = escape(invitation.role);
-    const safeLink = escape(inviteLink);
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <body style="font-family: Arial, sans-serif; background:#f5f5f5; padding:24px; margin:0;">
-          <div style="max-width:560px; margin:0 auto; background:#ffffff; border-radius:12px; padding:32px; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-            <h1 style="color:#0f1b3d; margin:0 0 16px; font-size:22px;">You're invited to join ${safeCompany}</h1>
-            <p style="color:#333; line-height:1.6; font-size:15px; margin:0 0 12px;">
-              You've been invited to join <strong>${safeCompany}</strong> as a <strong>${safeRole}</strong>.
-            </p>
-            <div style="text-align:center; margin:28px 0;">
-              <a href="${safeLink}" style="background:#0f1b3d; color:#ffffff; padding:14px 28px; text-decoration:none; border-radius:8px; font-weight:600; display:inline-block;">
-                Accept Invitation
-              </a>
-            </div>
-            <p style="color:#666; font-size:13px; line-height:1.5; margin:24px 0 0;">
-              Or copy and paste this link into your browser:<br>
-              <a href="${safeLink}" style="color:#0f1b3d; word-break:break-all;">${safeLink}</a>
-            </p>
-            <hr style="border:none; border-top:1px solid #eee; margin:24px 0;">
-            <p style="color:#999; font-size:12px; margin:0;">
-              This invitation will expire in 7 days. If you weren't expecting this email, you can safely ignore it.
-            </p>
-          </div>
-        </body>
-      </html>
-    `;
-
-    const response = await fetch(`${GATEWAY_URL}/emails`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "X-Connection-Api-Key": RESEND_API_KEY,
-      },
-      body: JSON.stringify({
-        from: `${companyName} <onboarding@resend.dev>`,
-        to: [invitation.email],
-        subject: `You're invited to join ${companyName}`,
-        html,
-      }),
+    const html = renderEmail({
+      eyebrow: companyName,
+      title: `You've been invited to join ${companyName}`,
+      preheader: `Accept your ${invitation.role} invitation to ${companyName}.`,
+      content: `
+        <p style="margin:0 0 14px;">You've been invited to join <strong>${escapeHtml(companyName)}</strong> on LKTECH as a <strong>${escapeHtml(invitation.role)}</strong>.</p>
+        <p style="margin:0 0 14px;">Accept the invitation to set up your account and get access to the tools your team uses every day.</p>`,
+      cta: { label: "Accept invitation", url: inviteLink },
+      footerNote:
+        "This invitation expires in 7 days. If you weren't expecting it, you can safely ignore this email.",
     });
 
-    const data = await response.json();
-    if (!response.ok) {
-      console.error("Resend error:", response.status, data);
+    const result = await sendMail({
+      to: invitation.email,
+      subject: `You're invited to join ${companyName}`,
+      html,
+      fromName: companyName,
+    });
+
+    if (!result.ok) {
       return json({ success: false, error: "Failed to send invitation email" }, 502);
     }
+
 
     return json({ success: true });
   } catch (error: unknown) {
