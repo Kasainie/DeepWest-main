@@ -121,84 +121,55 @@ Deno.serve(async (req) => {
 
     const results: { email: string; ok: boolean; error?: string }[] = [];
 
-    // Get owner user id to determine which recipient is the owner
     const ownerUserId = company.owner_id;
 
-    for (const r of recipients) {
+    const messages = recipients.map((r) => {
       const isOwner = r.userId === ownerUserId;
       const showCode = isOwner && adminCode;
-      const html = `
-        <!DOCTYPE html>
-        <html><body style="font-family:Arial,sans-serif;background:#f5f5f5;padding:24px;margin:0;">
-          <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-            <h1 style="color:#0f1b3d;margin:0 0 16px;font-size:22px;">${isOwner ? `Welcome to LKTECH! 🎉` : `New Company Registered 🎉`}</h1>
-            <p style="color:#333;line-height:1.6;font-size:15px;margin:0 0 12px;">Hi ${r.name},</p>
-            <p style="color:#333;line-height:1.6;font-size:15px;margin:0 0 16px;">
-              ${isOwner ? `Your company has been successfully registered on the platform:` : `A new company has just been registered on the platform:`}
-            </p>
-            <div style="background:#f8f9fb;border-radius:8px;padding:16px;margin:16px 0;">
-              <p style="margin:0 0 6px;font-size:14px;color:#666;">Company</p>
-              <p style="margin:0 0 12px;font-size:18px;font-weight:600;color:#0f1b3d;">${company.name}</p>
-              ${company.email ? `<p style="margin:0 0 4px;font-size:13px;color:#555;">📧 ${company.email}</p>` : ""}
-              ${company.phone ? `<p style="margin:0 0 4px;font-size:13px;color:#555;">📞 ${company.phone}</p>` : ""}
-              <p style="margin:8px 0 0;font-size:13px;color:#555;">🔗 lktech.life/${company.slug}</p>
-            </div>
-            ${showCode ? `
-              <p style="color:#333;line-height:1.6;font-size:15px;margin:16px 0 8px;">
-                Here is your <strong>Admin Access Code</strong>. Use it to sign in via the Staff Code login:
-              </p>
-              <div style="background:#f4f4f5;border-radius:8px;padding:20px;text-align:center;margin:12px 0 20px;">
-                <p style="font-size:28px;font-family:monospace;font-weight:bold;letter-spacing:4px;color:#0f1b3d;margin:0;">
-                  ${adminCode}
-                </p>
-              </div>
-              <p style="color:#666;font-size:12px;line-height:1.5;margin:0 0 16px;">
-                Keep this code safe and confidential. Anyone with this code can sign in as an administrator.
-              </p>
-            ` : ""}
-            <p style="color:#666;font-size:13px;line-height:1.5;margin:24px 0 0;">
-              ${isOwner ? `You can manage your business at any time from your dashboard.` : `You're receiving this because you're an administrator on the platform.`}
-            </p>
-          </div>
-        </body></html>
-      `;
+      const details: Array<[string, string]> = [["Company", company.name]];
+      if (company.email) details.push(["Email", company.email]);
+      if (company.phone) details.push(["Phone", company.phone]);
+      details.push(["Workspace", `lktech.life/${company.slug}`]);
 
-      try {
-        const resp = await fetch(`${GATEWAY_URL}/emails`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "X-Connection-Api-Key": RESEND_API_KEY,
-          },
-          body: JSON.stringify({
-            from: `LKTECH <onboarding@resend.dev>`,
-            to: [r.email],
-            subject: isOwner
-              ? `Welcome to LKTECH — ${company.name} is live${adminCode ? " (your admin code inside)" : ""}`
-              : `New company registered: ${company.name}`,
-            html,
-          }),
-        });
-        const data = await resp.json();
-        if (!resp.ok) {
-          console.error("Resend failed for", r.email, resp.status, data);
-          results.push({
-            email: r.email,
-            ok: false,
-            error: JSON.stringify(data),
-          });
-        } else {
-          results.push({ email: r.email, ok: true });
-        }
-      } catch (e) {
-        results.push({
-          email: r.email,
-          ok: false,
-          error: e instanceof Error ? e.message : "unknown",
-        });
-      }
-    }
+      const html = renderEmail({
+        eyebrow: isOwner ? "Registration complete" : "Platform notification",
+        title: isOwner
+          ? `${company.name} is live on LKTECH`
+          : `New company registered: ${company.name}`,
+        preheader: isOwner
+          ? "Your workspace is ready — here's everything you need to get started."
+          : `${company.name} just joined the platform.`,
+        content: `
+          <p style="margin:0 0 10px;">Hi ${escapeHtml(r.name)},</p>
+          <p style="margin:0 0 6px;">${isOwner ? "Your company has been successfully registered on LKTECH." : "A new company has just been registered on the platform."}</p>
+          ${detailRows(details)}
+          ${showCode ? `<p style="margin:16px 0 0;">Use the administrator access code below to sign in from the <strong>Staff Code</strong> tab.</p>${codeBlock(adminCode!, "Admin Access Code")}` : ""}`,
+        cta: {
+          label: isOwner ? "Open your dashboard" : "Review in Super Admin",
+          url: isOwner ? `https://lktech.life/${company.slug}` : "https://lktech.life/super-admin",
+        },
+        footerNote: isOwner
+          ? "Keep your admin code confidential — anyone holding it can sign in as an administrator."
+          : "You're receiving this because you administer the LKTECH platform.",
+      });
+
+      return {
+        to: r.email,
+        subject: isOwner
+          ? `Welcome to LKTECH — ${company.name} is live`
+          : `New company registered: ${company.name}`,
+        html,
+        fromName: isOwner ? company.name : "LKTECH",
+      };
+    });
+
+    // Send everything concurrently so no recipient waits behind another.
+    const sendResults = await Promise.all(messages.map((m) => sendMail(m)));
+    const results = sendResults.map((res, i) => ({
+      email: messages[i].to,
+      ok: res.ok,
+    }));
+
 
     return new Response(
       JSON.stringify({
