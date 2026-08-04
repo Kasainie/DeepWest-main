@@ -100,66 +100,39 @@ Deno.serve(async (req: Request) => {
     const fullName = staffRecord.full_name || "Admin";
     const companyName = company.name;
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-        <body style="font-family:Arial,sans-serif;background:#f5f5f5;padding:24px;margin:0;">
-          <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-            <h1 style="color:#0f1b3d;margin:0 0 16px;font-size:22px;">Welcome, ${fullName}! 🎉</h1>
-            <p style="color:#333;line-height:1.6;font-size:15px;margin:0 0 12px;">
-              Your company <strong>${companyName}</strong> has been successfully registered on LKTECH.
-            </p>
-            <p style="color:#333;line-height:1.6;font-size:15px;margin:0 0 16px;">
-              Here is your <strong>Admin Access Code</strong>. Use it to sign in via the Staff Code login at any time:
-            </p>
-            <div style="background:#f4f4f5;border-radius:8px;padding:20px;text-align:center;margin:24px 0;">
-              <p style="font-size:28px;font-family:monospace;font-weight:bold;letter-spacing:4px;color:#0f1b3d;margin:0;">
-                ${adminCode}
-              </p>
-            </div>
-            <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;">
-              🔗 Your dashboard: <a href="https://lktech.life/${company.slug}" style="color:#0f1b3d;">lktech.life/${company.slug}</a>
-            </p>
-            <p style="color:#666;font-size:13px;line-height:1.5;margin:24px 0 0;">
-              Keep this code safe and confidential. Anyone with this code can sign in as an administrator.
-            </p>
-            <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
-            <p style="color:#999;font-size:12px;margin:0;">
-              This is an automated message from LKTECH. If you did not register a company, please ignore this email.
-            </p>
-          </div>
-        </body>
-      </html>
-    `;
-
-    const emailResponse = await fetch(`${GATEWAY_URL}/emails`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "X-Connection-Api-Key": RESEND_API_KEY,
-      },
-      body: JSON.stringify({
-        from: `LKTECH <onboarding@resend.dev>`,
-        to: [recipientEmail],
-        subject: `Your Admin Access Code for ${companyName}`,
-        html,
-      }),
+    const html = renderEmail({
+      eyebrow: companyName,
+      title: `Welcome aboard, ${fullName}`,
+      preheader: `Your admin access code for ${companyName}`,
+      content: `
+        <p style="margin:0 0 14px;">Your company <strong>${escapeHtml(companyName)}</strong> is now live on LKTECH.</p>
+        <p style="margin:0 0 4px;">Use the administrator access code below to sign in from the <strong>Staff Code</strong> tab at any time.</p>
+        ${codeBlock(adminCode, "Admin Access Code")}
+        <p style="margin:0;">Your workspace: <a href="https://lktech.life/${escapeHtml(company.slug)}" style="color:#8C551F;">lktech.life/${escapeHtml(company.slug)}</a></p>`,
+      cta: { label: "Open your dashboard", url: `https://lktech.life/${company.slug}` },
+      footerNote:
+        "Keep this code confidential — anyone holding it can sign in as an administrator.",
     });
 
-    const data = await emailResponse.json();
-    if (!emailResponse.ok) {
-      console.error("Resend error:", emailResponse.status, data);
+    const result = await sendMail({
+      to: recipientEmail,
+      subject: `Your admin access code for ${companyName}`,
+      html,
+      fromName: companyName,
+    });
+
+    if (!result.ok) {
       return new Response(
-        JSON.stringify({ error: "Failed to send email", details: data }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Failed to send email" }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     return new Response(
-      JSON.stringify({ success: true, data }),
+      JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
     console.error("send-admin-code error:", msg);
