@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { renderEmail, codeBlock, detailRows, escapeHtml, sendMail } from "../_shared/email-brand.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -119,7 +120,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const results: { email: string; ok: boolean; error?: string }[] = [];
+
 
     const ownerUserId = company.owner_id;
 
