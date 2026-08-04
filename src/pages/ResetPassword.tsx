@@ -26,22 +26,85 @@ export default function ResetPassword() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    // Check if this is a recovery session from the email link
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const type = hashParams.get("type");
+    let active = true;
 
-    if (type === "recovery") {
-      setIsValidSession(true);
-      setChecking(false);
-      return;
-    }
+    const bootstrap = async () => {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const query = new URLSearchParams(window.location.search);
 
-    // Also check if user has an active session (already processed the recovery token)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsValidSession(!!session);
-      setChecking(false);
-    });
+      const errorDescription =
+        hashParams.get("error_description") || query.get("error_description");
+
+      try {
+        // 1. PKCE style link: ?code=...
+        const code = query.get("code");
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (!error) {
+            if (active) {
+              setIsValidSession(true);
+              setChecking(false);
+            }
+            window.history.replaceState({}, "", "/reset-password");
+            return;
+          }
+        }
+
+        // 2. OTP style link: ?token_hash=...&type=recovery
+        const tokenHash = query.get("token_hash") || query.get("token");
+        const type = query.get("type") || hashParams.get("type");
+        if (tokenHash && type === "recovery") {
+          const { error } = await supabase.auth.verifyOtp({
+            type: "recovery",
+            token_hash: tokenHash,
+          });
+          if (!error) {
+            if (active) {
+              setIsValidSession(true);
+              setChecking(false);
+            }
+            window.history.replaceState({}, "", "/reset-password");
+            return;
+          }
+        }
+
+        // 3. Implicit style link: #access_token=...&type=recovery
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (!error) {
+            if (active) {
+              setIsValidSession(true);
+              setChecking(false);
+            }
+            window.history.replaceState({}, "", "/reset-password");
+            return;
+          }
+        }
+
+        // 4. Session already established by the auth client
+        const { data } = await supabase.auth.getSession();
+        if (!active) return;
+        setIsValidSession(!!data.session);
+        setChecking(false);
+        if (!data.session && errorDescription) toast.error(errorDescription);
+      } catch {
+        if (!active) return;
+        setIsValidSession(false);
+        setChecking(false);
+      }
+    };
+
+    bootstrap();
+    return () => {
+      active = false;
+    };
   }, []);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
