@@ -339,11 +339,22 @@ export default function Login() {
                 className="w-full"
                 type="button"
                 onClick={async () => {
-                  const { error } = await lovable.auth.signInWithOAuth("google", {
-                    redirect_uri: window.location.origin,
-                  });
-                  if (error) toast.error(error.message || "Google sign-in failed");
+                  try {
+                    const result = await lovable.auth.signInWithOAuth("google", {
+                      redirect_uri: window.location.origin,
+                      extraParams: { prompt: "select_account" },
+                    });
+                    if (result.error) {
+                      toast.error(result.error.message || "Google sign-in failed");
+                      return;
+                    }
+                    if (result.redirected) return;
+                    navigate("/dashboard", { replace: true });
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : "Google sign-in failed");
+                  }
                 }}
+
               >
                 <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
