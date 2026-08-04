@@ -349,7 +349,7 @@ export default function Login() {
                       return;
                     }
                     if (result.redirected) return;
-                    navigate("/dashboard", { replace: true });
+                    window.location.replace("/dashboard");
                   } catch (e) {
                     toast.error(e instanceof Error ? e.message : "Google sign-in failed");
                   }
