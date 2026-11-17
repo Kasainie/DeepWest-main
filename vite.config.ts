@@ -42,7 +42,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "apple-touch-icon.png", "robots.txt"],
+      includeAssets: ["apple-touch-icon.png", "robots.txt"],
       devOptions: {
         enabled: false,
       },
