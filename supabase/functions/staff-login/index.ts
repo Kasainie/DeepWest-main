@@ -15,7 +15,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { staff_code, staff_password } = await req.json();
+    const { staff_code, staff_password, company_slug } = await req.json();
 
     if (!staff_code || typeof staff_code !== "string" || staff_code.length < 3 || staff_code.length > 20) {
       return new Response(
@@ -23,8 +23,19 @@ Deno.serve(async (req: Request) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    if (
+      company_slug !== undefined &&
+      company_slug !== null &&
+      (typeof company_slug !== "string" || !company_slug.trim() || company_slug.length > 255)
+    ) {
+      return new Response(
+        JSON.stringify({ error: "Invalid company login link" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const sanitizedCode = staff_code.replace(/\s+/g, "").toUpperCase();
+    const normalizedCompanySlug = typeof company_slug === "string" ? company_slug.trim() : null;
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -49,10 +60,18 @@ Deno.serve(async (req: Request) => {
     // Look up staff by code
     const { data: staffData, error: lookupError } = await supabaseAdmin.rpc(
       "lookup_staff_by_code",
-      { _staff_code: sanitizedCode }
+      { _staff_code: sanitizedCode, _company_slug: normalizedCompanySlug }
     );
 
-    if (lookupError || !staffData || staffData.length === 0) {
+    if (lookupError) {
+      console.error("Staff lookup failed:", lookupError);
+      return new Response(
+        JSON.stringify({ error: "Failed to authenticate" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!staffData || staffData.length === 0) {
       // Record failed attempt
       await supabaseAdmin.from("login_attempts").insert({ staff_code: sanitizedCode });
       return new Response(
@@ -60,8 +79,15 @@ Deno.serve(async (req: Request) => {
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    if (staffData.length > 1) {
+      return new Response(
+        JSON.stringify({ error: "Staff code matches multiple hotels. Use your hotel's login link." }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const staff = staffData[0];
+    const companyMembershipRole = staff.role === "waiter" ? "staff" : staff.role;
 
     // Password check — required whenever a password has been set for this staff member
     const { data: hasPassword } = await supabaseAdmin.rpc("staff_has_password", {
@@ -110,13 +136,52 @@ Deno.serve(async (req: Request) => {
     const randomPassword = Array.from(randomBytes, b => b.toString(16).padStart(2, '0')).join('');
 
     // Check if user already exists by looking up user_id on the staff record
-    const { data: staffRecord } = await supabaseAdmin
+    const { data: staffRecord, error: staffRecordError } = await supabaseAdmin
       .from("company_staff")
       .select("user_id")
       .eq("id", staff.staff_id)
       .single();
 
-    if (staffRecord?.user_id) {
+    if (staffRecordError || !staffRecord) {
+      console.error("Failed to load staff record for authentication:", staffRecordError);
+      return new Response(
+        JSON.stringify({ error: "Failed to authenticate" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    let linkedStaffUser = false;
+    if (staffRecord.user_id) {
+      const { data: linkedAuthUser, error: linkedAuthUserError } =
+        await supabaseAdmin.auth.admin.getUserById(staffRecord.user_id);
+
+      if (linkedAuthUserError) {
+        console.error("Failed to resolve linked staff auth user:", linkedAuthUserError);
+        return new Response(
+          JSON.stringify({ error: "Failed to authenticate" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      linkedStaffUser = linkedAuthUser.user.email?.toLowerCase() === staffEmail.toLowerCase();
+
+      if (!linkedStaffUser) {
+        const { error: unlinkError } = await supabaseAdmin
+          .from("company_staff")
+          .update({ user_id: null })
+          .eq("id", staff.staff_id);
+
+        if (unlinkError) {
+          console.error("Failed to unlink unrelated auth user from staff record:", unlinkError);
+          return new Response(
+            JSON.stringify({ error: "Failed to authenticate" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
+
+    if (linkedStaffUser && staffRecord.user_id) {
       // Existing user: rotate password to a fresh random value, then sign in
       const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
         staffRecord.user_id,
@@ -137,6 +202,22 @@ Deno.serve(async (req: Request) => {
       });
 
       if (signInError || !signInData?.session) {
+        console.error("Failed to sign in linked staff user:", signInError);
+        return new Response(
+          JSON.stringify({ error: "Failed to authenticate" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { error: membershipError } = await supabaseAdmin
+        .from("company_members")
+        .upsert({
+          company_id: staff.company_id,
+          user_id: signInData.user.id,
+          role: companyMembershipRole,
+        }, { onConflict: "company_id,user_id" });
+      if (membershipError) {
+        console.error("Failed to update staff company membership:", membershipError);
         return new Response(
           JSON.stringify({ error: "Failed to authenticate" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -186,11 +267,18 @@ Deno.serve(async (req: Request) => {
       .eq("id", staff.staff_id);
 
     // Add as company member
-    await supabaseAdmin.from("company_members").upsert({
+    const { error: membershipError } = await supabaseAdmin.from("company_members").upsert({
       company_id: staff.company_id,
       user_id: newUser.user.id,
-      role: staff.role,
-    }, { onConflict: "company_id,user_id" }).select();
+      role: companyMembershipRole,
+    }, { onConflict: "company_id,user_id" });
+    if (membershipError) {
+      console.error("Failed to add staff company membership:", membershipError);
+      return new Response(
+        JSON.stringify({ error: "Failed to authenticate" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Set current company
     await supabaseAdmin
@@ -205,6 +293,7 @@ Deno.serve(async (req: Request) => {
     });
 
     if (sessionError || !sessionData.session) {
+      console.error("Failed to sign in newly created staff user:", sessionError);
       return new Response(
         JSON.stringify({ error: "Failed to authenticate" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

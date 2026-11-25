@@ -101,7 +101,7 @@ export function SuperAdminApprovals() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative h-8 w-8 sm:h-10 sm:w-10">
           <ShieldCheck className="h-4 w-4" />
           {pendingUsers.length > 0 && (
             <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-amber-500 text-[10px] font-bold text-white flex items-center justify-center">

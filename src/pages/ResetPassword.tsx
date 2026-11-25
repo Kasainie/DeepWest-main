@@ -120,7 +120,7 @@ export default function ResetPassword() {
       navigate("/dashboard");
     } catch (err: any) {
       if (err instanceof z.ZodError) {
-        toast.error(err.errors[0].message);
+        toast.error(err.issues[0]?.message ?? "Invalid password reset details");
       } else {
         toast.error(err.message || "Failed to update password");
       }

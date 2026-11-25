@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { KshIcon } from "@/components/KshIcon";
+import { toast } from "sonner";
 import {
   AreaChart,
   Area,
@@ -21,15 +22,12 @@ type Period = "daily" | "weekly" | "monthly";
 interface DataPoint {
   label: string;
   orders: number;
-  bookings: number;
-  total: number;
 }
 
 export default function RevenueChart() {
   const { currentCompany } = useCompany();
   const [period, setPeriod] = useState<Period>("daily");
   const [orderData, setOrderData] = useState<{ date: string; total: number }[]>([]);
-  const [bookingData, setBookingData] = useState<{ date: string; amount: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,31 +41,23 @@ export default function RevenueChart() {
 
     const since = subMonths(new Date(), 6).toISOString();
 
-    const [ordersRes, bookingsRes] = await Promise.all([
-      supabase
-        .from("orders")
-        .select("created_at, total")
-        .eq("company_id", currentCompany.id)
-        .gte("created_at", since)
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("bookings")
-        .select("created_at, amount")
-        .eq("company_id", currentCompany.id)
-        .gte("created_at", since)
-        .order("created_at", { ascending: true }),
-    ]);
+    const { data: orders, error } = await supabase
+      .from("orders")
+      .select("created_at, total")
+      .eq("company_id", currentCompany.id)
+      .gte("created_at", since)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      setLoading(false);
+      toast.error(error.message);
+      return;
+    }
 
     setOrderData(
-      (ordersRes.data || []).map((o) => ({
+      (orders || []).map((o) => ({
         date: o.created_at,
         total: Number(o.total) || 0,
-      }))
-    );
-    setBookingData(
-      (bookingsRes.data || []).map((b) => ({
-        date: b.created_at,
-        amount: Number(b.amount) || 0,
       }))
     );
     setLoading(false);
@@ -96,39 +86,29 @@ export default function RevenueChart() {
       labelFn = (d) => format(d, "MMM yyyy");
     }
 
-    const buckets = new Map<string, { orders: number; bookings: number }>();
+    const buckets = new Map<string, number>();
     intervals.forEach((d) => {
       const key = period === "monthly" ? format(d, "yyyy-MM") : keyFn(d);
-      buckets.set(key, { orders: 0, bookings: 0 });
+      buckets.set(key, 0);
     });
 
     orderData.forEach((o) => {
       const d = new Date(o.date);
       const key = period === "monthly" ? format(d, "yyyy-MM") : keyFn(d);
       const bucket = buckets.get(key);
-      if (bucket) bucket.orders += o.total;
-    });
-
-    bookingData.forEach((b) => {
-      const d = new Date(b.date);
-      const key = period === "monthly" ? format(d, "yyyy-MM") : keyFn(d);
-      const bucket = buckets.get(key);
-      if (bucket) bucket.bookings += b.amount;
+      if (bucket !== undefined) buckets.set(key, bucket + o.total);
     });
 
     return intervals.map((d) => {
       const key = period === "monthly" ? format(d, "yyyy-MM") : keyFn(d);
-      const bucket = buckets.get(key) || { orders: 0, bookings: 0 };
       return {
         label: labelFn(d),
-        orders: Math.round(bucket.orders * 100) / 100,
-        bookings: Math.round(bucket.bookings * 100) / 100,
-        total: Math.round((bucket.orders + bucket.bookings) * 100) / 100,
+        orders: Math.round((buckets.get(key) || 0) * 100) / 100,
       };
     });
-  }, [orderData, bookingData, period]);
+  }, [orderData, period]);
 
-  const grandTotal = chartData.reduce((s, d) => s + d.total, 0);
+  const grandTotal = chartData.reduce((s, d) => s + d.orders, 0);
 
   return (
     <Card className="shadow-card border-0">
@@ -167,10 +147,6 @@ export default function RevenueChart() {
                   <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
                   <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                 </linearGradient>
-                <linearGradient id="colorBookings" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--accent))" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(var(--accent))" stopOpacity={0} />
-                </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis
@@ -192,10 +168,7 @@ export default function RevenueChart() {
                   borderRadius: "0.5rem",
                   fontSize: 12,
                 }}
-                formatter={(value: number, name: string) => [
-                  `KSh ${value.toFixed(2)}`,
-                  name === "orders" ? "Orders" : name === "bookings" ? "Bookings" : "Total",
-                ]}
+                formatter={(value: number) => [`KSh ${value.toFixed(2)}`, "Orders"]}
               />
               <Area
                 type="monotone"
@@ -205,14 +178,6 @@ export default function RevenueChart() {
                 fill="url(#colorOrders)"
                 name="orders"
               />
-              <Area
-                type="monotone"
-                dataKey="bookings"
-                stroke="hsl(var(--accent))"
-                strokeWidth={2}
-                fill="url(#colorBookings)"
-                name="bookings"
-              />
             </AreaChart>
           </ResponsiveContainer>
         )}
@@ -220,10 +185,6 @@ export default function RevenueChart() {
           <div className="flex items-center gap-1.5">
             <div className="h-2 w-2 rounded-full bg-primary" />
             Orders
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="h-2 w-2 rounded-full bg-accent" />
-            Bookings
           </div>
         </div>
       </CardContent>

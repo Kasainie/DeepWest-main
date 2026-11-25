@@ -106,6 +106,7 @@ USING (
 
 -- managers must not see staff codes of equal/higher ranked staff
 DROP POLICY IF EXISTS "Manager+ can view all staff" ON public.company_staff;
+DROP POLICY IF EXISTS "Owner/admin can view all staff" ON public.company_staff;
 CREATE POLICY "Owner/admin can view all staff" ON public.company_staff
 FOR SELECT TO authenticated
 USING (public.get_company_role(auth.uid(), company_id) = ANY (ARRAY['owner','admin']));

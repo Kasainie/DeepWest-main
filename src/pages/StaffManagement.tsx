@@ -29,15 +29,13 @@ interface StaffRecord {
 }
 
 const departments = [
-  { value: "hotel", label: "Hotel", icon: Building2 },
   { value: "restaurant", label: "Restaurant", icon: UtensilsCrossed },
-  { value: "bar", label: "Bar", icon: Wine },
-  { value: "bar_admin", label: "Bar Admin", icon: ShieldCheck },
   { value: "kitchen", label: "Kitchen", icon: ChefHat },
   { value: "accountant", label: "Accountant", icon: Calculator },
 ];
 
 const roles = [
+  { value: "waiter", label: "Waiter" },
   { value: "staff", label: "Staff" },
   { value: "manager", label: "Manager" },
   { value: "admin", label: "Admin" },
@@ -116,10 +114,9 @@ export default function StaffManagement() {
 
   const [form, setForm] = useState({
     full_name: "",
-    departments: ["hotel"] as string[],
+    departments: ["restaurant"] as string[],
     role: "staff",
     phone: "",
-    email: "",
     password: "",
     staff_code: generateStaffCode(),
   });
@@ -149,6 +146,10 @@ export default function StaffManagement() {
     if (!currentCompany) return;
     if (form.departments.length === 0) {
       toast.error("Please select at least one department");
+      return;
+    }
+    if (form.role === "waiter" && (form.departments.length !== 1 || form.departments[0] !== "restaurant")) {
+      toast.error("Waiters must be assigned to the Restaurant department");
       return;
     }
     setSaving(true);
@@ -183,27 +184,7 @@ export default function StaffManagement() {
         if (pwdErr) toast.error(`Staff added, but password not set: ${pwdErr.message}`);
       }
 
-      // Email the staff member their access code (if email given) and notify owner/admins.
-      if (inserted?.id) {
-        supabase.functions
-          .invoke("send-staff-code", {
-            body: {
-              staff_id: inserted.id,
-              staff_email: form.email.trim() || undefined,
-            },
-          })
-          .then(({ error: emailErr }) => {
-            if (emailErr) {
-              console.warn("send-staff-code error:", emailErr);
-              toast.warning("Staff added, but email could not be sent.");
-            } else if (form.email.trim()) {
-              toast.success(`Access code emailed to ${form.email.trim()}`);
-            }
-          })
-          .catch((err) => console.warn("send-staff-code failed:", err));
-      }
-
-      setForm({ full_name: "", departments: ["hotel"], role: "staff", phone: "", email: "", password: "", staff_code: generateStaffCode() });
+      setForm({ full_name: "", departments: ["restaurant"], role: "staff", phone: "", password: "", staff_code: generateStaffCode() });
       setAddOpen(false);
       fetchStaff();
     }
@@ -319,11 +300,23 @@ export default function StaffManagement() {
                     Add Staff
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle className="font-display">Add Staff Member</DialogTitle>
+                <DialogContent className="flex max-h-[90dvh] flex-col overflow-hidden sm:max-w-md">
+                  <DialogHeader className="shrink-0">
+                    <DialogTitle className="font-display">
+                      {form.role === "waiter" ? "Add Waiter" : "Add Staff Member"}
+                    </DialogTitle>
                   </DialogHeader>
-                  <form onSubmit={handleAddStaff} className="space-y-4 mt-2">
+                  <div className="flex shrink-0 items-center gap-2 rounded-md border bg-secondary/40 px-3 py-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                    <p className="text-sm">
+                      <span className="text-muted-foreground">Adding staff to </span>
+                      <span className="font-semibold">{currentCompany?.name ?? "the selected hotel"}</span>
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-xs text-muted-foreground">
+                    Switch hotels using the selector in the top bar to add staff to another property.
+                  </p>
+                  <form onSubmit={handleAddStaff} className="mt-2 min-h-0 flex-1 space-y-4 overflow-y-auto pr-2">
                     <div className="space-y-2">
                       <Label>Full Name</Label>
                       <Input
@@ -341,13 +334,14 @@ export default function StaffManagement() {
                           return (
                             <label
                               key={d.value}
-                              className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors text-sm ${
+                              className={`flex items-center gap-2 p-2 rounded-lg border transition-colors text-sm ${
                                 selected ? "border-primary bg-primary/10" : "border-border hover:bg-secondary/50"
-                              }`}
+                              } ${form.role === "waiter" ? "cursor-not-allowed opacity-75" : "cursor-pointer"}`}
                             >
                               <input
                                 type="checkbox"
                                 checked={selected}
+                                disabled={form.role === "waiter"}
                                 onChange={() =>
                                   setForm((f) => ({
                                     ...f,
@@ -364,10 +358,24 @@ export default function StaffManagement() {
                           );
                         })}
                       </div>
+                      {form.role === "waiter" && (
+                        <p className="text-xs text-muted-foreground">
+                          Waiters are assigned to Restaurant to receive ready-order alerts.
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label>Role</Label>
-                      <Select value={form.role} onValueChange={(v) => setForm((f) => ({ ...f, role: v }))}>
+                      <Select
+                        value={form.role}
+                        onValueChange={(role) =>
+                          setForm((f) => ({
+                            ...f,
+                            role,
+                            departments: role === "waiter" ? ["restaurant"] : f.departments,
+                          }))
+                        }
+                      >
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {roles.map((r) => (
@@ -385,15 +393,6 @@ export default function StaffManagement() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Email <span className="text-muted-foreground font-normal">(optional — sends them their access code)</span></Label>
-                      <Input
-                        type="email"
-                        value={form.email}
-                        onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                        placeholder="staff@example.com"
-                      />
-                    </div>
-                    <div className="space-y-2">
                       <Label>Staff Code</Label>
                       <div className="flex gap-2">
                         <Input
@@ -408,6 +407,7 @@ export default function StaffManagement() {
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Staff will use this code to log in
+                        {form.role === "waiter" && " from this property's login link"}
                       </p>
                     </div>
                     <div className="space-y-2">
@@ -422,7 +422,7 @@ export default function StaffManagement() {
                     </div>
                     <Button type="submit" className="w-full" disabled={saving}>
                       {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                      Add Staff Member
+                      {form.role === "waiter" ? "Add Waiter" : "Add Staff Member"}
                     </Button>
                   </form>
                 </DialogContent>
@@ -500,7 +500,7 @@ export default function StaffManagement() {
             ) : (
               <div className="space-y-1">
                 {staffList.map((member) => {
-                  const primaryDept = member.department[0] || "hotel";
+                  const primaryDept = member.department[0] || "restaurant";
                   const DeptIcon = deptIcons[primaryDept] || User;
                   return (
                     <div
@@ -524,7 +524,7 @@ export default function StaffManagement() {
                               );
                             })}
                             <Badge variant="secondary" className="text-[10px] capitalize">
-                              {member.role}
+                              {roles.find((role) => role.value === member.role)?.label ?? member.role}
                             </Badge>
                             {!member.is_active && (
                               <Badge variant="destructive" className="text-[10px]">Inactive</Badge>
@@ -643,10 +643,7 @@ export default function StaffManagement() {
                   <div>
                     <p className="text-sm font-semibold">{dept.label}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {dept.value === "hotel" && "Front desk, housekeeping, reception"}
                       {dept.value === "restaurant" && "Serving, hosting, waitstaff"}
-                      {dept.value === "bar" && "Bartenders, lounge staff"}
-                      {dept.value === "bar_admin" && "Bar management, menu & inventory"}
                       {dept.value === "kitchen" && "Chefs, sous chefs, prep cooks"}
                       {dept.value === "accountant" && "Finance, billing, payroll"}
                     </p>

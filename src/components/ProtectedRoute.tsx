@@ -1,40 +1,11 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { session, user, loading } = useAuth();
-  const { isSuperAdmin, loading: checkingSuperAdmin } = useSuperAdmin();
-  const [approvalStatus, setApprovalStatus] = useState<"loading" | "approved" | "pending">("loading");
+  const { session, loading } = useAuth();
 
-  useEffect(() => {
-    if (!user || checkingSuperAdmin) {
-      setApprovalStatus("loading");
-      return;
-    }
-
-    // Super admin (verified server-side) is always approved
-    if (isSuperAdmin) {
-      setApprovalStatus("approved");
-      return;
-    }
-
-    const checkApproval = async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("is_approved")
-        .eq("user_id", user.id)
-        .single();
-
-      setApprovalStatus(data?.is_approved ? "approved" : "pending");
-    };
-    checkApproval();
-  }, [user, isSuperAdmin, checkingSuperAdmin]);
-
-  if (loading || (session && approvalStatus === "loading")) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -44,10 +15,6 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!session) {
     return <Navigate to="/" replace />;
-  }
-
-  if (approvalStatus === "pending") {
-    return <Navigate to="/pending-approval" replace />;
   }
 
   return <>{children}</>;

@@ -1,1 +1,4 @@
-project_id = "bfpcizwaawssnhqrugzc"
+project_id = "kgampzkutvjoxixhsnaf"
+
+[functions.staff-login]
+verify_jwt = false

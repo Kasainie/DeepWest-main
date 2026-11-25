@@ -1,5 +1,4 @@
 import { useCompany } from "@/contexts/CompanyContext";
-import { Navigate } from "react-router-dom";
 import { Loader2, PauseCircle } from "lucide-react";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
@@ -16,7 +15,14 @@ export function CompanyGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (!currentCompany) {
-    return <Navigate to="/register-company" replace />;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-3 p-6 text-center">
+        <h1 className="text-2xl font-bold">No Hotel Workspace Assigned</h1>
+        <p className="text-muted-foreground max-w-md">
+          Contact the system administrator to assign your account to DeepWest Hotel 1 or DeepWest Hotel 2.
+        </p>
+      </div>
+    );
   }
 
   if ((currentCompany as any).is_paused && !isSuperAdmin) {

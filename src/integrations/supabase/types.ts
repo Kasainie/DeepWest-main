@@ -10,124 +10,10 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.18"
   }
   public: {
     Tables: {
-      bar_inventory: {
-        Row: {
-          category: string
-          company_id: string
-          cost_per_unit: number
-          created_at: string
-          id: string
-          low_threshold: number
-          name: string
-          stock: number
-          unit: string
-          updated_at: string
-        }
-        Insert: {
-          category?: string
-          company_id: string
-          cost_per_unit?: number
-          created_at?: string
-          id?: string
-          low_threshold?: number
-          name: string
-          stock?: number
-          unit?: string
-          updated_at?: string
-        }
-        Update: {
-          category?: string
-          company_id?: string
-          cost_per_unit?: number
-          created_at?: string
-          id?: string
-          low_threshold?: number
-          name?: string
-          stock?: number
-          unit?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bar_inventory_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      bookings: {
-        Row: {
-          amount: number
-          booking_type: string
-          check_in: string | null
-          check_out: string | null
-          company_id: string
-          created_at: string
-          details: string | null
-          guest_id: string | null
-          id: string
-          room_id: string | null
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          amount?: number
-          booking_type?: string
-          check_in?: string | null
-          check_out?: string | null
-          company_id: string
-          created_at?: string
-          details?: string | null
-          guest_id?: string | null
-          id?: string
-          room_id?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          amount?: number
-          booking_type?: string
-          check_in?: string | null
-          check_out?: string | null
-          company_id?: string
-          created_at?: string
-          details?: string | null
-          guest_id?: string | null
-          id?: string
-          room_id?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bookings_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bookings_guest_id_fkey"
-            columns: ["guest_id"]
-            isOneToOne: false
-            referencedRelation: "guests"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bookings_room_id_fkey"
-            columns: ["room_id"]
-            isOneToOne: false
-            referencedRelation: "rooms"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       companies: {
         Row: {
           address: string | null
@@ -352,122 +238,6 @@ export type Database = {
           },
         ]
       }
-      conference_bookings: {
-        Row: {
-          amount: number
-          attendees: number
-          company_id: string
-          created_at: string
-          end_date: string | null
-          end_time: string | null
-          event_date: string
-          event_name: string
-          id: string
-          notes: string | null
-          organizer: string | null
-          room_id: string
-          start_time: string | null
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          amount?: number
-          attendees?: number
-          company_id: string
-          created_at?: string
-          end_date?: string | null
-          end_time?: string | null
-          event_date: string
-          event_name: string
-          id?: string
-          notes?: string | null
-          organizer?: string | null
-          room_id: string
-          start_time?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          amount?: number
-          attendees?: number
-          company_id?: string
-          created_at?: string
-          end_date?: string | null
-          end_time?: string | null
-          event_date?: string
-          event_name?: string
-          id?: string
-          notes?: string | null
-          organizer?: string | null
-          room_id?: string
-          start_time?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "conference_bookings_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "conference_bookings_room_id_fkey"
-            columns: ["room_id"]
-            isOneToOne: false
-            referencedRelation: "conference_rooms"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      conference_rooms: {
-        Row: {
-          amenities: string[] | null
-          capacity: number
-          company_id: string
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          price_per_day: number
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          amenities?: string[] | null
-          capacity?: number
-          company_id: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-          price_per_day?: number
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          amenities?: string[] | null
-          capacity?: number
-          company_id?: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-          price_per_day?: number
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "conference_rooms_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       expense_categories: {
         Row: {
           budget_monthly: number | null
@@ -553,62 +323,6 @@ export type Database = {
           },
           {
             foreignKeyName: "expenses_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      guests: {
-        Row: {
-          company_id: string
-          created_at: string
-          email: string | null
-          full_name: string
-          id: string
-          id_number: string | null
-          is_vip: boolean
-          last_visit: string | null
-          notes: string | null
-          phone: string | null
-          total_spent: number
-          total_visits: number
-          updated_at: string
-        }
-        Insert: {
-          company_id: string
-          created_at?: string
-          email?: string | null
-          full_name: string
-          id?: string
-          id_number?: string | null
-          is_vip?: boolean
-          last_visit?: string | null
-          notes?: string | null
-          phone?: string | null
-          total_spent?: number
-          total_visits?: number
-          updated_at?: string
-        }
-        Update: {
-          company_id?: string
-          created_at?: string
-          email?: string | null
-          full_name?: string
-          id?: string
-          id_number?: string | null
-          is_vip?: boolean
-          last_visit?: string | null
-          notes?: string | null
-          phone?: string | null
-          total_spent?: number
-          total_visits?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "guests_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
@@ -844,59 +558,6 @@ export type Database = {
           },
         ]
       }
-      payment_tenders: {
-        Row: {
-          actual_amount: number
-          company_id: string
-          created_at: string
-          expected_amount: number
-          id: string
-          notes: string | null
-          payment_method: string
-          reconciled_by: string | null
-          shift: string
-          tender_date: string
-          updated_at: string
-          variance: number | null
-        }
-        Insert: {
-          actual_amount?: number
-          company_id: string
-          created_at?: string
-          expected_amount?: number
-          id?: string
-          notes?: string | null
-          payment_method?: string
-          reconciled_by?: string | null
-          shift?: string
-          tender_date?: string
-          updated_at?: string
-          variance?: number | null
-        }
-        Update: {
-          actual_amount?: number
-          company_id?: string
-          created_at?: string
-          expected_amount?: number
-          id?: string
-          notes?: string | null
-          payment_method?: string
-          reconciled_by?: string | null
-          shift?: string
-          tender_date?: string
-          updated_at?: string
-          variance?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "payment_tenders_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -935,56 +596,6 @@ export type Database = {
           {
             foreignKeyName: "profiles_current_company_id_fkey"
             columns: ["current_company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      rooms: {
-        Row: {
-          amenities: string[] | null
-          beds: number
-          company_id: string
-          created_at: string
-          floor: number
-          id: string
-          price_per_night: number
-          room_number: string
-          status: string
-          type: string
-          updated_at: string
-        }
-        Insert: {
-          amenities?: string[] | null
-          beds?: number
-          company_id: string
-          created_at?: string
-          floor?: number
-          id?: string
-          price_per_night?: number
-          room_number: string
-          status?: string
-          type?: string
-          updated_at?: string
-        }
-        Update: {
-          amenities?: string[] | null
-          beds?: number
-          company_id?: string
-          created_at?: string
-          floor?: number
-          id?: string
-          price_per_night?: number
-          room_number?: string
-          status?: string
-          type?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "rooms_company_id_fkey"
-            columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
@@ -1112,96 +723,12 @@ export type Database = {
         }
         Relationships: []
       }
-      website_pages: {
-        Row: {
-          company_id: string
-          content: string | null
-          created_at: string
-          id: string
-          meta_description: string | null
-          meta_title: string | null
-          slug: string
-          sort_order: number
-          status: string
-          title: string
-          updated_at: string
-          views: number
-        }
-        Insert: {
-          company_id: string
-          content?: string | null
-          created_at?: string
-          id?: string
-          meta_description?: string | null
-          meta_title?: string | null
-          slug: string
-          sort_order?: number
-          status?: string
-          title: string
-          updated_at?: string
-          views?: number
-        }
-        Update: {
-          company_id?: string
-          content?: string | null
-          created_at?: string
-          id?: string
-          meta_description?: string | null
-          meta_title?: string | null
-          slug?: string
-          sort_order?: number
-          status?: string
-          title?: string
-          updated_at?: string
-          views?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "website_pages_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       accept_invitation: { Args: { _token: string }; Returns: string }
-      create_company_with_owner: {
-        Args: {
-          _address?: string
-          _description?: string
-          _email?: string
-          _logo_url?: string
-          _name: string
-          _phone?: string
-          _slug: string
-        }
-        Returns: {
-          address: string | null
-          created_at: string
-          description: string | null
-          email: string | null
-          id: string
-          is_paused: boolean
-          logo_url: string | null
-          name: string
-          owner_id: string
-          phone: string | null
-          slug: string
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "companies"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
       get_company_by_slug: {
         Args: { _slug: string }
         Returns: {
@@ -1251,7 +778,7 @@ export type Database = {
         }[]
       }
       lookup_staff_by_code: {
-        Args: { _staff_code: string }
+        Args: { _company_slug: string | null; _staff_code: string }
         Returns: {
           company_id: string
           company_name: string
@@ -1290,12 +817,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1319,11 +846,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1344,11 +871,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1369,11 +896,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1386,11 +913,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

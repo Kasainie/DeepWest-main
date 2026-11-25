@@ -21,7 +21,7 @@ interface MenuItem {
   is_available: boolean;
 }
 
-const categories = ["starter", "main", "side", "dessert", "drink"];
+const categories = ["breakfast", "snacks", "soft drinks", "starter", "main", "side", "dessert", "drink"];
 
 interface MenuManagerProps {
   onMenuChange?: () => void;
@@ -130,7 +130,7 @@ export function MenuManager({ onMenuChange }: MenuManagerProps) {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Price ($)</Label>
+                  <Label>Price (KSh)</Label>
                   <Input type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} placeholder="12.99" required />
                 </div>
               </div>

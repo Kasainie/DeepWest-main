@@ -19,6 +19,7 @@ interface CompanyContextType {
   currentCompany: Company | null;
   companyRole: string | null;
   staffDepartment: string[] | null;
+  staffRole: string | null;
   loading: boolean;
   switchCompany: (companyId: string) => Promise<void>;
   refreshCompanies: () => Promise<void>;
@@ -29,6 +30,7 @@ const CompanyContext = createContext<CompanyContextType>({
   currentCompany: null,
   companyRole: null,
   staffDepartment: null,
+  staffRole: null,
   loading: true,
   switchCompany: async () => {},
   refreshCompanies: async () => {},
@@ -37,19 +39,42 @@ const CompanyContext = createContext<CompanyContextType>({
 export const useCompany = () => useContext(CompanyContext);
 
 export function CompanyProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
   const [companyRole, setCompanyRole] = useState<string | null>(null);
   const [staffDepartment, setStaffDepartment] = useState<string[] | null>(null);
+  const [staffRole, setStaffRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchCompanies = useCallback(async () => {
+    if (isDemo) {
+      const demoCompany: Company = {
+        id: "00000000-0000-0000-0000-000000000002",
+        name: "DeepWest Demo Hotel",
+        slug: "demo",
+        logo_url: null,
+        address: "Demo Location",
+        phone: null,
+        email: "demo@deepwest.local",
+        description: "Local demo workspace",
+        owner_id: "00000000-0000-0000-0000-000000000001",
+      };
+      setCompanies([demoCompany]);
+      setCurrentCompany(demoCompany);
+      setCompanyRole("owner");
+      setStaffDepartment(null);
+      setStaffRole(null);
+      setLoading(false);
+      return;
+    }
+
     if (!user) {
       setCompanies([]);
       setCurrentCompany(null);
       setCompanyRole(null);
       setStaffDepartment(null);
+      setStaffRole(null);
       setLoading(false);
       return;
     }
@@ -58,6 +83,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     setCurrentCompany(null);
     setCompanyRole(null);
     setStaffDepartment(null);
+    setStaffRole(null);
 
     const { data: memberships } = await supabase
       .from("company_members")
@@ -112,15 +138,16 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       // Fetch staff department
       const { data: staffRecord } = await supabase
         .from("company_staff")
-        .select("department")
+        .select("department, role")
         .eq("company_id", active!.id)
         .eq("user_id", user.id)
         .maybeSingle();
       setStaffDepartment(staffRecord?.department as string[] || null);
+      setStaffRole(staffRecord?.role || null);
     }
 
     setLoading(false);
-  }, [user]);
+  }, [user, isDemo]);
 
   useEffect(() => {
     fetchCompanies();
@@ -148,11 +175,12 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     // Fetch staff department on switch
     const { data: staffRecord } = await supabase
       .from("company_staff")
-      .select("department")
+      .select("department, role")
       .eq("company_id", companyId)
       .eq("user_id", user.id)
       .maybeSingle();
     setStaffDepartment(staffRecord?.department as string[] || null);
+    setStaffRole(staffRecord?.role || null);
   };
 
   return (
@@ -162,6 +190,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
         currentCompany,
         companyRole,
         staffDepartment,
+        staffRole,
         loading,
         switchCompany,
         refreshCompanies: fetchCompanies,

@@ -2,10 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { usePushNotifications } from "@/hooks/usePushNotifications";
-import { useTenantManifest } from "@/hooks/useTenantManifest";
 import { CompanyProvider } from "@/contexts/CompanyContext";
 import { BrandingProvider } from "@/contexts/BrandingContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -14,30 +12,18 @@ import { DepartmentGuard } from "@/components/DepartmentGuard";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { SuperAdminGuard } from "@/components/SuperAdminGuard";
 import Dashboard from "./pages/Dashboard";
-import Rooms from "./pages/Rooms";
 import Restaurant from "./pages/Restaurant";
-import Bar from "./pages/Bar";
-import BarAdmin from "./pages/BarAdmin";
 import Kitchen from "./pages/Kitchen";
-import Conference from "./pages/Conference";
-import Bookings from "./pages/Bookings";
-import Guests from "./pages/Guests";
-import Website from "./pages/Website";
 import SettingsPage from "./pages/SettingsPage";
 import StaffManagement from "./pages/StaffManagement";
 import About from "./pages/About";
 import Sales from "./pages/Sales";
-import Tenders from "./pages/Tenders";
 import Expenses from "./pages/Expenses";
-import RegisterCompany from "./pages/RegisterCompany";
 import SuperAdmin from "./pages/SuperAdmin";
-import PendingApproval from "./pages/PendingApproval";
-import RegisterSuccess from "./pages/RegisterSuccess";
 import AcceptInvite from "./pages/AcceptInvite";
 import Login from "./pages/Login";
 import HomeRoute from "./components/HomeRoute";
 import ForgotPassword from "./pages/ForgotPassword";
-import Install from "./pages/Install";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import { ReactNode } from "react";
@@ -67,38 +53,28 @@ const Bare = ({ children }: { children: ReactNode }) => (
 );
 
 const AppRoutes = () => {
-  useTenantManifest();
   return (
     <Routes>
       {/* Public */}
       <Route path="/" element={<HomeRoute />} />
       <Route path="/login" element={<Login />} />
       <Route path="/login/:slug" element={<Login />} />
-      <Route path="/pending-approval" element={<PendingApproval />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/install" element={<Install />} />
 
       {/* Authenticated, no dashboard chrome */}
-      <Route path="/register-company" element={<Bare><RegisterCompany /></Bare>} />
-      <Route path="/register-success" element={<Bare><RegisterSuccess /></Bare>} />
+      <Route path="/register-company" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/register-success" element={<Navigate to="/dashboard" replace />} />
       <Route path="/accept-invite" element={<Bare><AcceptInvite /></Bare>} />
 
       {/* Dashboard pages */}
       <Route path="/dashboard" element={<Shell><Dashboard /></Shell>} />
-      <Route path="/rooms" element={<Shell><Rooms /></Shell>} />
       <Route path="/restaurant" element={<Shell><Restaurant /></Shell>} />
-      <Route path="/bar" element={<Shell><Bar /></Shell>} />
-      <Route path="/bar-admin" element={<Shell><BarAdmin /></Shell>} />
+      <Route path="/waiter" element={<Shell><Restaurant waiterMode /></Shell>} />
       <Route path="/kitchen" element={<Shell><Kitchen /></Shell>} />
-      <Route path="/conference" element={<Shell><Conference /></Shell>} />
-      <Route path="/bookings" element={<Shell><Bookings /></Shell>} />
-      <Route path="/guests" element={<Shell><Guests /></Shell>} />
       <Route path="/sales" element={<Shell><Sales /></Shell>} />
-      <Route path="/tenders" element={<Shell><Tenders /></Shell>} />
       <Route path="/expenses" element={<Shell><Expenses /></Shell>} />
       <Route path="/staff" element={<Shell><StaffManagement /></Shell>} />
-      <Route path="/website" element={<Shell><Website /></Shell>} />
       <Route path="/settings" element={<Shell><SettingsPage /></Shell>} />
       <Route path="/about" element={<Shell><About /></Shell>} />
       <Route
@@ -112,7 +88,17 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Per-tenant landing — branded login that doubles as the PWA start_url */}
+      {/* Retired section URLs must not be interpreted as tenant slugs. */}
+      <Route path="/rooms" element={<NotFound />} />
+      <Route path="/bar" element={<NotFound />} />
+      <Route path="/bar-admin" element={<NotFound />} />
+      <Route path="/conference" element={<NotFound />} />
+      <Route path="/tenders" element={<NotFound />} />
+      <Route path="/bookings" element={<NotFound />} />
+      <Route path="/guests" element={<NotFound />} />
+      <Route path="/website" element={<NotFound />} />
+
+      {/* Per-tenant landing */}
       <Route path="/:slug" element={<Login />} />
 
       <Route path="*" element={<NotFound />} />
@@ -121,7 +107,6 @@ const AppRoutes = () => {
 };
 
 const App = () => {
-  usePushNotifications();
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

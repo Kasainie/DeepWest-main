@@ -96,7 +96,7 @@ export function DateRangeFilter({ dateRange, onDateRangeChange }: DateRangeFilte
                   }
                 }}
                 disabled={(d) => d > dateRange.to}
-                initialFocus
+                autoFocus
                 className={cn("p-3 pointer-events-auto")}
               />
             </PopoverContent>
@@ -120,7 +120,7 @@ export function DateRangeFilter({ dateRange, onDateRangeChange }: DateRangeFilte
                   }
                 }}
                 disabled={(d) => d < dateRange.from || d > new Date()}
-                initialFocus
+                autoFocus
                 className={cn("p-3 pointer-events-auto")}
               />
             </PopoverContent>

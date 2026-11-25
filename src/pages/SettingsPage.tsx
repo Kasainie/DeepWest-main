@@ -15,10 +15,23 @@ import { motion } from "framer-motion";
 import BrandingSettings from "@/components/settings/BrandingSettings";
 import { uploadCompanyLogo, validateCompanyLogoFile } from "@/lib/companyLogo";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
+import type { Database } from "@/integrations/supabase/types";
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
+function getErrorMessage(error: unknown, fallback: string) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string" &&
+    error.message
+  ) {
+    return error.message;
+  }
+  return fallback;
+}
 
 export default function SettingsPage() {
   const { currentCompany, companyRole, refreshCompanies } = useCompany();
@@ -85,7 +98,7 @@ export default function SettingsPage() {
           user_id: user.id,
           full_name: userName,
           role: "admin",
-          department: ["hotel", "restaurant", "bar", "kitchen", "accountant"],
+          department: ["restaurant", "kitchen", "accountant"],
           staff_code: newCode,
           is_active: true,
         });
@@ -93,8 +106,8 @@ export default function SettingsPage() {
       setStaffCode(newCode);
       setCodeRevealed(true);
       toast.success("Admin access code created!", { description: `Your code: ${newCode}` });
-    } catch (err: any) {
-      toast.error(err.message || "Failed to create code");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Failed to create code"));
     } finally {
       setRegenerating(false);
     }
@@ -116,8 +129,8 @@ export default function SettingsPage() {
       setStaffCode(newCode);
       setCodeRevealed(true);
       toast.success("Access code regenerated!", { description: `New code: ${newCode}` });
-    } catch (err: any) {
-      toast.error(err.message || "Failed to regenerate code");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Failed to regenerate code"));
     } finally {
       setRegenerating(false);
     }
@@ -128,8 +141,8 @@ export default function SettingsPage() {
     if (!file) return;
     try {
       validateCompanyLogoFile(file);
-    } catch (error: any) {
-      toast.error(error.message || "Invalid logo file");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Invalid logo file"));
       return;
     }
 
@@ -159,7 +172,7 @@ export default function SettingsPage() {
         logo_url = upload.publicUrl;
       }
 
-      const updateData: Record<string, any> = {
+      const updateData: Database["public"]["Tables"]["companies"]["Update"] = {
         name: form.name.trim(),
         phone: form.phone.trim() || null,
         address: form.address.trim() || null,
@@ -188,8 +201,8 @@ export default function SettingsPage() {
 
       await refreshCompanies();
       toast.success("Settings saved!");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Failed to save"));
     } finally {
       setSaving(false);
     }
@@ -278,14 +291,14 @@ export default function SettingsPage() {
                         <Lock className="h-3.5 w-3.5 text-muted-foreground" />
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>URL slug is permanent and cannot be changed after registration</p>
+                        <p>Hotel workspace URL</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
                 <div className="flex items-center gap-0">
                   <span className="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-input bg-muted text-sm text-muted-foreground whitespace-nowrap">
-                    lktech.life/
+                    deepwest/
                   </span>
                   <Input
                     value={form.slug}

@@ -71,30 +71,20 @@ export function InviteStaffDialog({ onInviteSent }: InviteStaffDialogProps) {
       // Generate invite link
       const inviteLink = `${window.location.origin}/accept-invite?token=${data.token}`;
 
-      // Send email via Resend
-      const { error: emailError } = await supabase.functions.invoke(
-        "send-invitation-email",
-        {
-          body: {
-            invitation_token: data.token,
-            origin: window.location.origin,
-          },
-        },
-      );
-
-      // Copy link as fallback
+      let linkCopied = false;
       try {
         await navigator.clipboard.writeText(inviteLink);
-      } catch {}
-
-      if (emailError) {
-        toast.warning("Invite created, but email failed to send", {
-          description: "Link copied to clipboard — share it manually.",
-          duration: 7000,
+        linkCopied = true;
+      } catch {
+        toast.warning("Invitation created, but the link could not be copied", {
+          description: inviteLink,
+          duration: 10000,
         });
-      } else {
-        toast.success(`Invitation emailed to ${parsed.email}`, {
-          description: "Link also copied to clipboard as a backup.",
+      }
+
+      if (linkCopied) {
+        toast.success("Invitation created", {
+          description: "Invite link copied. Share it manually.",
           duration: 6000,
         });
       }
@@ -105,7 +95,7 @@ export function InviteStaffDialog({ onInviteSent }: InviteStaffDialogProps) {
       onInviteSent?.();
     } catch (err: any) {
       if (err instanceof z.ZodError) {
-        toast.error(err.errors[0].message);
+        toast.error(err.issues[0]?.message ?? "Invalid invitation details");
       } else {
         toast.error(err.message || "Failed to create invitation");
       }

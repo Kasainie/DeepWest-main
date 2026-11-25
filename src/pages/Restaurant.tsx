@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Minus, ShoppingCart, Send, Loader2, UtensilsCrossed, Trash2, ClipboardList, DollarSign, Utensils } from "lucide-react";
+import { Plus, Minus, ShoppingCart, Send, Loader2, UtensilsCrossed, Trash2, ClipboardList, Utensils, Search } from "lucide-react";
 import { BottomTabBar } from "@/components/BottomTabBar";
 import { OrderHistory } from "@/components/OrderHistory";
 import { toast } from "sonner";
@@ -41,11 +41,12 @@ interface CartItem {
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
-const categories = ["all", "starter", "main", "side", "dessert", "drink"];
+const categories = ["all", "breakfast", "snacks", "soft drinks", "starter", "main", "side", "dessert", "drink"];
 
-export default function Restaurant() {
-  const { currentCompany } = useCompany();
+export default function Restaurant({ waiterMode = false }: { waiterMode?: boolean }) {
+  const { currentCompany, staffRole } = useCompany();
   const { user } = useAuth();
+  const isWaiterMode = waiterMode || staffRole?.toLowerCase() === "waiter";
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -53,7 +54,8 @@ export default function Restaurant() {
   const [orderNotes, setOrderNotes] = useState("");
   const [sending, setSending] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [activeTab, setActiveTab] = useState("new-order");
+  const [menuSearch, setMenuSearch] = useState("");
+  const [activeTab, setActiveTab] = useState(isWaiterMode ? "orders" : "new-order");
   const [bottomTab, setBottomTab] = useState<"home" | "history">("home");
   const [stats, setStats] = useState({ ordersToday: 0, revenueToday: 0, activeOrders: 0, menuCount: 0 });
   const [dateRange, setDateRange] = useState<DateRange>({ from: new Date(), to: new Date() });
@@ -61,9 +63,9 @@ export default function Restaurant() {
   useEffect(() => {
     if (currentCompany) {
       fetchMenu();
-      fetchStats();
+      if (!isWaiterMode) fetchStats();
     }
-  }, [currentCompany?.id, dateRange]);
+  }, [currentCompany?.id, dateRange, isWaiterMode]);
 
   const fetchStats = async () => {
     if (!currentCompany) return;
@@ -141,7 +143,6 @@ export default function Restaurant() {
   };
 
   const cartTotal = cart.reduce((sum, c) => sum + c.menuItem.price * c.quantity, 0);
-  const tax = cartTotal * 0.1;
 
   const sendOrder = async () => {
     if (!currentCompany || !user || cart.length === 0) return;
@@ -158,8 +159,8 @@ export default function Restaurant() {
           company_id: currentCompany.id,
           table_number: tableNumber.trim(),
           subtotal: cartTotal,
-          tax: tax,
-          total: cartTotal + tax,
+          tax: 0,
+          total: cartTotal,
           notes: orderNotes || null,
           created_by: user.id,
           status: "pending",
@@ -198,32 +199,44 @@ export default function Restaurant() {
     }
   };
 
-  const filteredMenu =
-    selectedCategory === "all"
-      ? menuItems
-      : menuItems.filter((m) => m.category === selectedCategory);
+  const normalizedMenuSearch = menuSearch.trim().toLowerCase();
+  const filteredMenu = menuItems.filter((menuItem) => {
+    const matchesCategory = selectedCategory === "all" || menuItem.category === selectedCategory;
+    const matchesSearch =
+      !normalizedMenuSearch ||
+      `${menuItem.name} ${menuItem.category} ${menuItem.description || ""}`
+        .toLowerCase()
+        .includes(normalizedMenuSearch);
+    return matchesCategory && matchesSearch;
+  });
 
   const showInlineLoader = loading && menuItems.length === 0;
 
   return (
-    <div className="pb-16">
+    <div className={isWaiterMode ? "" : "pb-16"}>
       {bottomTab === "home" ? (
         <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
           <motion.div variants={item}>
-            <h1 className="text-2xl font-bold font-display">Restaurant</h1>
-            <p className="text-sm text-muted-foreground mt-1">Manage orders, menu & kitchen flow</p>
+            <h1 className="text-2xl font-bold font-display">{isWaiterMode ? "Waiter Dashboard" : "Restaurant"}</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {isWaiterMode ? "Create orders and follow their progress from the kitchen" : "Manage orders, menu & kitchen flow"}
+            </p>
           </motion.div>
 
-          <motion.div variants={item} className="flex items-center justify-end">
-            <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
-          </motion.div>
+          {!isWaiterMode && (
+            <>
+              <motion.div variants={item} className="flex items-center justify-end">
+                <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+              </motion.div>
 
-          <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <StatCard title="Total Orders" value={stats.ordersToday} change="Selected period" changeType="neutral" icon={ClipboardList} />
-            <StatCard title="Total Revenue" value={`KSh ${stats.revenueToday.toLocaleString()}`} change="Selected period" changeType="neutral" iconNode={<KshIcon className="h-5 w-5 text-primary" />} />
-            <StatCard title="Active Orders" value={stats.activeOrders} change="In progress" changeType="neutral" icon={Utensils} />
-            <StatCard title="Menu Items" value={stats.menuCount} change="Available" changeType="neutral" icon={UtensilsCrossed} />
-          </motion.div>
+              <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <StatCard title="Total Orders" value={stats.ordersToday} change="Selected period" changeType="neutral" icon={ClipboardList} />
+                <StatCard title="Total Revenue" value={`KSh ${stats.revenueToday.toLocaleString()}`} change="Selected period" changeType="neutral" iconNode={<KshIcon className="h-5 w-5 text-primary" />} />
+                <StatCard title="Active Orders" value={stats.activeOrders} change="In progress" changeType="neutral" icon={Utensils} />
+                <StatCard title="Menu Items" value={stats.menuCount} change="Available" changeType="neutral" icon={UtensilsCrossed} />
+              </motion.div>
+            </>
+          )}
 
           {showInlineLoader ? (
             <div className="flex items-center justify-center min-h-[300px]">
@@ -234,19 +247,34 @@ export default function Restaurant() {
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList>
                 <TabsTrigger value="new-order">New Order</TabsTrigger>
-                <TabsTrigger value="orders">Active Orders</TabsTrigger>
-                <TabsTrigger value="menu">Manage Menu</TabsTrigger>
+                <TabsTrigger value="orders">{isWaiterMode ? "Kitchen Orders" : "Active Orders"}</TabsTrigger>
+                {!isWaiterMode && <TabsTrigger value="menu">Manage Menu</TabsTrigger>}
               </TabsList>
 
               <TabsContent value="new-order" className="mt-4">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2 space-y-4">
+                    <div className="relative max-w-sm">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        aria-label="Search menu items"
+                        placeholder="Search menu items..."
+                        value={menuSearch}
+                        onChange={(e) => setMenuSearch(e.target.value)}
+                        className="h-9 pl-9 text-sm"
+                      />
+                    </div>
                     <div className="flex gap-2 flex-wrap">
                       {categories.map((cat) => (
                         <Button key={cat} variant={selectedCategory === cat ? "default" : "outline"} size="sm" onClick={() => setSelectedCategory(cat)} className="capitalize text-xs">{cat}</Button>
                       ))}
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {filteredMenu.length === 0 && (
+                        <p className="col-span-full py-8 text-center text-sm text-muted-foreground">
+                          No menu items found. Try another search or category.
+                        </p>
+                      )}
                       {filteredMenu.map((mi) => {
                         const inCart = cart.find((c) => c.menuItem.id === mi.id);
                         return (
@@ -301,8 +329,7 @@ export default function Restaurant() {
                             ))}
                             <div className="border-t pt-2 space-y-1 text-sm">
                               <div className="flex justify-between"><span>Subtotal</span><span>KSh {cartTotal.toLocaleString()}</span></div>
-                              <div className="flex justify-between text-muted-foreground"><span>Tax (10%)</span><span>KSh {tax.toLocaleString()}</span></div>
-                              <div className="flex justify-between font-bold"><span>Total</span><span>KSh {(cartTotal + tax).toLocaleString()}</span></div>
+                              <div className="flex justify-between font-bold"><span>Total</span><span>KSh {cartTotal.toLocaleString()}</span></div>
                             </div>
                             <div className="space-y-2">
                               <div>
@@ -327,12 +354,14 @@ export default function Restaurant() {
               </TabsContent>
 
               <TabsContent value="orders" className="mt-4">
-                <OrdersList />
+                <OrdersList mode={isWaiterMode ? "waiter" : "restaurant"} />
               </TabsContent>
 
-              <TabsContent value="menu" className="mt-4">
-                <MenuManager onMenuChange={fetchMenu} />
-              </TabsContent>
+              {!isWaiterMode && (
+                <TabsContent value="menu" className="mt-4">
+                  <MenuManager onMenuChange={fetchMenu} />
+                </TabsContent>
+              )}
             </Tabs>
           </motion.div>
           )}
@@ -340,7 +369,7 @@ export default function Restaurant() {
       ) : (
         <OrderHistory />
       )}
-      <BottomTabBar activeTab={bottomTab} onTabChange={setBottomTab} />
+      {!isWaiterMode && <BottomTabBar activeTab={bottomTab} onTabChange={setBottomTab} />}
     </div>
   );
 }

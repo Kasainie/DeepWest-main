@@ -1,30 +1,41 @@
 import { Navigate, useLocation } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { useCompany } from "@/contexts/CompanyContext";
 
 // Maps routes to the departments that can access them
 const ROUTE_DEPARTMENTS: Record<string, string[]> = {
-  "/rooms": ["hotel"],
   "/restaurant": ["restaurant"],
+  "/waiter": ["restaurant"],
   "/kitchen": ["kitchen"],
-  "/bar-admin": ["bar_admin"],
-  "/bar": ["bar", "bar_admin"],
-  "/conference": ["hotel"],
-  "/bookings": ["hotel", "accountant"],
-  "/guests": ["hotel"],
   "/sales": ["accountant"],
-  "/tenders": ["accountant"],
   "/expenses": ["accountant"],
 };
 
 // Routes only accessible to owner/admin/manager
-const ADMIN_ONLY_ROUTES = ["/staff", "/website", "/settings"];
+const ADMIN_ONLY_ROUTES = ["/staff", "/settings"];
 
 export function DepartmentGuard({ children }: { children: React.ReactNode }) {
-  const { companyRole, staffDepartment } = useCompany();
+  const { companyRole, staffDepartment, staffRole, loading } = useCompany();
   const location = useLocation();
   const path = location.pathname;
 
+  if (loading) {
+    return (
+      <div className="flex min-h-[300px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   const isFullAccess = !companyRole || ["owner", "admin", "manager"].includes(companyRole);
+  const isWaiter = staffRole?.toLowerCase() === "waiter";
+
+  if (path.startsWith("/waiter") && !isWaiter) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  if (isWaiter && (path.startsWith("/restaurant") || path === "/dashboard")) {
+    return <Navigate to="/waiter" replace />;
+  }
 
   // Full-access roles can go anywhere
   if (isFullAccess) return <>{children}</>;

@@ -62,10 +62,6 @@ export function generateReceiptHtml(order: any, company: any): string {
       <span>Subtotal</span>
       <span>KSh ${Number(order.subtotal).toFixed(2)}</span>
     </div>
-    <div class="total-line">
-      <span>Tax (10%)</span>
-      <span>KSh ${Number(order.tax).toFixed(2)}</span>
-    </div>
     <div class="total-line total-final">
       <span>TOTAL</span>
       <span>KSh ${Number(order.total).toFixed(2)}</span>
@@ -84,7 +80,7 @@ export function generateReceiptHtml(order: any, company: any): string {
   <div class="footer">
     <p>Thank you for dining with us!</p>
     <p style="margin-top:4px;">${company?.name || 'Restaurant'}</p>
-    <p style="margin-top:8px;font-size:9px;color:#999;">Powered by LKTECH</p>
+    <p style="margin-top:8px;font-size:9px;color:#999;">DeepWest</p>
   </div>
 </body>
 </html>`;

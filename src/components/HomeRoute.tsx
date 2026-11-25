@@ -1,7 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import LandingPage from "@/pages/LandingPage";
 
 export default function HomeRoute() {
   const { session, loading } = useAuth();
@@ -18,5 +17,5 @@ export default function HomeRoute() {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return <LandingPage />;
+  return <Navigate to="/login" replace />;
 }

@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { Capacitor } from "@capacitor/core";
+import { Haptics } from "@capacitor/haptics";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
 import { Bell, Check, CheckCheck, Info, AlertTriangle, UserPlus, ShoppingCart, CalendarDays, X, Volume2, VolumeX } from "lucide-react";
@@ -9,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 
 // No more static type-to-department mapping — we use the `department` column from DB
 
@@ -89,19 +92,40 @@ export function NotificationDropdown() {
 
   const audioCache = useRef<Record<string, HTMLAudioElement>>({});
 
-  const playNotificationSound = useCallback((type?: string) => {
-    if (!soundSettings.enabled) return;
+  const playNotificationSound = useCallback((type?: string, preview = false) => {
+    if (!preview && !soundSettings.enabled) return;
     try {
       const url = NOTIFICATION_SOUNDS[type || ""] || NOTIFICATION_SOUNDS.default;
       if (!audioCache.current[url]) {
         audioCache.current[url] = new Audio(url);
+        audioCache.current[url].preload = "auto";
       }
       const audio = audioCache.current[url];
       audio.volume = soundSettings.volume;
       audio.currentTime = 0;
-      audio.play().catch(() => {});
-    } catch {}
+      void audio.play().catch((error: unknown) => {
+        console.error("Failed to play notification sound", error);
+        if (preview) {
+          toast.error("Couldn't play the sound. Check your connection and device volume.");
+        }
+      });
+    } catch (error: unknown) {
+      console.error("Failed to play notification sound", error);
+      if (preview) {
+        toast.error("Couldn't play the sound. Check your connection and device volume.");
+      }
+    }
   }, [soundSettings.enabled, soundSettings.volume]);
+
+  const vibrateForAndroidNotification = useCallback(() => {
+    const isAndroid = Capacitor.getPlatform() === "android" ||
+      (typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent));
+    if (!isAndroid) return;
+
+    void Haptics.vibrate({ duration: 250 }).catch((error: unknown) => {
+      console.error("Failed to vibrate for notification", error);
+    });
+  }, []);
 
   useEffect(() => {
     if (!currentCompany) return;
@@ -118,13 +142,16 @@ export function NotificationDropdown() {
           const newNotif = payload.new as Notification;
           const shouldShow = isFullAccess || 
             (newNotif.department && staffDepartment?.some(d => d.toLowerCase() === newNotif.department?.toLowerCase()));
-          if (shouldShow) playNotificationSound(newNotif.type);
+          if (shouldShow) {
+            playNotificationSound(newNotif.type);
+            vibrateForAndroidNotification();
+          }
         }
       )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [currentCompany?.id, playNotificationSound, isFullAccess, staffDepartment]);
+  }, [currentCompany?.id, playNotificationSound, vibrateForAndroidNotification, isFullAccess, staffDepartment]);
 
   const fetchNotifications = async () => {
     if (!currentCompany) return;
@@ -160,7 +187,7 @@ export function NotificationDropdown() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative h-8 w-8 sm:h-10 sm:w-10">
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
             <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
@@ -215,6 +242,27 @@ export function NotificationDropdown() {
                 </div>
               </div>
             )}
+            <div className="space-y-1.5">
+              <p className="text-xs text-muted-foreground">Preview notification sounds</p>
+              <div className="flex flex-wrap gap-1.5">
+                {Object.entries(NOTIFICATION_SOUNDS)
+                  .filter(([type]) => type !== "default")
+                  .map(([type]) => (
+                    <Button
+                      key={type}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs capitalize"
+                      aria-label={`Play ${type} notification sound`}
+                      onClick={() => playNotificationSound(type, true)}
+                    >
+                      <Volume2 className="h-3 w-3" />
+                      {type}
+                    </Button>
+                  ))}
+              </div>
+            </div>
           </div>
         )}
         <ScrollArea className="max-h-80">

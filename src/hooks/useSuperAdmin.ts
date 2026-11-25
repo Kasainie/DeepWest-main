@@ -8,12 +8,18 @@ import { useAuth } from "@/contexts/AuthContext";
  * instead of comparing a hardcoded email on the client.
  */
 export function useSuperAdmin() {
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
+
+    if (isDemo) {
+      setIsSuperAdmin(true);
+      setLoading(false);
+      return;
+    }
 
     if (!user) {
       setIsSuperAdmin(false);
@@ -33,7 +39,7 @@ export function useSuperAdmin() {
     return () => {
       active = false;
     };
-  }, [user]);
+  }, [user, isDemo]);
 
   return { isSuperAdmin, loading };
 }

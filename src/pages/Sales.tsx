@@ -19,7 +19,7 @@ import { downloadSaleReceipt, printSaleReceipt } from "@/lib/saleReceipt";
 import { motion } from "framer-motion";
 import { formatKES } from "@/lib/currency";
 import { format, subDays, startOfMonth } from "date-fns";
-import { getLocalDateString, getLocalDayBoundsUTC } from "@/lib/dateUtils";
+import { getLocalDateString } from "@/lib/dateUtils";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -33,7 +33,7 @@ interface Sale {
   amount: number;
   payment_method: string;
   created_at: string;
-  source: "manual" | "order" | "booking" | "conference";
+  source: "manual" | "order";
 }
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
@@ -70,64 +70,26 @@ export default function Sales() {
     if (isInitial) setLoading(true);
     const fromDate = getLocalDateString(dateRange.from);
     const toDate = getLocalDateString(dateRange.to);
-    const { start: rangeStart } = getLocalDayBoundsUTC(dateRange.from);
-    const { end: rangeEnd } = getLocalDayBoundsUTC(dateRange.to);
+    const { data: salesRecords, error } = await supabase
+      .from("sales")
+      .select("*")
+      .eq("company_id", currentCompany.id)
+      .gte("sale_date", fromDate)
+      .lte("sale_date", toDate)
+      .order("sale_date", { ascending: false });
 
-    const [salesRes, bookingsRes, confRes] = await Promise.all([
-      supabase
-        .from("sales")
-        .select("*")
-        .eq("company_id", currentCompany.id)
-        .gte("sale_date", fromDate)
-        .lte("sale_date", toDate)
-        .order("sale_date", { ascending: false }),
-      supabase
-        .from("bookings")
-        .select("id, booking_type, amount, status, created_at, details, guests(full_name)")
-        .eq("company_id", currentCompany.id)
-        .gte("created_at", rangeStart)
-        .lte("created_at", rangeEnd),
-      supabase
-        .from("conference_bookings")
-        .select("id, event_name, amount, status, created_at, event_date")
-        .eq("company_id", currentCompany.id)
-        .gte("created_at", rangeStart)
-        .lte("created_at", rangeEnd),
-    ]);
+    if (error) {
+      toast.error(error.message);
+      setLoading(false);
+      return;
+    }
 
-    const salesData: Sale[] = (salesRes.data || []).map((s: any) => ({
-      ...s,
-      source: s.reference_type === "order" ? ("order" as const) : ("manual" as const),
+    const salesData: Sale[] = (salesRecords || []).map((sale) => ({
+      ...sale,
+      source: sale.reference_type === "order" ? "order" : "manual",
     }));
 
-    const bookingSales: Sale[] = (bookingsRes.data || []).map((b: any) => ({
-      id: `booking-${b.id}`,
-      sale_date: getLocalDateString(new Date(b.created_at)),
-      department: b.booking_type === "room" ? "hotel" : b.booking_type,
-      category: b.booking_type === "room" ? "room" : "service",
-      description: `${b.booking_type} booking${b.guests?.full_name ? ` · ${b.guests.full_name}` : ""}${b.details ? ` · ${b.details}` : ""}`,
-      amount: Number(b.amount),
-      payment_method: "cash",
-      created_at: b.created_at,
-      source: "booking" as const,
-    }));
-
-    const confSales: Sale[] = (confRes.data || []).map((c: any) => ({
-      id: `conf-${c.id}`,
-      sale_date: c.event_date || getLocalDateString(new Date(c.created_at)),
-      department: "conference",
-      category: "service",
-      description: `Conference: ${c.event_name}`,
-      amount: Number(c.amount),
-      payment_method: "cash",
-      created_at: c.created_at,
-      source: "conference" as const,
-    }));
-
-    const allSales = [...salesData, ...bookingSales, ...confSales]
-      .sort((a, b) => b.created_at.localeCompare(a.created_at));
-
-    setSales(allSales);
+    setSales(salesData.sort((a, b) => b.created_at.localeCompare(a.created_at)));
     setLoading(false);
   };
 
@@ -393,7 +355,7 @@ export default function Sales() {
                             <TableCell className="text-sm">{format(new Date(s.sale_date), "MMM d, yyyy")}</TableCell>
                             <TableCell>
                               <Badge variant={s.source === "manual" ? "default" : "secondary"} className="capitalize text-[10px]">
-                                {s.source === "manual" ? "Manual" : s.source === "order" ? "Order" : s.source === "booking" ? "Booking" : "Conference"}
+                                {s.source === "manual" ? "Manual" : "Order"}
                               </Badge>
                             </TableCell>
                             <TableCell><Badge variant="outline" className="capitalize text-xs">{s.department}</Badge></TableCell>

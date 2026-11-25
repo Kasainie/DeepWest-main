@@ -1,21 +1,15 @@
 import {
   LayoutDashboard,
-  BedDouble,
   UtensilsCrossed,
-  Wine,
-  Presentation,
-  Globe,
   Settings,
-  CalendarDays,
-  Users,
   Building2,
   ShieldCheck,
   ChefHat,
   Info,
   Banknote,
-  Wallet,
   Receipt,
   Crown,
+  ClipboardList,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
@@ -37,26 +31,19 @@ import {
 } from "@/components/ui/sidebar";
 
 const mainItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, departments: null },
-  { title: "Rooms", url: "/rooms", icon: BedDouble, departments: ["hotel"] },
-  { title: "Restaurant", url: "/restaurant", icon: UtensilsCrossed, departments: ["restaurant"] },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, departments: null, hideFromWaiters: true },
+  { title: "Restaurant", url: "/restaurant", icon: UtensilsCrossed, departments: ["restaurant"], hideFromWaiters: true },
+  { title: "Waiter", url: "/waiter", icon: ClipboardList, departments: ["restaurant"], waiterOnly: true },
   { title: "Kitchen", url: "/kitchen", icon: ChefHat, departments: ["kitchen"] },
-  { title: "Bar", url: "/bar", icon: Wine, departments: ["bar", "bar_admin"] },
-  { title: "Bar Admin", url: "/bar-admin", icon: ShieldCheck, departments: ["bar_admin"] },
-  { title: "Conference", url: "/conference", icon: Presentation, departments: ["hotel"] },
 ];
 
 const accountingItems = [
   { title: "Sales", url: "/sales", icon: Banknote, departments: ["accountant"] },
-  { title: "Tenders", url: "/tenders", icon: Wallet, departments: ["accountant"] },
   { title: "Expenses", url: "/expenses", icon: Receipt, departments: ["accountant"] },
 ];
 
 const managementItems = [
-  { title: "Bookings", url: "/bookings", icon: CalendarDays, departments: ["hotel", "accountant"], adminOnly: false },
-  { title: "Guests", url: "/guests", icon: Users, departments: ["hotel"], adminOnly: false },
   { title: "Staff", url: "/staff", icon: ShieldCheck, departments: null, adminOnly: true },
-  { title: "Website", url: "/website", icon: Globe, departments: null, adminOnly: true },
   { title: "Settings", url: "/settings", icon: Settings, departments: null, adminOnly: true },
   { title: "About", url: "/about", icon: Info, departments: null, adminOnly: false },
 ];
@@ -65,11 +52,12 @@ export function AppSidebar() {
   const { state, setOpenMobile, isMobile } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const { currentCompany, companyRole, staffDepartment } = useCompany();
+  const { currentCompany, companyRole, staffDepartment, staffRole } = useCompany();
   const { user } = useAuth();
   const { isSuperAdmin } = useSuperAdmin();
   const isActive = (path: string) =>
     path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+  const isWaiter = staffRole?.toLowerCase() === "waiter";
 
   const handleNavClick = () => {
     if (isMobile) {
@@ -82,6 +70,8 @@ export function AppSidebar() {
 
   const filterByDepartment = (items: typeof mainItems | typeof managementItems) =>
     items.filter((item) => {
+      if ("waiterOnly" in item && item.waiterOnly && !isWaiter) return false;
+      if ("hideFromWaiters" in item && item.hideFromWaiters && isWaiter) return false;
       // Admin-only items hidden from staff
       if ("adminOnly" in item && item.adminOnly && !isFullAccess) return false;
       if (isFullAccess || !item.departments) return true;
@@ -100,9 +90,11 @@ export function AppSidebar() {
               className="h-9 w-9 shrink-0 rounded-lg object-cover"
             />
           ) : (
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary">
-              <Building2 className="h-5 w-5 text-sidebar-primary-foreground" />
-            </div>
+            <img
+              src="/deepwest-app-icon.png"
+              alt="DeepWest Hotel"
+              className="h-9 w-9 shrink-0 rounded-lg object-cover"
+            />
           )}
           {!collapsed && (
             <div className="min-w-0">
@@ -245,7 +237,7 @@ export function AppSidebar() {
           <Building2 className="h-3 w-3 text-sidebar-foreground opacity-60" />
           {!collapsed && (
             <span className="text-[10px] text-sidebar-foreground opacity-60">
-              Powered by <span className="font-semibold">LKTECH</span>
+              DeepWest Hotels
             </span>
           )}
         </div>

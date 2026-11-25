@@ -24,7 +24,6 @@ interface OrderWithItems {
   payment_status: string;
   payment_method: string | null;
   subtotal: number;
-  tax: number;
   total: number;
   notes: string | null;
   created_at: string;

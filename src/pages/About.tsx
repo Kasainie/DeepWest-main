@@ -110,7 +110,7 @@ export default function About() {
       fetchTickets();
     } catch (err: any) {
       if (err instanceof z.ZodError) {
-        toast.error(err.errors[0].message);
+        toast.error(err.issues[0]?.message ?? "Invalid form details");
       } else {
         toast.error(err.message || "Failed to submit ticket");
       }
@@ -135,7 +135,7 @@ export default function About() {
                 <Building2 className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <CardTitle className="text-xl font-display">LKTECH</CardTitle>
+                <CardTitle className="text-xl font-display">DeepWest</CardTitle>
                 <p className="text-sm text-muted-foreground">System Provider</p>
               </div>
             </div>
@@ -143,7 +143,7 @@ export default function About() {
           <CardContent className="space-y-5">
             <p className="text-sm text-muted-foreground leading-relaxed">
               This hospitality management system is developed and maintained by{" "}
-              <span className="font-semibold text-foreground">LKTECH</span>. For support,
+              <span className="font-semibold text-foreground">DeepWest</span>. For support,
               inquiries, or feature requests, please use the form below or contact us directly.
             </p>
 
@@ -181,7 +181,7 @@ export default function About() {
 
             <div className="pt-3 border-t border-border">
               <p className="text-xs text-muted-foreground text-center">
-                © {new Date().getFullYear()} LKTECH. All rights reserved.
+                © {new Date().getFullYear()} DeepWest. All rights reserved.
               </p>
             </div>
           </CardContent>

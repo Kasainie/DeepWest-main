@@ -23,11 +23,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) { // notific
   const { user, signOut } = useAuth();
   const { currentCompany, companyRole } = useCompany();
   const { branding, refreshBranding } = useBranding();
+  const canManageBranding = companyRole === "owner" || companyRole === "admin";
   const isDark = branding?.theme_mode === "dark" || (!branding && document.documentElement.classList.contains("dark"));
   const [toggling, setToggling] = useState(false);
 
   const toggleTheme = async () => {
-    if (!currentCompany) return;
+    if (!currentCompany || !canManageBranding) return;
     setToggling(true);
     const newMode = isDark ? "light" : "dark";
     // Apply immediately
@@ -58,9 +59,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) { // notific
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center justify-between gap-2 border-b px-2 sm:px-4 bg-card sticky top-0 z-30">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <SidebarTrigger />
+          <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-1 border-b bg-card px-1.5 sm:gap-2 sm:px-4">
+            <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-3">
+              <SidebarTrigger className="h-8 w-8 shrink-0 sm:h-10 sm:w-10" />
               {currentCompany?.logo_url ? (
                 <img
                   src={currentCompany.logo_url}
@@ -81,25 +82,28 @@ export function DashboardLayout({ children }: DashboardLayoutProps) { // notific
                 />
               </div>
             </div>
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex shrink-0 items-center gap-0 sm:gap-2">
               <SuperAdminApprovals />
 
               <NotificationDropdown />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleTheme}
-                disabled={toggling}
-                title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-              >
-                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </Button>
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-xs font-semibold text-primary-foreground">
+              {canManageBranding && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 sm:h-10 sm:w-10"
+                  onClick={toggleTheme}
+                  disabled={toggling}
+                  title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                >
+                  {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
+              )}
+              <div className="flex shrink-0 items-center gap-2" title={`${displayName}${companyRole ? ` · ${companyRole}` : ""}`}>
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground sm:h-8 sm:w-8">
                   {initials}
                 </div>
-                <div className="flex flex-col items-end">
-                  <span className="text-xs font-medium leading-tight">{displayName}</span>
+                <div className="hidden flex-col items-end sm:flex">
+                  <span className="max-w-36 truncate text-xs font-medium leading-tight">{displayName}</span>
                   {companyRole && (
                     <Badge variant="secondary" className="text-[9px] capitalize px-1.5 py-0">
                       {companyRole}
@@ -107,7 +111,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) { // notific
                   )}
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={signOut} title="Sign out">
+              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10" onClick={signOut} title="Sign out">
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>

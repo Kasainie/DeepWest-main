@@ -74,7 +74,7 @@ export function generateSaleReceiptHtml(
   <div class="footer">
     <p>Thank you for your business!</p>
     <p style="margin-top:4px;">${company?.name || "Company"}</p>
-    <p style="margin-top:8px;font-size:9px;color:#999;">Powered by LKTECH</p>
+    <p style="margin-top:8px;font-size:9px;color:#999;">DeepWest</p>
   </div>
 </body>
 </html>`;

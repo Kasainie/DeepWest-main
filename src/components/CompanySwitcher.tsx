@@ -1,5 +1,4 @@
 import { useCompany } from "@/contexts/CompanyContext";
-import { useNavigate } from "react-router-dom";
 import {
   Select,
   SelectContent,
@@ -7,36 +6,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, Plus } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-
-const ADD_COMPANY_VALUE = "__add_new_company__";
+import { Building2 } from "lucide-react";
 
 export function CompanySwitcher() {
   const { companies, currentCompany, companyRole, switchCompany } = useCompany();
-  const navigate = useNavigate();
-
-  const isOwner = companyRole === "owner";
-
   if (companies.length === 0) return null;
 
   const canSwitch = companyRole === "owner" || companyRole === "admin";
+  const compactCompanyName = currentCompany?.name.replace(/\s+Hotel\b/i, "");
 
   // Staff are locked to the single company they belong to — no cross-tenant switching.
   if (!canSwitch) {
     return (
-      <div className="flex items-center gap-2 min-w-0 max-w-[45vw] sm:max-w-none">
-        <span className="truncate text-sm font-medium">{currentCompany?.name}</span>
+      <div className="flex min-w-0 max-w-[38vw] items-center sm:max-w-none">
+        <span className="truncate text-xs font-medium sm:text-sm">{compactCompanyName}</span>
       </div>
     );
   }
 
   const handleValueChange = (value: string) => {
-    if (value === ADD_COMPANY_VALUE) {
-      navigate("/register-company");
-    } else {
-      switchCompany(value);
-    }
+    switchCompany(value);
   };
 
   return (
@@ -45,18 +34,21 @@ export function CompanySwitcher() {
         value={currentCompany?.id || ""}
         onValueChange={handleValueChange}
       >
-        <SelectTrigger className="w-[150px] sm:w-[200px] h-9 bg-secondary border-0">
-          <div className="flex items-center gap-2">
+        <SelectTrigger className="h-9 w-[132px] min-w-0 bg-secondary border-0 px-2 sm:w-[200px]">
+          <div className="flex min-w-0 items-center gap-1">
             {currentCompany?.logo_url ? (
               <img
                 src={currentCompany.logo_url}
                 alt=""
-                className="h-5 w-5 rounded object-cover"
+                className="h-4 w-4 shrink-0 rounded object-cover sm:h-5 sm:w-5"
               />
             ) : (
-              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground sm:h-4 sm:w-4" />
             )}
-            <SelectValue />
+            <SelectValue className="min-w-0 truncate text-xs sm:text-sm">
+              <span className="sm:hidden">{compactCompanyName}</span>
+              <span className="hidden sm:inline">{currentCompany?.name}</span>
+            </SelectValue>
           </div>
         </SelectTrigger>
         <SelectContent>
@@ -72,17 +64,6 @@ export function CompanySwitcher() {
               </div>
             </SelectItem>
           ))}
-          {isOwner && (
-            <>
-              <Separator className="my-1" />
-              <SelectItem value={ADD_COMPANY_VALUE}>
-                <div className="flex items-center gap-2 text-primary">
-                  <Plus className="h-3 w-3" />
-                  Register New Company
-                </div>
-              </SelectItem>
-            </>
-          )}
         </SelectContent>
       </Select>
     </div>
