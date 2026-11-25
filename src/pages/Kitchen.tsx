@@ -258,18 +258,6 @@ export default function Kitchen() {
                 Mark Ready
               </Button>
             )}
-            {order.status === "ready" && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex-1"
-                onClick={() => updateOrderStatus(order.id, "served")}
-                disabled={updating === order.id}
-              >
-                {updating === order.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Check className="h-3 w-3 mr-1" />}
-                Mark Served
-              </Button>
-            )}
             <Button
               size="sm"
               variant="ghost"

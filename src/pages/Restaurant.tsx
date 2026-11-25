@@ -354,7 +354,10 @@ export default function Restaurant({ waiterMode = false }: { waiterMode?: boolea
               </TabsContent>
 
               <TabsContent value="orders" className="mt-4">
-                <OrdersList mode={isWaiterMode ? "waiter" : "restaurant"} />
+                <OrdersList
+                  mode={isWaiterMode ? "waiter" : "restaurant"}
+                  onOrderDeleted={fetchStats}
+                />
               </TabsContent>
 
               {!isWaiterMode && (

@@ -166,6 +166,7 @@ export default function BrandingSettings() {
   const { currentCompany, companyRole } = useCompany();
   const { branding, refreshBranding } = useBranding();
   const canEdit = companyRole === "owner" || companyRole === "admin";
+  const canChangeTheme = companyRole === "owner";
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
@@ -198,7 +199,11 @@ export default function BrandingSettings() {
   };
 
   const handleReset = () => {
-    setForm({ ...DEFAULTS, welcome_message: "" });
+    setForm({
+      ...DEFAULTS,
+      welcome_message: "",
+      theme_mode: canChangeTheme ? DEFAULTS.theme_mode : branding?.theme_mode || DEFAULTS.theme_mode,
+    });
   };
 
   const applyPreset = (preset: typeof THEME_PRESETS[number]) => {
@@ -209,7 +214,7 @@ export default function BrandingSettings() {
       sidebar_color: preset.sidebar,
       font_heading: preset.heading,
       font_body: preset.body,
-      theme_mode: preset.mode,
+      theme_mode: canChangeTheme ? preset.mode : f.theme_mode,
     }));
   };
 
@@ -226,7 +231,7 @@ export default function BrandingSettings() {
         font_heading: form.font_heading,
         font_body: form.font_body,
         welcome_message: form.welcome_message.trim() || null,
-        theme_mode: form.theme_mode,
+        theme_mode: canChangeTheme ? form.theme_mode : branding?.theme_mode || DEFAULTS.theme_mode,
       };
 
       if (branding) {
@@ -291,13 +296,16 @@ export default function BrandingSettings() {
                 </p>
               </div>
             </div>
-            <Switch
-              checked={form.theme_mode === "dark"}
-              onCheckedChange={(checked) =>
-                setForm((f) => ({ ...f, theme_mode: checked ? "dark" : "light" }))
-              }
-              disabled={!canEdit}
-            />
+            {canChangeTheme ? (
+              <Switch
+                checked={form.theme_mode === "dark"}
+                onCheckedChange={(checked) =>
+                  setForm((f) => ({ ...f, theme_mode: checked ? "dark" : "light" }))
+                }
+              />
+            ) : (
+              <span className="text-xs text-muted-foreground">Owner only</span>
+            )}
           </div>
 
           {/* Theme Presets */}

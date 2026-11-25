@@ -23,12 +23,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) { // notific
   const { user, signOut } = useAuth();
   const { currentCompany, companyRole } = useCompany();
   const { branding, refreshBranding } = useBranding();
-  const canManageBranding = companyRole === "owner" || companyRole === "admin";
+  const canChangeTheme = companyRole === "owner";
   const isDark = branding?.theme_mode === "dark" || (!branding && document.documentElement.classList.contains("dark"));
   const [toggling, setToggling] = useState(false);
 
   const toggleTheme = async () => {
-    if (!currentCompany || !canManageBranding) return;
+    if (!currentCompany || !canChangeTheme) return;
     setToggling(true);
     const newMode = isDark ? "light" : "dark";
     // Apply immediately
@@ -96,7 +96,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) { // notific
                 <RefreshCw className="h-4 w-4" />
               </Button>
               <NotificationDropdown />
-              {canManageBranding && (
+              {canChangeTheme && (
                 <Button
                   variant="ghost"
                   size="icon"

@@ -5,9 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, CreditCard, Check, Download, Clock, Printer } from "lucide-react";
+import { Loader2, CreditCard, Check, Download, Clock, Printer, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { generateReceipt, printReceipt } from "@/lib/receipt";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface OrderWithItems {
   id: string;
@@ -37,13 +46,22 @@ const statusBadge: Record<string, string> = {
   served: "bg-accent/10 text-accent",
 };
 
-export function OrdersList({ mode = "restaurant" }: { mode?: "restaurant" | "waiter" }) {
-  const { currentCompany, staffRole } = useCompany();
+export function OrdersList({
+  mode = "restaurant",
+  onOrderDeleted,
+}: {
+  mode?: "restaurant" | "waiter";
+  onOrderDeleted?: () => void;
+}) {
+  const { currentCompany, companyRole, staffRole } = useCompany();
   const isWaiter = mode === "waiter" || staffRole?.toLowerCase() === "waiter";
+  const canDeleteOrders = !isWaiter && (companyRole === "owner" || companyRole === "admin");
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState<string | null>(null);
   const [serving, setServing] = useState<string | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<OrderWithItems | null>(null);
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentCompany) {
@@ -113,6 +131,30 @@ export function OrdersList({ mode = "restaurant" }: { mode?: "restaurant" | "wai
       fetchOrders();
     }
     setPaying(null);
+  };
+
+  const handleDeleteOrder = async () => {
+    if (!currentCompany || !orderToDelete || !canDeleteOrders) return;
+    setDeletingOrderId(orderToDelete.id);
+    const { data, error } = await supabase
+      .from("orders")
+      .delete()
+      .eq("id", orderToDelete.id)
+      .eq("company_id", currentCompany.id)
+      .select("id")
+      .maybeSingle();
+
+    if (error) {
+      toast.error(`Failed to delete order: ${error.message}`);
+    } else if (!data) {
+      toast.error("Order was not deleted. It may have already been removed or you may not have permission.");
+    } else {
+      setOrders((prev) => prev.filter((order) => order.id !== orderToDelete.id));
+      toast.success(`Order #${orderToDelete.order_number} deleted`);
+      setOrderToDelete(null);
+      onOrderDeleted?.();
+    }
+    setDeletingOrderId(null);
   };
 
   const handleDownloadReceipt = (order: OrderWithItems) => {
@@ -304,10 +346,56 @@ export function OrdersList({ mode = "restaurant" }: { mode?: "restaurant" | "wai
                   )}
                 </>
               )}
+              {canDeleteOrders && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setOrderToDelete(order)}
+                  disabled={deletingOrderId === order.id}
+                  className="text-xs text-destructive hover:text-destructive"
+                  aria-label={`Delete order ${order.order_number}`}
+                >
+                  {deletingOrderId === order.id ? (
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3 w-3 mr-1" />
+                  )}
+                  Delete
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
       ))}
+      <AlertDialog
+        open={orderToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open && deletingOrderId === null) setOrderToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete Order #{orderToDelete?.order_number}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently deletes the order and its items, and removes its sales-ledger entry.
+              {orderToDelete?.payment_status === "paid" && " It will not refund or reverse the payment."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingOrderId !== null}>Cancel</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteOrder}
+              disabled={deletingOrderId !== null}
+            >
+              {deletingOrderId !== null && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Delete order
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
