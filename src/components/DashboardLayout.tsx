@@ -1,6 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Search, LogOut, Building2, Sun, Moon } from "lucide-react";
+import { Search, LogOut, Building2, Sun, Moon, RefreshCw } from "lucide-react";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
 import { SuperAdminApprovals } from "@/components/SuperAdminApprovals";
 
@@ -85,6 +85,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) { // notific
             <div className="flex shrink-0 items-center gap-0 sm:gap-2">
               <SuperAdminApprovals />
 
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 sm:h-10 sm:w-10"
+                onClick={() => window.location.reload()}
+                title="Refresh page"
+                aria-label="Refresh page"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
               <NotificationDropdown />
               {canManageBranding && (
                 <Button

@@ -10,12 +10,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, TrendingUp, BarChart3, Loader2, ArrowUpRight, ArrowDownRight, Download, FileText, Printer } from "lucide-react";
+import { Plus, TrendingUp, BarChart3, Loader2, ArrowUpRight, ArrowDownRight, Download, FileText, Printer, Trash2 } from "lucide-react";
 import { KshIcon } from "@/components/KshIcon";
 import { downloadCSV, downloadPDF } from "@/lib/export";
 import { DateRangeFilter, DateRange } from "@/components/DateRangeFilter";
 import { toast } from "sonner";
 import { downloadSaleReceipt, printSaleReceipt } from "@/lib/saleReceipt";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { motion } from "framer-motion";
 import { formatKES } from "@/lib/currency";
 import { format, subDays, startOfMonth } from "date-fns";
@@ -44,11 +53,13 @@ const CATEGORIES = ["food", "beverage", "room", "service", "other"];
 const PAYMENT_METHODS = ["cash", "mpesa", "card", "bank_transfer"];
 
 export default function Sales() {
-  const { currentCompany } = useCompany();
+  const { currentCompany, companyRole } = useCompany();
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>({ from: new Date(), to: new Date() });
   const [deptFilter, setDeptFilter] = useState<string>("all");
   const [form, setForm] = useState({
@@ -59,6 +70,7 @@ export default function Sales() {
     amount: "",
     payment_method: "cash",
   });
+  const canDeleteSales = companyRole === "owner" || companyRole === "admin";
 
   useEffect(() => {
     if (currentCompany) fetchSales();
@@ -114,6 +126,29 @@ export default function Sales() {
       fetchSales();
     }
     setSaving(false);
+  };
+
+  const handleDeleteSale = async () => {
+    if (!currentCompany || !saleToDelete) return;
+    setDeleting(true);
+    const { data, error } = await supabase
+      .from("sales")
+      .delete()
+      .eq("id", saleToDelete.id)
+      .eq("company_id", currentCompany.id)
+      .select("id")
+      .maybeSingle();
+
+    if (error) {
+      toast.error(`Failed to delete transaction: ${error.message}`);
+    } else if (!data) {
+      toast.error("Transaction was not deleted. It may have already been removed or you may not have permission.");
+    } else {
+      setSales((prev) => prev.filter((sale) => sale.id !== saleToDelete.id));
+      toast.success("Transaction deleted.");
+      setSaleToDelete(null);
+    }
+    setDeleting(false);
   };
 
   const filtered = deptFilter === "all" ? sales : sales.filter(s => s.department === deptFilter);
@@ -346,7 +381,7 @@ export default function Sales() {
                           <TableHead>Description</TableHead>
                           <TableHead>Payment</TableHead>
                           <TableHead className="text-right">Amount</TableHead>
-                          <TableHead className="text-right">Receipt</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -363,18 +398,33 @@ export default function Sales() {
                             <TableCell><Badge variant="secondary" className="capitalize text-xs">{s.payment_method.replace("_", " ")}</Badge></TableCell>
                             <TableCell className="text-right font-medium">{formatKES(Number(s.amount))}</TableCell>
                             <TableCell className="text-right">
-                              {s.source === "manual" ? (
-                                <div className="flex items-center justify-end gap-1">
+                              <div className="flex items-center justify-end gap-1">
+                                {s.source === "manual" && (
+                                  <>
                                   <Button variant="ghost" size="icon" className="h-7 w-7" title="Download Receipt" onClick={() => { downloadSaleReceipt(s, currentCompany); toast.success("Receipt downloaded!"); }}>
                                     <Download className="h-3 w-3" />
                                   </Button>
                                   <Button variant="ghost" size="icon" className="h-7 w-7" title="Print Receipt" onClick={() => printSaleReceipt(s, currentCompany)}>
                                     <Printer className="h-3 w-3" />
                                   </Button>
-                                </div>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">—</span>
-                              )}
+                                  </>
+                                )}
+                                {canDeleteSales && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-destructive hover:text-destructive"
+                                    title="Delete transaction"
+                                    aria-label={`Delete transaction ${s.description || format(new Date(s.sale_date), "MMM d, yyyy")}`}
+                                    onClick={() => setSaleToDelete(s)}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                )}
+                                {s.source === "order" && !canDeleteSales && (
+                                  <span className="text-xs text-muted-foreground">—</span>
+                                )}
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -407,6 +457,31 @@ export default function Sales() {
           </motion.div>
         </TabsContent>
       </Tabs>
+      <AlertDialog
+        open={saleToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setSaleToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this transaction?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes {saleToDelete?.description || "this transaction"} dated{" "}
+              {saleToDelete ? format(new Date(saleToDelete.sale_date), "MMM d, yyyy") : ""} for{" "}
+              {saleToDelete ? formatKES(Number(saleToDelete.amount)) : ""} from the sales ledger.
+              {saleToDelete?.source === "order" && " The associated order and payment will remain unchanged."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <Button variant="destructive" onClick={handleDeleteSale} disabled={deleting}>
+              {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Delete transaction
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }

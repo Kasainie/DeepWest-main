@@ -8,8 +8,7 @@ import { ShieldCheck, UserCheck, UserX, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
-
-const APPROVAL_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3";
+import { notificationSounds } from "@/lib/notificationSounds";
 
 
 interface PendingUser {
@@ -33,7 +32,7 @@ export function SuperAdminApprovals() {
   const playSound = useCallback(() => {
     try {
       if (!audioRef.current) {
-        audioRef.current = new Audio(APPROVAL_SOUND_URL);
+        audioRef.current = new Audio(notificationSounds.restaurant.src);
       }
       audioRef.current.volume = 0.5;
       audioRef.current.currentTime = 0;

@@ -29,6 +29,8 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [staffCode, setStaffCode] = useState("");
+  const [staffPassword, setStaffPassword] = useState("");
+  const [requiresStaffPassword, setRequiresStaffPassword] = useState(false);
   const [staffLoading, setStaffLoading] = useState(false);
   const [company, setCompany] = useState<CompanyInfo | null>(null);
 
@@ -86,18 +88,29 @@ export default function Login() {
       const { data, error } = await supabase.functions.invoke("staff-login", {
         body: {
           staff_code: staffCode.replace(/\s+/g, "").toUpperCase(),
+          staff_password: requiresStaffPassword ? staffPassword : undefined,
           company_slug: slug ?? null,
         },
       });
 
       if (error) {
         let message = "Invalid staff code";
+        let passwordRequired = false;
         const errorContext: unknown = "context" in error ? error.context : null;
         if (errorContext instanceof Response) {
           const body: unknown = await errorContext.clone().json().catch(() => null);
-          if (body && typeof body === "object" && "error" in body && typeof body.error === "string") {
-            message = body.error;
+          if (body && typeof body === "object") {
+            if ("error" in body && typeof body.error === "string") {
+              message = body.error;
+            }
+            passwordRequired = "password_required" in body && body.password_required === true;
           }
+        }
+        if (passwordRequired) {
+          setRequiresStaffPassword(true);
+          setStaffPassword("");
+          toast.info("This staff account requires a password");
+          return;
         }
         throw new Error(message);
       }
@@ -180,11 +193,29 @@ export default function Login() {
                   <Input
                     id="staffCode"
                     value={staffCode}
-                    onChange={(e) => setStaffCode(e.target.value.toUpperCase())}
+                    onChange={(e) => {
+                      setStaffCode(e.target.value.toUpperCase());
+                      setRequiresStaffPassword(false);
+                      setStaffPassword("");
+                    }}
                     placeholder="Staff access code"
                     autoComplete="one-time-code"
                     required
                   />
+                  {requiresStaffPassword && (
+                    <>
+                      <Label htmlFor="staffPassword" className="sr-only">Staff password</Label>
+                      <Input
+                        id="staffPassword"
+                        type="password"
+                        value={staffPassword}
+                        onChange={(e) => setStaffPassword(e.target.value)}
+                        placeholder="Staff password"
+                        autoComplete="current-password"
+                        required
+                      />
+                    </>
+                  )}
                   <Button type="submit" className="w-full" disabled={staffLoading}>
                     {staffLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sign in

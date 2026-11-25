@@ -15,6 +15,7 @@ import { motion } from "framer-motion";
 import { generateReceipt, printReceipt } from "@/lib/receipt";
 import { getLocalDayBoundsUTC } from "@/lib/dateUtils";
 import { DateRangeFilter, DateRange } from "@/components/DateRangeFilter";
+import { notificationSounds } from "@/lib/notificationSounds";
 
 interface OrderWithItems {
   id: string;
@@ -54,10 +55,6 @@ const statusIcons: Record<string, typeof Clock> = {
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } };
 const itemVariant = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
-// Distinct sounds: urgent bell for new orders, gentle chime for status updates
-const NEW_ORDER_SOUND = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
-const STATUS_CHANGE_SOUND = "https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3";
-
 export default function Kitchen() {
   const { currentCompany } = useCompany();
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
@@ -74,14 +71,14 @@ export default function Kitchen() {
     try {
       if (type === "new_order") {
         if (!newOrderAudioRef.current) {
-          newOrderAudioRef.current = new Audio(NEW_ORDER_SOUND);
+          newOrderAudioRef.current = new Audio(notificationSounds.kitchen.src);
         }
         newOrderAudioRef.current.volume = 0.9;
         newOrderAudioRef.current.currentTime = 0;
         newOrderAudioRef.current.play().catch(() => {});
       } else {
         if (!statusAudioRef.current) {
-          statusAudioRef.current = new Audio(STATUS_CHANGE_SOUND);
+          statusAudioRef.current = new Audio(notificationSounds.kitchen.src);
         }
         statusAudioRef.current.volume = 0.6;
         statusAudioRef.current.currentTime = 0;

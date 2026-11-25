@@ -3,6 +3,7 @@ import { Capacitor } from "@capacitor/core";
 import { Haptics } from "@capacitor/haptics";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
+import { getNotificationSoundForStaff, notificationSounds } from "@/lib/notificationSounds";
 import { Bell, Check, CheckCheck, Info, AlertTriangle, UserPlus, ShoppingCart, CalendarDays, X, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -41,15 +42,6 @@ const typeColors: Record<string, string> = {
   booking: "bg-secondary text-secondary-foreground",
 };
 
-const NOTIFICATION_SOUNDS: Record<string, string> = {
-  order: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",      // cash register ding
-  booking: "https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3",    // gentle chime
-  warning: "https://assets.mixkit.co/active_storage/sfx/2868/2868-preview.mp3",    // alert tone
-  staff: "https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3",      // soft notification
-  info: "https://assets.mixkit.co/active_storage/sfx/2356/2356-preview.mp3",       // subtle pop
-  default: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3",
-};
-
 function loadSoundSettings() {
   try {
     const stored = localStorage.getItem("notification_sound_settings");
@@ -59,7 +51,7 @@ function loadSoundSettings() {
 }
 
 export function NotificationDropdown() {
-  const { currentCompany, companyRole, staffDepartment } = useCompany();
+  const { currentCompany, companyRole, staffDepartment, staffRole } = useCompany();
   const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -92,15 +84,14 @@ export function NotificationDropdown() {
 
   const audioCache = useRef<Record<string, HTMLAudioElement>>({});
 
-  const playNotificationSound = useCallback((type?: string, preview = false) => {
+  const playNotificationSound = useCallback((soundUrl: string, preview = false) => {
     if (!preview && !soundSettings.enabled) return;
     try {
-      const url = NOTIFICATION_SOUNDS[type || ""] || NOTIFICATION_SOUNDS.default;
-      if (!audioCache.current[url]) {
-        audioCache.current[url] = new Audio(url);
-        audioCache.current[url].preload = "auto";
+      if (!audioCache.current[soundUrl]) {
+        audioCache.current[soundUrl] = new Audio(soundUrl);
+        audioCache.current[soundUrl].preload = "auto";
       }
-      const audio = audioCache.current[url];
+      const audio = audioCache.current[soundUrl];
       audio.volume = soundSettings.volume;
       audio.currentTime = 0;
       void audio.play().catch((error: unknown) => {
@@ -143,7 +134,7 @@ export function NotificationDropdown() {
           const shouldShow = isFullAccess || 
             (newNotif.department && staffDepartment?.some(d => d.toLowerCase() === newNotif.department?.toLowerCase()));
           if (shouldShow) {
-            playNotificationSound(newNotif.type);
+            playNotificationSound(getNotificationSoundForStaff(staffRole, staffDepartment));
             vibrateForAndroidNotification();
           }
         }
@@ -151,7 +142,7 @@ export function NotificationDropdown() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [currentCompany?.id, playNotificationSound, vibrateForAndroidNotification, isFullAccess, staffDepartment]);
+  }, [currentCompany?.id, playNotificationSound, vibrateForAndroidNotification, isFullAccess, staffDepartment, staffRole]);
 
   const fetchNotifications = async () => {
     if (!currentCompany) return;
@@ -245,20 +236,19 @@ export function NotificationDropdown() {
             <div className="space-y-1.5">
               <p className="text-xs text-muted-foreground">Preview notification sounds</p>
               <div className="flex flex-wrap gap-1.5">
-                {Object.entries(NOTIFICATION_SOUNDS)
-                  .filter(([type]) => type !== "default")
-                  .map(([type]) => (
+                {Object.entries(notificationSounds)
+                  .map(([soundName, sound]) => (
                     <Button
-                      key={type}
+                      key={soundName}
                       type="button"
                       variant="outline"
                       size="sm"
                       className="h-7 px-2 text-xs capitalize"
-                      aria-label={`Play ${type} notification sound`}
-                      onClick={() => playNotificationSound(type, true)}
+                      aria-label={`Play ${sound.label} notification sound`}
+                      onClick={() => playNotificationSound(sound.src, true)}
                     >
                       <Volume2 className="h-3 w-3" />
-                      {type}
+                      {sound.label}
                     </Button>
                   ))}
               </div>

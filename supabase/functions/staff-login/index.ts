@@ -39,7 +39,13 @@ Deno.serve(async (req: Request) => {
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
     // Rate limiting: check recent failed attempts for this code
@@ -196,7 +202,7 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+      const { data: signInData, error: signInError } = await supabaseAuth.auth.signInWithPassword({
         email: staffEmail,
         password: randomPassword,
       });
@@ -287,7 +293,7 @@ Deno.serve(async (req: Request) => {
       .eq("user_id", newUser.user.id);
 
     // Now sign in
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.signInWithPassword({
+    const { data: sessionData, error: sessionError } = await supabaseAuth.auth.signInWithPassword({
       email: staffEmail,
       password: randomPassword,
     });
