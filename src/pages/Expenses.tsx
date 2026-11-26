@@ -7,12 +7,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Receipt, TrendingDown, PieChart, Loader2, FolderPlus, Download, FileText, Printer } from "lucide-react";
+import { Plus, Receipt, TrendingDown, PieChart, Loader2, FolderPlus, Download, FileText, Printer, Trash2 } from "lucide-react";
 import { downloadCSV, downloadPDF } from "@/lib/export";
 import { DateRangeFilter, DateRange } from "@/components/DateRangeFilter";
 import { toast } from "sonner";
@@ -43,13 +52,15 @@ const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { st
 const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 
 export default function Expenses() {
-  const { currentCompany } = useCompany();
+  const { currentCompany, companyRole } = useCompany();
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [addExpOpen, setAddExpOpen] = useState(false);
   const [addCatOpen, setAddCatOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>({ from: new Date(), to: new Date() });
   const [expForm, setExpForm] = useState({
     category_id: "",
@@ -60,6 +71,7 @@ export default function Expenses() {
     notes: "",
   });
   const [catForm, setCatForm] = useState({ name: "", budget_monthly: "" });
+  const canDeleteExpenses = ["owner", "admin"].includes(companyRole?.toLowerCase() ?? "");
 
   useEffect(() => {
     if (currentCompany) fetchAll();
@@ -102,6 +114,29 @@ export default function Expenses() {
       fetchAll();
     }
     setSaving(false);
+  };
+
+  const handleDeleteExpense = async () => {
+    if (!currentCompany || !expenseToDelete) return;
+    setDeleting(true);
+    const { data, error } = await supabase
+      .from("expenses")
+      .delete()
+      .eq("id", expenseToDelete.id)
+      .eq("company_id", currentCompany.id)
+      .select("id")
+      .maybeSingle();
+
+    if (error) {
+      toast.error(`Failed to delete expense: ${error.message}`);
+    } else if (!data) {
+      toast.error("Expense was not deleted. It may have already been removed or you may not have permission.");
+    } else {
+      setExpenses((prev) => prev.filter((expense) => expense.id !== expenseToDelete.id));
+      setExpenseToDelete(null);
+      toast.success("Expense deleted.");
+    }
+    setDeleting(false);
   };
 
   const handleAddExpense = async (e: React.FormEvent) => {
@@ -357,7 +392,7 @@ export default function Expenses() {
                           <TableHead>Category</TableHead>
                           <TableHead>Payment</TableHead>
                           <TableHead className="text-right">Amount</TableHead>
-                          <TableHead className="text-right">Receipt</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -381,6 +416,18 @@ export default function Expenses() {
                                   <Button variant="ghost" size="icon" className="h-7 w-7" title="Print Receipt" onClick={() => printExpenseReceipt({ ...exp, category_name: cat?.name || "Uncategorized" }, currentCompany)}>
                                     <Printer className="h-3 w-3" />
                                   </Button>
+                                  {canDeleteExpenses && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-destructive hover:text-destructive"
+                                      title="Delete expense"
+                                      aria-label={`Delete expense ${exp.description}`}
+                                      onClick={() => setExpenseToDelete(exp)}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -427,6 +474,30 @@ export default function Expenses() {
           </motion.div>
         </TabsContent>
       </Tabs>
+      <AlertDialog
+        open={expenseToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setExpenseToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this expense?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes {expenseToDelete?.description || "this expense"} dated{" "}
+              {expenseToDelete ? format(new Date(expenseToDelete.expense_date), "MMM d, yyyy") : ""} for{" "}
+              {expenseToDelete ? formatKES(Number(expenseToDelete.amount)) : ""} from the expenses ledger.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <Button variant="destructive" onClick={handleDeleteExpense} disabled={deleting}>
+              {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete expense
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }

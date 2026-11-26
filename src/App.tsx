@@ -12,13 +12,16 @@ import { DepartmentGuard } from "@/components/DepartmentGuard";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { SuperAdminGuard } from "@/components/SuperAdminGuard";
 import Dashboard from "./pages/Dashboard";
+import CombinedDashboard from "./pages/CombinedDashboard";
 import Restaurant from "./pages/Restaurant";
 import Kitchen from "./pages/Kitchen";
 import SettingsPage from "./pages/SettingsPage";
 import StaffManagement from "./pages/StaffManagement";
 import About from "./pages/About";
 import Sales from "./pages/Sales";
+import Inventory from "./pages/Inventory";
 import Expenses from "./pages/Expenses";
+import Housekeeping from "./pages/Housekeeping";
 import SuperAdmin from "./pages/SuperAdmin";
 import AcceptInvite from "./pages/AcceptInvite";
 import Login from "./pages/Login";
@@ -69,11 +72,14 @@ const AppRoutes = () => {
 
       {/* Dashboard pages */}
       <Route path="/dashboard" element={<Shell><Dashboard /></Shell>} />
+      <Route path="/combined-dashboard" element={<Shell><CombinedDashboard /></Shell>} />
       <Route path="/restaurant" element={<Shell><Restaurant /></Shell>} />
       <Route path="/waiter" element={<Shell><Restaurant waiterMode /></Shell>} />
       <Route path="/kitchen" element={<Shell><Kitchen /></Shell>} />
       <Route path="/sales" element={<Shell><Sales /></Shell>} />
+      <Route path="/inventory" element={<Shell><Inventory /></Shell>} />
       <Route path="/expenses" element={<Shell><Expenses /></Shell>} />
+      <Route path="/housekeeping" element={<Shell><Housekeeping /></Shell>} />
       <Route path="/staff" element={<Shell><StaffManagement /></Shell>} />
       <Route path="/settings" element={<Shell><SettingsPage /></Shell>} />
       <Route path="/about" element={<Shell><About /></Shell>} />

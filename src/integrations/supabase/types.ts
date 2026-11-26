@@ -187,6 +187,7 @@ export type Database = {
       }
       company_staff: {
         Row: {
+          access_permissions: string[] | null
           company_id: string
           created_at: string
           department: string[]
@@ -201,6 +202,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          access_permissions?: string[] | null
           company_id: string
           created_at?: string
           department?: string[]
@@ -215,6 +217,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          access_permissions?: string[] | null
           company_id?: string
           created_at?: string
           department?: string[]
@@ -350,6 +353,150 @@ export type Database = {
           staff_code?: string
         }
         Relationships: []
+      }
+      inventory_restock_entries: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          item_name: string
+          menu_item_id: string | null
+          quantity: number
+          restocked_by: string
+          stock_date: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          item_name: string
+          menu_item_id?: string | null
+          quantity: number
+          restocked_by?: string
+          stock_date?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          item_name?: string
+          menu_item_id?: string | null
+          quantity?: number
+          restocked_by?: string
+          stock_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_restock_entries_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_restock_entries_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_stock_balances: {
+        Row: {
+          company_id: string
+          id: string
+          item_name: string
+          menu_item_id: string | null
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          id?: string
+          item_name: string
+          menu_item_id?: string | null
+          quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          id?: string
+          item_name?: string
+          menu_item_id?: string | null
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_stock_balances_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_stock_balances_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      housekeeping_tasks: {
+        Row: {
+          assigned_to: string | null
+          assigned_to_name: string
+          company_id: string
+          created_at: string
+          created_by: string
+          id: string
+          instructions: string | null
+          room_label: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          assigned_to_name: string
+          company_id: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          instructions?: string | null
+          room_label: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          assigned_to_name?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          instructions?: string | null
+          room_label?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "housekeeping_tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "company_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "housekeeping_tasks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       menu_items: {
         Row: {
@@ -505,6 +652,9 @@ export type Database = {
           paid_at: string | null
           payment_method: string | null
           payment_status: string
+          ready_at: string | null
+          served_by_name: string | null
+          served_by_user_id: string | null
           status: string
           subtotal: number
           table_number: string | null
@@ -523,6 +673,9 @@ export type Database = {
           paid_at?: string | null
           payment_method?: string | null
           payment_status?: string
+          ready_at?: string | null
+          served_by_name?: string | null
+          served_by_user_id?: string | null
           status?: string
           subtotal?: number
           table_number?: string | null
@@ -541,6 +694,9 @@ export type Database = {
           paid_at?: string | null
           payment_method?: string | null
           payment_status?: string
+          ready_at?: string | null
+          served_by_name?: string | null
+          served_by_user_id?: string | null
           status?: string
           subtotal?: number
           table_number?: string | null
@@ -729,6 +885,18 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { _token: string }; Returns: string }
+      create_restaurant_order: {
+        Args: {
+          _company_id: string
+          _items: Json
+          _notes: string
+          _table_number: string
+        }
+        Returns: {
+          id: string
+          order_number: number
+        }[]
+      }
       get_company_by_slug: {
         Args: { _slug: string }
         Returns: {
@@ -762,6 +930,13 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      list_housekeeping_cleaners: {
+        Args: { _company_id: string }
+        Returns: {
+          full_name: string
+          staff_id: string
+        }[]
+      }
       list_company_staff: {
         Args: { _company_id: string }
         Returns: {
@@ -790,9 +965,29 @@ export type Database = {
         }[]
       }
       role_rank: { Args: { _role: string }; Returns: number }
+      set_housekeeping_task_status: {
+        Args: { _status: string; _task_id: string }
+        Returns: undefined
+      }
       set_staff_password: {
         Args: { _password: string; _staff_id: string }
         Returns: undefined
+      }
+      staff_has_permission: {
+        Args: {
+          _company_id: string
+          _permission: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_housekeeping_cleaner: {
+        Args: { _company_id: string; _staff_id: string }
+        Returns: boolean
+      }
+      is_housekeeping_task_assignee: {
+        Args: { _company_id: string; _staff_id: string; _user_id: string }
+        Returns: boolean
       }
       staff_has_password: { Args: { _staff_id: string }; Returns: boolean }
       verify_staff_password: {

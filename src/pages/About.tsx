@@ -136,15 +136,13 @@ export default function About() {
               </div>
               <div>
                 <CardTitle className="text-xl font-display">DeepWest</CardTitle>
-                <p className="text-sm text-muted-foreground">System Provider</p>
+                <p className="text-sm text-muted-foreground">Developed by Lktech</p>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-5">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              This hospitality management system is developed and maintained by{" "}
-              <span className="font-semibold text-foreground">DeepWest</span>. For support,
-              inquiries, or feature requests, please use the form below or contact us directly.
+              For support, inquiries, or feature requests, please use the form below or contact us directly.
             </p>
 
             <div className="space-y-3">
@@ -170,10 +168,10 @@ export default function About() {
                 <div>
                   <p className="text-xs text-muted-foreground">Email</p>
                   <a
-                    href="mailto:kochjomboz04@gmail.com"
+                    href="mailto:info@lktech.life"
                     className="text-sm font-medium text-foreground hover:text-primary transition-colors"
                   >
-                    kochjomboz04@gmail.com
+                    info@lktech.life
                   </a>
                 </div>
               </div>
@@ -181,7 +179,7 @@ export default function About() {
 
             <div className="pt-3 border-t border-border">
               <p className="text-xs text-muted-foreground text-center">
-                © {new Date().getFullYear()} DeepWest. All rights reserved.
+                © {new Date().getFullYear()} Lktech. All rights reserved.
               </p>
             </div>
           </CardContent>

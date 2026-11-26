@@ -456,6 +456,7 @@ export default function Sales() {
             </Card>
           </motion.div>
         </TabsContent>
+
       </Tabs>
       <AlertDialog
         open={saleToDelete !== null}

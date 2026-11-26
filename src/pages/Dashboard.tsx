@@ -8,7 +8,7 @@ import { DateRangeFilter, DateRange } from "@/components/DateRangeFilter";
 import { StatCard } from "@/components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { UtensilsCrossed, Loader2, ShoppingCart, Receipt } from "lucide-react";
+import { UtensilsCrossed, Loader2, ShoppingCart, Receipt, Banknote, Smartphone, TrendingUp, TrendingDown } from "lucide-react";
 import { motion } from "framer-motion";
 import RevenueChart from "@/components/dashboard/RevenueChart";
 import { KshIcon } from "@/components/KshIcon";
@@ -30,6 +30,8 @@ export default function Dashboard() {
   const [periodOrders, setPeriodOrders] = useState(0);
   const [periodOrderRevenue, setPeriodOrderRevenue] = useState(0);
   const [periodSalesTotal, setPeriodSalesTotal] = useState(0);
+  const [cashPayments, setCashPayments] = useState(0);
+  const [tillPayments, setTillPayments] = useState(0);
   const [pendingOrders, setPendingOrders] = useState(0);
   const [periodExpenses, setPeriodExpenses] = useState(0);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
@@ -58,7 +60,7 @@ export default function Dashboard() {
         .lte("created_at", rangeEnd),
       supabase
         .from("sales")
-        .select("amount")
+        .select("amount, payment_method")
         .eq("company_id", currentCompany.id)
         .gte("sale_date", fromDate)
         .lte("sale_date", toDate),
@@ -87,6 +89,19 @@ export default function Dashboard() {
 
     const sales = salesRes.data || [];
     setPeriodSalesTotal(sales.reduce((sum, s) => sum + Number(s.amount), 0));
+    const paymentTotals = sales.reduce(
+      (totals, sale) => {
+        const method = sale.payment_method.trim().toLowerCase();
+        if (method === "cash") totals.cash += Number(sale.amount);
+        if (["till", "mpesa", "mobile", "mobile_money", "mobile-money"].includes(method)) {
+          totals.till += Number(sale.amount);
+        }
+        return totals;
+      },
+      { cash: 0, till: 0 },
+    );
+    setCashPayments(paymentTotals.cash);
+    setTillPayments(paymentTotals.till);
 
     setPendingOrders(pendingOrdersRes.count || 0);
     setRecentOrders(recentOrdersRes.data || []);
@@ -100,6 +115,8 @@ export default function Dashboard() {
   const isToday = format(dateRange.from, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd") &&
                   format(dateRange.to, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
   const periodLabel = isToday ? "Today" : "Period";
+  const profitLoss = periodSalesTotal - periodExpenses;
+  const profitLossLabel = profitLoss > 0 ? "Profit" : profitLoss < 0 ? "Loss" : "Break-even";
 
   const showLoading = loading;
 
@@ -131,10 +148,19 @@ export default function Dashboard() {
       ) : (
         <>
       {/* Top-level stats */}
-      <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3">
         <StatCard title={`${periodLabel}'s Orders`} value={String(periodOrders)} change={pendingOrders > 0 ? `${pendingOrders} pending` : "All clear"} changeType={pendingOrders > 0 ? "negative" : "positive"} icon={ShoppingCart} />
         <StatCard title={`${periodLabel}'s Revenue`} value={`KSh ${periodSalesTotal.toLocaleString()}`} change={`Orders: KSh ${periodOrderRevenue.toLocaleString()}`} changeType="positive" iconNode={<KshIcon className="h-5 w-5 text-primary" />} />
+        <StatCard title="Cash Payments" value={`KSh ${cashPayments.toLocaleString()}`} change={periodLabel} changeType="positive" icon={Banknote} />
+        <StatCard title="Till Payments" value={`KSh ${tillPayments.toLocaleString()}`} change={periodLabel} changeType="positive" icon={Smartphone} />
         <StatCard title={`${periodLabel}'s Expenses`} value={`KSh ${periodExpenses.toLocaleString()}`} change={periodExpenses > 0 ? `Net: KSh ${(periodSalesTotal - periodExpenses).toLocaleString()}` : "No expenses"} changeType={periodExpenses > 0 ? "negative" : "neutral"} icon={Receipt} />
+        <StatCard
+          title={`${periodLabel}'s Profit / Loss`}
+          value={`KSh ${profitLoss.toLocaleString()}`}
+          change={profitLossLabel}
+          changeType={profitLoss > 0 ? "positive" : profitLoss < 0 ? "negative" : "neutral"}
+          icon={profitLoss < 0 ? TrendingDown : TrendingUp}
+        />
       </motion.div>
 
       {/* Revenue Chart */}

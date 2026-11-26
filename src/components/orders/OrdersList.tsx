@@ -49,9 +49,11 @@ const statusBadge: Record<string, string> = {
 export function OrdersList({
   mode = "restaurant",
   onOrderDeleted,
+  onKitchenOrdersCountChange,
 }: {
   mode?: "restaurant" | "waiter";
   onOrderDeleted?: () => void;
+  onKitchenOrdersCountChange?: (count: number) => void;
 }) {
   const { currentCompany, companyRole, staffRole } = useCompany();
   const isWaiter = mode === "waiter" || staffRole?.toLowerCase() === "waiter";
@@ -62,6 +64,7 @@ export function OrdersList({
   const [serving, setServing] = useState<string | null>(null);
   const [orderToDelete, setOrderToDelete] = useState<OrderWithItems | null>(null);
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
+  const [paymentFilter, setPaymentFilter] = useState<"all" | "unpaid" | "paid">("all");
 
   useEffect(() => {
     if (currentCompany) {
@@ -83,13 +86,39 @@ export function OrdersList({
       .from("orders")
       .select("*, order_items(*)")
       .eq("company_id", currentCompany.id);
-    const { data } = isWaiter
-      ? await query.in("status", ["pending", "preparing", "ready"]).order("created_at", { ascending: false }).limit(50)
-      : await query.neq("status", "cancelled").order("created_at", { ascending: false }).limit(50);
+    const ordersRequest = isWaiter
+      ? query.in("status", ["pending", "preparing", "ready"]).order("created_at", { ascending: false }).limit(50)
+      : query.neq("status", "cancelled").order("created_at", { ascending: false }).limit(50);
+    const kitchenOrdersCountRequest = onKitchenOrdersCountChange
+      ? supabase
+          .from("orders")
+          .select("id", { count: "exact", head: true })
+          .eq("company_id", currentCompany.id)
+          .in("status", ["pending", "preparing", "ready"])
+      : Promise.resolve({ count: null, error: null });
+    const [{ data }, { count, error: countError }] = await Promise.all([
+      ordersRequest,
+      kitchenOrdersCountRequest,
+    ]);
 
     setOrders((data || []) as OrderWithItems[]);
+    if (countError) {
+      toast.error("Failed to load the number of active kitchen orders");
+    } else if (count !== null) {
+      onKitchenOrdersCountChange?.(count);
+    }
     setLoading(false);
   };
+
+  const unpaidOrders = orders.filter((order) => order.payment_status !== "paid");
+  const paidOrders = orders.filter((order) => order.payment_status === "paid");
+  const ordersToDisplay = isWaiter
+    ? orders
+    : paymentFilter === "unpaid"
+      ? unpaidOrders
+      : paymentFilter === "paid"
+        ? paidOrders
+        : [...unpaidOrders, ...paidOrders];
 
   const handleMarkServed = async (orderId: string) => {
     setServing(orderId);
@@ -102,7 +131,7 @@ export function OrdersList({
       .maybeSingle();
 
     if (error) {
-      toast.error("Failed to mark order as served");
+      toast.error(error.message || "Failed to mark order as served");
     } else if (!data) {
       toast.error("This order is no longer ready to serve");
     } else {
@@ -120,7 +149,6 @@ export function OrdersList({
         payment_status: "paid",
         payment_method: method,
         paid_at: new Date().toISOString(),
-        status: "completed",
       })
       .eq("id", orderId);
 
@@ -206,10 +234,80 @@ export function OrdersList({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {!isWaiter && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-xl font-bold font-display">Active Orders</h2>
+            <p className="text-xs text-muted-foreground">Unpaid orders are grouped first</p>
+          </div>
+          <div
+            role="group"
+            aria-label="Filter active orders by payment status"
+            className="flex w-full gap-1 rounded-lg bg-muted p-1 sm:w-auto"
+          >
+            {([
+              { value: "all", label: "All", count: orders.length },
+              { value: "unpaid", label: "Unpaid", count: unpaidOrders.length },
+              { value: "paid", label: "Paid", count: paidOrders.length },
+            ] as const).map((filter) => (
+              <Button
+                key={filter.value}
+                type="button"
+                size="sm"
+                variant={paymentFilter === filter.value ? "default" : "ghost"}
+                aria-pressed={paymentFilter === filter.value}
+                onClick={() => setPaymentFilter(filter.value)}
+                className="flex-1 gap-1.5 sm:flex-none"
+              >
+                {filter.label}
+                <span
+                  className={`rounded-full px-1.5 text-[10px] ${
+                    paymentFilter === filter.value
+                      ? "bg-primary-foreground/20 text-primary-foreground"
+                      : "bg-background text-muted-foreground"
+                  }`}
+                >
+                  {filter.count}
+                </span>
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
       {isWaiter && <h2 className="text-xl font-bold font-display">Kitchen Orders</h2>}
-      {orders.map((order) => (
-        <Card key={order.id} className="shadow-card border-0">
+      {ordersToDisplay.length === 0 ? (
+        <Card className="shadow-card border-0">
+          <CardContent className="py-10 text-center">
+            <p className="text-sm text-muted-foreground">
+              {paymentFilter === "unpaid" ? "No unpaid orders" : "No paid orders"}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+      <div className="space-y-3">
+      {ordersToDisplay.map((order, index) => {
+        const isPaid = order.payment_status === "paid";
+        const previousOrder = ordersToDisplay[index - 1];
+        const isNewPaymentGroup = !isWaiter && (
+          index === 0 || (previousOrder.payment_status === "paid") !== isPaid
+        );
+        const groupCount = isPaid ? paidOrders.length : unpaidOrders.length;
+
+        return (
+        <div key={order.id} className="space-y-3">
+        {isNewPaymentGroup && (
+          <div className="flex items-center gap-2 px-1 pt-2">
+            <span className={`h-2 w-2 rounded-full ${isPaid ? "bg-success" : "bg-destructive"}`} />
+            <h3 className={`text-sm font-semibold ${isPaid ? "text-foreground" : "text-destructive"}`}>
+              {isPaid ? "Paid orders" : "Unpaid orders"}
+            </h3>
+            <Badge variant={isPaid ? "secondary" : "destructive"} className="text-[10px]">
+              {groupCount}
+            </Badge>
+          </div>
+        )}
+        <Card className="shadow-card border-0">
           <CardContent className="p-4">
             <div className="flex items-start justify-between mb-3">
               <div>
@@ -257,10 +355,10 @@ export function OrdersList({
                 order.status === "ready" && (
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="default"
                     onClick={() => handleMarkServed(order.id)}
                     disabled={serving === order.id}
-                    className="text-xs"
+                    className="min-w-32 bg-success font-semibold text-success-foreground shadow-sm hover:bg-success/90"
                   >
                     {serving === order.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Check className="h-3 w-3 mr-1" />}
                     Mark Served
@@ -283,20 +381,11 @@ export function OrdersList({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handlePayment(order.id, "card")}
-                        disabled={paying === order.id}
-                        className="text-xs"
-                      >
-                        Pay Card
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
                         onClick={() => handlePayment(order.id, "mobile")}
                         disabled={paying === order.id}
                         className="text-xs"
                       >
-                        Mobile Pay
+                        Pay Till
                       </Button>
                     </>
                   )}
@@ -366,7 +455,11 @@ export function OrdersList({
             </div>
           </CardContent>
         </Card>
-      ))}
+        </div>
+        );
+      })}
+      </div>
+      )}
       <AlertDialog
         open={orderToDelete !== null}
         onOpenChange={(open) => {

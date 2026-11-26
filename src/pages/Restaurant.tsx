@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getLocalDayBoundsUTC } from "@/lib/dateUtils";
 import { useCompany } from "@/contexts/CompanyContext";
@@ -22,6 +22,7 @@ import { OrdersList } from "@/components/orders/OrdersList";
 import { MenuManager } from "@/components/orders/MenuManager";
 import { StatCard } from "@/components/StatCard";
 import { KshIcon } from "@/components/KshIcon";
+import { hasStaffAccess } from "@/lib/staffAccess";
 
 interface MenuItem {
   id: string;
@@ -30,6 +31,7 @@ interface MenuItem {
   price: number;
   description: string | null;
   is_available: boolean;
+  stockQuantity: number;
 }
 
 interface CartItem {
@@ -44,9 +46,22 @@ const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
 const categories = ["all", "breakfast", "snacks", "soft drinks", "starter", "main", "side", "dessert", "drink"];
 
 export default function Restaurant({ waiterMode = false }: { waiterMode?: boolean }) {
-  const { currentCompany, staffRole } = useCompany();
+  const { currentCompany, companyRole, staffDepartment, staffPermissions, staffRole } = useCompany();
   const { user } = useAuth();
   const isWaiterMode = waiterMode || staffRole?.toLowerCase() === "waiter";
+  const canManageOrders = hasStaffAccess(
+    companyRole,
+    staffDepartment,
+    staffPermissions,
+    "restaurant.orders",
+  );
+  const showUnpaidOrdersBadge = canManageOrders && !isWaiterMode;
+  const canManageMenu = hasStaffAccess(
+    companyRole,
+    staffDepartment,
+    staffPermissions,
+    "restaurant.menu",
+  );
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -56,18 +71,13 @@ export default function Restaurant({ waiterMode = false }: { waiterMode?: boolea
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [menuSearch, setMenuSearch] = useState("");
   const [activeTab, setActiveTab] = useState(isWaiterMode ? "orders" : "new-order");
+  const [preparingOrdersCount, setPreparingOrdersCount] = useState(0);
+  const [unpaidOrdersCount, setUnpaidOrdersCount] = useState(0);
   const [bottomTab, setBottomTab] = useState<"home" | "history">("home");
   const [stats, setStats] = useState({ ordersToday: 0, revenueToday: 0, activeOrders: 0, menuCount: 0 });
   const [dateRange, setDateRange] = useState<DateRange>({ from: new Date(), to: new Date() });
 
-  useEffect(() => {
-    if (currentCompany) {
-      fetchMenu();
-      if (!isWaiterMode) fetchStats();
-    }
-  }, [currentCompany?.id, dateRange, isWaiterMode]);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     if (!currentCompany) return;
     const { start: rangeStart } = getLocalDayBoundsUTC(dateRange.from);
     const { end: rangeEnd } = getLocalDayBoundsUTC(dateRange.to);
@@ -100,23 +110,133 @@ export default function Restaurant({ waiterMode = false }: { waiterMode?: boolea
       activeOrders: activeRes.count || 0,
       menuCount: menuRes.count || 0,
     });
-  };
+  }, [currentCompany, dateRange]);
 
-  const fetchMenu = async () => {
+  const fetchUnpaidOrdersCount = useCallback(async () => {
+    if (!currentCompany || !showUnpaidOrdersBadge) {
+      setUnpaidOrdersCount(0);
+      return;
+    }
+
+    const { count, error } = await supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", currentCompany.id)
+      .neq("status", "cancelled")
+      .neq("payment_status", "paid");
+
+    if (error) {
+      toast.error("Failed to load the number of unpaid orders");
+      return;
+    }
+
+    setUnpaidOrdersCount(count || 0);
+  }, [currentCompany, showUnpaidOrdersBadge]);
+
+  useEffect(() => {
+    if (!currentCompany || !showUnpaidOrdersBadge) {
+      setUnpaidOrdersCount(0);
+      return;
+    }
+
+    fetchUnpaidOrdersCount();
+    const channel = supabase
+      .channel(`cashier-unpaid-orders-${currentCompany.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+          filter: `company_id=eq.${currentCompany.id}`,
+        },
+        fetchUnpaidOrdersCount,
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentCompany, fetchUnpaidOrdersCount, showUnpaidOrdersBadge]);
+
+  const fetchMenu = useCallback(async () => {
     if (!currentCompany) return;
     const isInitial = menuItems.length === 0;
     if (isInitial) setLoading(true);
-    const { data } = await supabase
-      .from("menu_items")
-      .select("*")
-      .eq("company_id", currentCompany.id)
-      .eq("is_available", true)
-      .order("category");
-    setMenuItems((data || []) as MenuItem[]);
+    const [menuRes, stockRes] = await Promise.all([
+      supabase
+        .from("menu_items")
+        .select("*")
+        .eq("company_id", currentCompany.id)
+        .eq("is_available", true)
+        .order("category"),
+      supabase
+        .from("inventory_stock_balances")
+        .select("menu_item_id, quantity")
+        .eq("company_id", currentCompany.id),
+    ]);
+
+    if (menuRes.error || stockRes.error) {
+      toast.error(menuRes.error?.message || stockRes.error?.message || "Failed to load menu stock");
+      setLoading(false);
+      return;
+    }
+
+    const quantities = new Map(
+      (stockRes.data || []).flatMap((balance) =>
+        balance.menu_item_id ? [[balance.menu_item_id, balance.quantity] as const] : [],
+      ),
+    );
+    setMenuItems((menuRes.data || []).map((menuItem) => ({
+      ...menuItem,
+      stockQuantity: quantities.get(menuItem.id) || 0,
+    })));
     setLoading(false);
-  };
+  }, [currentCompany, menuItems.length]);
+
+  useEffect(() => {
+    if (currentCompany) {
+      fetchMenu();
+      if (!isWaiterMode && canManageOrders) fetchStats();
+    }
+  }, [currentCompany, dateRange, isWaiterMode, canManageOrders, fetchMenu, fetchStats]);
+
+  useEffect(() => {
+    if (!canManageOrders && canManageMenu) {
+      setActiveTab("menu");
+    } else if (!canManageMenu && activeTab === "menu") {
+      setActiveTab(isWaiterMode ? "orders" : "new-order");
+    }
+  }, [activeTab, canManageMenu, canManageOrders, isWaiterMode]);
+
+  useEffect(() => {
+    if (!currentCompany) return;
+    const channel = supabase
+      .channel(`restaurant-stock-${currentCompany.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "inventory_stock_balances",
+          filter: `company_id=eq.${currentCompany.id}`,
+        },
+        () => fetchMenu(),
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentCompany, fetchMenu]);
 
   const addToCart = (menuItem: MenuItem) => {
+    const existing = cart.find((cartItem) => cartItem.menuItem.id === menuItem.id);
+    if (menuItem.stockQuantity <= 0) {
+      toast.error(`${menuItem.name} is out of stock. Restock it before ordering.`);
+      return;
+    }
+    if (existing && existing.quantity >= menuItem.stockQuantity) {
+      toast.error(`Only ${menuItem.stockQuantity} ${menuItem.name} available`);
+      return;
+    }
     setCart((prev) => {
       const existing = prev.find((c) => c.menuItem.id === menuItem.id);
       if (existing) {
@@ -129,6 +249,13 @@ export default function Restaurant({ waiterMode = false }: { waiterMode?: boolea
   };
 
   const updateQuantity = (itemId: string, delta: number) => {
+    if (delta > 0) {
+      const cartItem = cart.find((item) => item.menuItem.id === itemId);
+      if (cartItem && cartItem.quantity >= cartItem.menuItem.stockQuantity) {
+        toast.error(`Only ${cartItem.menuItem.stockQuantity} ${cartItem.menuItem.name} available`);
+        return;
+      }
+    }
     setCart((prev) =>
       prev
         .map((c) =>
@@ -153,35 +280,20 @@ export default function Restaurant({ waiterMode = false }: { waiterMode?: boolea
     setSending(true);
 
     try {
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          company_id: currentCompany.id,
-          table_number: tableNumber.trim(),
-          subtotal: cartTotal,
-          tax: 0,
-          total: cartTotal,
-          notes: orderNotes || null,
-          created_by: user.id,
-          status: "pending",
-        })
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc("create_restaurant_order", {
+        _company_id: currentCompany.id,
+        _table_number: tableNumber.trim(),
+        _notes: orderNotes,
+        _items: cart.map((cartItem) => ({
+          menu_item_id: cartItem.menuItem.id,
+          quantity: cartItem.quantity,
+          notes: cartItem.notes || null,
+        })),
+      });
 
-      if (orderError) throw orderError;
-
-      const orderItems = cart.map((c) => ({
-        order_id: order.id,
-        menu_item_id: c.menuItem.id,
-        name: c.menuItem.name,
-        quantity: c.quantity,
-        unit_price: c.menuItem.price,
-        total_price: c.menuItem.price * c.quantity,
-        notes: c.notes || null,
-      }));
-
-      const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
-      if (itemsError) throw itemsError;
+      if (error) throw error;
+      const order = data?.[0];
+      if (!order) throw new Error("Order was not created");
 
       toast.success(`Order #${order.order_number} sent to kitchen!`, {
         description: `Table ${tableNumber} · ${cart.length} item(s)`,
@@ -192,8 +304,13 @@ export default function Restaurant({ waiterMode = false }: { waiterMode?: boolea
       setOrderNotes("");
       setActiveTab("orders");
       fetchStats();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to send order");
+      fetchMenu();
+    } catch (err: unknown) {
+      const errorMessage =
+        typeof err === "object" && err !== null && "message" in err && typeof err.message === "string"
+          ? err.message
+          : "Failed to send order";
+      toast.error(errorMessage);
     } finally {
       setSending(false);
     }
@@ -213,8 +330,8 @@ export default function Restaurant({ waiterMode = false }: { waiterMode?: boolea
   const showInlineLoader = loading && menuItems.length === 0;
 
   return (
-    <div className={isWaiterMode ? "" : "pb-16"}>
-      {bottomTab === "home" ? (
+    <div className={!isWaiterMode || canManageOrders ? "pb-16" : ""}>
+      {bottomTab === "home" || !canManageOrders ? (
         <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
           <motion.div variants={item}>
             <h1 className="text-2xl font-bold font-display">{isWaiterMode ? "Waiter Dashboard" : "Restaurant"}</h1>
@@ -223,7 +340,7 @@ export default function Restaurant({ waiterMode = false }: { waiterMode?: boolea
             </p>
           </motion.div>
 
-          {!isWaiterMode && (
+          {!isWaiterMode && canManageOrders && (
             <>
               <motion.div variants={item} className="flex items-center justify-end">
                 <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
@@ -246,12 +363,34 @@ export default function Restaurant({ waiterMode = false }: { waiterMode?: boolea
           <motion.div variants={item}>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList>
-                <TabsTrigger value="new-order">New Order</TabsTrigger>
-                <TabsTrigger value="orders">{isWaiterMode ? "Kitchen Orders" : "Active Orders"}</TabsTrigger>
-                {!isWaiterMode && <TabsTrigger value="menu">Manage Menu</TabsTrigger>}
+                {canManageOrders && (
+                  <>
+                    <TabsTrigger value="new-order">New Order</TabsTrigger>
+                    <TabsTrigger value="orders">
+                      {isWaiterMode ? "Kitchen Orders" : "Active Orders"}
+                      {isWaiterMode && preparingOrdersCount > 0 && (
+                        <span
+                          aria-label={`${preparingOrdersCount} active kitchen orders`}
+                          className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground"
+                        >
+                          {preparingOrdersCount}
+                        </span>
+                      )}
+                      {showUnpaidOrdersBadge && unpaidOrdersCount > 0 && (
+                        <span
+                          aria-label={`${unpaidOrdersCount} unpaid orders`}
+                          className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs font-semibold text-destructive-foreground"
+                        >
+                          {unpaidOrdersCount}
+                        </span>
+                      )}
+                    </TabsTrigger>
+                  </>
+                )}
+                {!isWaiterMode && canManageMenu && <TabsTrigger value="menu">Manage Menu</TabsTrigger>}
               </TabsList>
 
-              <TabsContent value="new-order" className="mt-4">
+              {canManageOrders && <TabsContent value="new-order" className="mt-4">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <div className="lg:col-span-2 space-y-4">
                     <div className="relative max-w-sm">
@@ -278,7 +417,7 @@ export default function Restaurant({ waiterMode = false }: { waiterMode?: boolea
                       {filteredMenu.map((mi) => {
                         const inCart = cart.find((c) => c.menuItem.id === mi.id);
                         return (
-                          <Card key={mi.id} className={`shadow-sm transition-all ${!mi.is_available ? "opacity-50" : ""}`}>
+                          <Card key={mi.id} className={`shadow-sm transition-all ${mi.stockQuantity <= 0 ? "opacity-60" : ""}`}>
                             <CardContent className="p-3">
                               <div className="flex items-start justify-between mb-1">
                                 <div>
@@ -288,16 +427,19 @@ export default function Restaurant({ waiterMode = false }: { waiterMode?: boolea
                                 <span className="font-semibold text-sm">KSh {mi.price.toLocaleString()}</span>
                               </div>
                               {mi.description && <p className="text-[10px] text-muted-foreground mb-2">{mi.description}</p>}
+                              <p className={`mb-2 text-xs ${mi.stockQuantity > 0 ? "text-muted-foreground" : "font-medium text-destructive"}`}>
+                                {mi.stockQuantity > 0 ? `${mi.stockQuantity} in stock` : "Out of stock"}
+                              </p>
                               <div className="flex items-center gap-2">
                                 {inCart ? (
                                   <>
                                     <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => updateQuantity(mi.id, -1)}><Minus className="h-3 w-3" /></Button>
                                     <span className="text-sm font-medium w-6 text-center">{inCart.quantity}</span>
-                                    <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => updateQuantity(mi.id, 1)}><Plus className="h-3 w-3" /></Button>
+                                    <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={inCart.quantity >= mi.stockQuantity} onClick={() => updateQuantity(mi.id, 1)}><Plus className="h-3 w-3" /></Button>
                                     <Button size="sm" variant="ghost" className="h-7 w-7 p-0 ml-auto text-destructive" onClick={() => removeFromCart(mi.id)}><Trash2 className="h-3 w-3" /></Button>
                                   </>
                                 ) : (
-                                  <Button size="sm" className="h-7 text-xs" disabled={!mi.is_available} onClick={() => addToCart(mi)}><Plus className="h-3 w-3 mr-1" /> Add</Button>
+                                  <Button size="sm" className="h-7 text-xs" disabled={!mi.is_available || mi.stockQuantity <= 0} onClick={() => addToCart(mi)}><Plus className="h-3 w-3 mr-1" /> Add</Button>
                                 )}
                               </div>
                             </CardContent>
@@ -351,16 +493,17 @@ export default function Restaurant({ waiterMode = false }: { waiterMode?: boolea
                     </Card>
                   </div>
                 </div>
-              </TabsContent>
+              </TabsContent>}
 
-              <TabsContent value="orders" className="mt-4">
+              {canManageOrders && <TabsContent value="orders" className="mt-4">
                 <OrdersList
                   mode={isWaiterMode ? "waiter" : "restaurant"}
                   onOrderDeleted={fetchStats}
+                  onKitchenOrdersCountChange={setPreparingOrdersCount}
                 />
-              </TabsContent>
+              </TabsContent>}
 
-              {!isWaiterMode && (
+              {!isWaiterMode && canManageMenu && (
                 <TabsContent value="menu" className="mt-4">
                   <MenuManager onMenuChange={fetchMenu} />
                 </TabsContent>
@@ -372,7 +515,7 @@ export default function Restaurant({ waiterMode = false }: { waiterMode?: boolea
       ) : (
         <OrderHistory />
       )}
-      {!isWaiterMode && <BottomTabBar activeTab={bottomTab} onTabChange={setBottomTab} />}
+      {canManageOrders && <BottomTabBar activeTab={bottomTab} onTabChange={setBottomTab} />}
     </div>
   );
 }

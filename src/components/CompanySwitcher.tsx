@@ -12,7 +12,7 @@ export function CompanySwitcher() {
   const { companies, currentCompany, companyRole, switchCompany } = useCompany();
   if (companies.length === 0) return null;
 
-  const canSwitch = companyRole === "owner" || companyRole === "admin";
+  const canSwitch = ["owner", "admin", "manager"].includes(companyRole?.toLowerCase() ?? "");
   const compactCompanyName = currentCompany?.name.replace(/\s+Hotel\b/i, "");
 
   // Staff are locked to the single company they belong to — no cross-tenant switching.
@@ -34,17 +34,11 @@ export function CompanySwitcher() {
         value={currentCompany?.id || ""}
         onValueChange={handleValueChange}
       >
-        <SelectTrigger className="h-9 w-[132px] min-w-0 bg-secondary border-0 px-2 sm:w-[200px]">
-          <div className="flex min-w-0 items-center gap-1">
-            {currentCompany?.logo_url ? (
-              <img
-                src={currentCompany.logo_url}
-                alt=""
-                className="h-4 w-4 shrink-0 rounded object-cover sm:h-5 sm:w-5"
-              />
-            ) : (
-              <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground sm:h-4 sm:w-4" />
-            )}
+        <SelectTrigger
+          aria-label="Switch hotel"
+          className="h-8 w-fit min-w-0 max-w-[38vw] border-0 bg-transparent px-1 text-xs sm:h-9 sm:max-w-[220px] sm:px-2 sm:text-sm"
+        >
+          <div className="flex min-w-0 items-center">
             <SelectValue className="min-w-0 truncate text-xs sm:text-sm">
               <span className="sm:hidden">{compactCompanyName}</span>
               <span className="hidden sm:inline">{currentCompany?.name}</span>

@@ -157,7 +157,11 @@ export default function Kitchen() {
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     setUpdating(orderId);
     const updateData: any = { status: newStatus };
-    if (newStatus === "ready") updateData.completed_at = new Date().toISOString();
+    if (newStatus === "ready") {
+      const readyAt = new Date().toISOString();
+      updateData.completed_at = readyAt;
+      updateData.ready_at = readyAt;
+    }
 
     const { error } = await supabase
       .from("orders")
@@ -283,9 +287,85 @@ export default function Kitchen() {
   };
 
   const activeItems = orders.reduce((sum, o) => sum + o.order_items.length, 0);
+  const nextPendingOrder = pendingOrders[0];
+  const nextPreparingOrder = preparingOrders[0];
 
   return (
     <div className="pb-16">
+      {bottomTab === "home" && (nextPendingOrder || nextPreparingOrder) && (
+        <div className="sticky top-0 z-20 -mx-3 bg-background/95 px-3 py-2 shadow-sm backdrop-blur sm:-mx-4 sm:px-4 lg:-mx-6 lg:px-6">
+          <div className="space-y-2">
+            {nextPendingOrder && (
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-warning/40 bg-card p-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">
+                    Order #{nextPendingOrder.order_number} waiting
+                  </p>
+                  {nextPendingOrder.table_number && (
+                    <p className="text-xs text-muted-foreground">
+                      Table {nextPendingOrder.table_number}
+                    </p>
+                  )}
+                  <div className="mt-1 flex flex-wrap gap-x-2 text-xs text-muted-foreground">
+                    {nextPendingOrder.order_items.map((orderItem) => (
+                      <span key={orderItem.id}>
+                        ×{orderItem.quantity} {orderItem.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => updateOrderStatus(nextPendingOrder.id, "preparing")}
+                  disabled={updating === nextPendingOrder.id}
+                  className="shrink-0"
+                >
+                  {updating === nextPendingOrder.id ? (
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  ) : (
+                    <ChefHat className="mr-1 h-3 w-3" />
+                  )}
+                  Accept & Prepare
+                </Button>
+              </div>
+            )}
+            {nextPreparingOrder && (
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-card p-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">
+                    Order #{nextPreparingOrder.order_number} cooking
+                  </p>
+                  {nextPreparingOrder.table_number && (
+                    <p className="text-xs text-muted-foreground">
+                      Table {nextPreparingOrder.table_number}
+                    </p>
+                  )}
+                  <div className="mt-1 flex flex-wrap gap-x-2 text-xs text-muted-foreground">
+                    {nextPreparingOrder.order_items.map((orderItem) => (
+                      <span key={orderItem.id}>
+                        ×{orderItem.quantity} {orderItem.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => updateOrderStatus(nextPreparingOrder.id, "ready")}
+                  disabled={updating === nextPreparingOrder.id}
+                  className="shrink-0 bg-success hover:bg-success/90"
+                >
+                  {updating === nextPreparingOrder.id ? (
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  ) : (
+                    <Check className="mr-1 h-3 w-3" />
+                  )}
+                  Mark Ready
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       {bottomTab === "home" ? (
         <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
           <motion.div variants={itemVariant} className="flex items-center justify-between flex-wrap gap-3">

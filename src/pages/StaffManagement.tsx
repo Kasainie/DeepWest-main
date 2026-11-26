@@ -11,11 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
-import { Shield, ShieldCheck, User, Loader2, Plus, Copy, Trash2, KeyRound, Building2, UtensilsCrossed, Wine, ChefHat, Calculator, RotateCcw, Eye, EyeOff } from "lucide-react";
+import { Shield, ShieldCheck, User, Loader2, Plus, Copy, Trash2, KeyRound, Building2, UtensilsCrossed, Wine, ChefHat, Calculator, RotateCcw, Eye, EyeOff, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { InviteStaffDialog } from "@/components/InviteStaffDialog";
 import { PendingInvitations } from "@/components/PendingInvitations";
+import { DEPARTMENT_ACCESS_OPTIONS } from "@/lib/staffAccess";
 
 interface StaffRecord {
   id: string;
@@ -32,10 +33,14 @@ const departments = [
   { value: "restaurant", label: "Restaurant", icon: UtensilsCrossed },
   { value: "kitchen", label: "Kitchen", icon: ChefHat },
   { value: "accountant", label: "Accountant", icon: Calculator },
+  { value: "housekeeping", label: "Housekeeping", icon: Sparkles },
 ];
 
 const roles = [
   { value: "waiter", label: "Waiter" },
+  { value: "chef", label: "Chef" },
+  { value: "cashier", label: "Cashier" },
+  { value: "cleaner", label: "Cleaner" },
   { value: "staff", label: "Staff" },
   { value: "manager", label: "Manager" },
   { value: "admin", label: "Admin" },
@@ -48,6 +53,7 @@ const deptIcons: Record<string, typeof Building2> = {
   bar_admin: ShieldCheck,
   kitchen: ChefHat,
   accountant: Calculator,
+  housekeeping: Sparkles,
 };
 
 const deptColors: Record<string, string> = {
@@ -57,6 +63,7 @@ const deptColors: Record<string, string> = {
   bar_admin: "bg-accent/20 text-accent-foreground",
   kitchen: "bg-destructive/10 text-destructive",
   accountant: "bg-success/10 text-success",
+  housekeeping: "bg-accent/10 text-accent",
 };
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
@@ -115,6 +122,7 @@ export default function StaffManagement() {
   const [form, setForm] = useState({
     full_name: "",
     departments: ["restaurant"] as string[],
+    accessPermissions: ["restaurant.orders", "restaurant.menu"] as string[],
     role: "staff",
     phone: "",
     password: "",
@@ -161,6 +169,7 @@ export default function StaffManagement() {
         full_name: form.full_name.trim(),
         staff_code: form.staff_code.trim().toUpperCase(),
         department: form.departments,
+        access_permissions: form.accessPermissions,
         role: form.role,
         phone: form.phone.trim() || null,
       })
@@ -184,7 +193,15 @@ export default function StaffManagement() {
         if (pwdErr) toast.error(`Staff added, but password not set: ${pwdErr.message}`);
       }
 
-      setForm({ full_name: "", departments: ["restaurant"], role: "staff", phone: "", password: "", staff_code: generateStaffCode() });
+      setForm({
+        full_name: "",
+        departments: ["restaurant"],
+        accessPermissions: ["restaurant.orders", "restaurant.menu"],
+        role: "staff",
+        phone: "",
+        password: "",
+        staff_code: generateStaffCode(),
+      });
       setAddOpen(false);
       fetchStaff();
     }
@@ -214,6 +231,44 @@ export default function StaffManagement() {
   const handleCopyCode = async (code: string) => {
     await navigator.clipboard.writeText(code);
     toast.success("Staff code copied!");
+  };
+
+  const toggleDepartment = (department: string) => {
+    setForm((current) => {
+      const selected = current.departments.includes(department);
+      const departmentPermissions = (DEPARTMENT_ACCESS_OPTIONS[department] || []).map(
+        (option) => option.permission,
+      );
+      return selected
+        ? {
+            ...current,
+            departments: current.departments.filter((value) => value !== department),
+            accessPermissions: current.accessPermissions.filter(
+              (permission) => !departmentPermissions.includes(permission),
+            ),
+          }
+        : {
+            ...current,
+            departments: [...current.departments, department],
+            accessPermissions: [
+              ...new Set([
+                ...current.accessPermissions,
+                ...(department === "housekeeping"
+                  ? ["housekeeping.tasks"]
+                  : departmentPermissions),
+              ]),
+            ],
+          };
+    });
+  };
+
+  const toggleAccessPermission = (permission: string) => {
+    setForm((current) => ({
+      ...current,
+      accessPermissions: current.accessPermissions.includes(permission)
+        ? current.accessPermissions.filter((value) => value !== permission)
+        : [...current.accessPermissions, permission],
+    }));
   };
 
   const handleToggleActive = async (staffId: string, isActive: boolean) => {
@@ -343,12 +398,7 @@ export default function StaffManagement() {
                                 checked={selected}
                                 disabled={form.role === "waiter"}
                                 onChange={() =>
-                                  setForm((f) => ({
-                                    ...f,
-                                    departments: selected
-                                      ? f.departments.filter((v) => v !== d.value)
-                                      : [...f.departments, d.value],
-                                  }))
+                                  toggleDepartment(d.value)
                                 }
                                 className="sr-only"
                               />
@@ -364,6 +414,39 @@ export default function StaffManagement() {
                         </p>
                       )}
                     </div>
+                    <div className="space-y-3">
+                      <div>
+                        <Label>Department access</Label>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Choose which parts of each selected department this staff member can access. Role is a job title and does not grant extra permissions.
+                        </p>
+                      </div>
+                      {form.departments.map((department) => {
+                        const departmentInfo = departments.find((entry) => entry.value === department);
+                        const accessOptions = (DEPARTMENT_ACCESS_OPTIONS[department] || []).filter(
+                          (option) => form.role !== "waiter" || option.permission === "restaurant.orders",
+                        );
+                        return (
+                          <fieldset key={department} className="space-y-2 rounded-lg border p-3">
+                            <legend className="px-1 text-sm font-medium">
+                              {departmentInfo?.label || department}
+                            </legend>
+                            {accessOptions.map((option) => (
+                              <label key={option.permission} className="flex items-center gap-2 text-sm">
+                                <input
+                                  type="checkbox"
+                                  checked={form.accessPermissions.includes(option.permission)}
+                                  disabled={form.role === "waiter"}
+                                  onChange={() => toggleAccessPermission(option.permission)}
+                                  className="h-4 w-4 rounded border-border accent-primary"
+                                />
+                                {option.label}
+                              </label>
+                            ))}
+                          </fieldset>
+                        );
+                      })}
+                    </div>
                     <div className="space-y-2">
                       <Label>Role</Label>
                       <Select
@@ -373,6 +456,8 @@ export default function StaffManagement() {
                             ...f,
                             role,
                             departments: role === "waiter" ? ["restaurant"] : f.departments,
+                            accessPermissions:
+                              role === "waiter" ? ["restaurant.orders"] : f.accessPermissions,
                           }))
                         }
                       >
@@ -646,6 +731,7 @@ export default function StaffManagement() {
                       {dept.value === "restaurant" && "Serving, hosting, waitstaff"}
                       {dept.value === "kitchen" && "Chefs, sous chefs, prep cooks"}
                       {dept.value === "accountant" && "Finance, billing, payroll"}
+                      {dept.value === "housekeeping" && "Room cleaning and housekeeping tasks"}
                     </p>
                   </div>
                 </div>

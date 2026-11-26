@@ -1,21 +1,27 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useCompany } from "@/contexts/CompanyContext";
+import {
+  canViewBusinessDashboard,
+  getStaffLandingPath,
+  hasAnyStaffAccess,
+} from "@/lib/staffAccess";
 
-// Maps routes to the departments that can access them
-const ROUTE_DEPARTMENTS: Record<string, string[]> = {
-  "/restaurant": ["restaurant"],
-  "/waiter": ["restaurant"],
-  "/kitchen": ["kitchen"],
-  "/sales": ["accountant"],
-  "/expenses": ["accountant"],
+const ROUTE_PERMISSIONS: Record<string, string[]> = {
+  "/restaurant": ["restaurant.orders", "restaurant.menu"],
+  "/waiter": ["restaurant.orders"],
+  "/kitchen": ["kitchen.orders"],
+  "/inventory": ["accounting.inventory", "kitchen.inventory"],
+  "/sales": ["accounting.sales"],
+  "/expenses": ["accounting.expenses"],
+  "/housekeeping": ["housekeeping.tasks", "housekeeping.manage"],
 };
 
 // Routes only accessible to owner/admin/manager
-const ADMIN_ONLY_ROUTES = ["/staff", "/settings"];
+const ADMIN_ONLY_ROUTES = ["/staff", "/settings", "/combined-dashboard"];
 
 export function DepartmentGuard({ children }: { children: React.ReactNode }) {
-  const { companyRole, staffDepartment, staffRole, loading } = useCompany();
+  const { companyRole, staffDepartment, staffPermissions, staffRole, loading } = useCompany();
   const location = useLocation();
   const path = location.pathname;
 
@@ -30,8 +36,15 @@ export function DepartmentGuard({ children }: { children: React.ReactNode }) {
   const isFullAccess = !companyRole || ["owner", "admin", "manager"].includes(companyRole);
   const isWaiter = staffRole?.toLowerCase() === "waiter";
 
+  if (
+    path === "/dashboard" &&
+    !canViewBusinessDashboard(companyRole, staffDepartment, staffRole)
+  ) {
+    return <Navigate to={getStaffLandingPath(staffDepartment, staffRole)} replace />;
+  }
+
   if (path.startsWith("/waiter") && !isWaiter) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={getStaffLandingPath(staffDepartment, staffRole)} replace />;
   }
   if (isWaiter && (path.startsWith("/restaurant") || path === "/dashboard")) {
     return <Navigate to="/waiter" replace />;
@@ -42,16 +55,19 @@ export function DepartmentGuard({ children }: { children: React.ReactNode }) {
 
   // Staff on admin-only routes → redirect
   if (ADMIN_ONLY_ROUTES.some((r) => path.startsWith(r))) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={getStaffLandingPath(staffDepartment, staffRole)} replace />;
   }
 
-  // Check department-restricted routes
-  const allowedDepartments = Object.entries(ROUTE_DEPARTMENTS).find(([route]) =>
+  // Check department and page-level permissions for staff routes.
+  const requiredPermissions = Object.entries(ROUTE_PERMISSIONS).find(([route]) =>
     path.startsWith(route)
   )?.[1];
 
-  if (allowedDepartments && (!staffDepartment || !staffDepartment.some(d => allowedDepartments.includes(d.toLowerCase())))) {
-    return <Navigate to="/dashboard" replace />;
+  if (
+    requiredPermissions &&
+    !hasAnyStaffAccess(companyRole, staffDepartment, staffPermissions, requiredPermissions)
+  ) {
+    return <Navigate to={getStaffLandingPath(staffDepartment, staffRole)} replace />;
   }
 
   return <>{children}</>;

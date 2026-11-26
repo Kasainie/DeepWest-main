@@ -1,5 +1,6 @@
 import {
   LayoutDashboard,
+  BarChart3,
   UtensilsCrossed,
   Settings,
   Building2,
@@ -10,12 +11,16 @@ import {
   Receipt,
   Crown,
   ClipboardList,
+  Package,
+  Sparkles,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { useLocation } from "react-router-dom";
 import { useCompany } from "@/contexts/CompanyContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { hasAnyStaffAccess } from "@/lib/staffAccess";
+import { canViewBusinessDashboard } from "@/lib/staffAccess";
 import {
   Sidebar,
   SidebarContent,
@@ -32,14 +37,18 @@ import {
 
 const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, departments: null, hideFromWaiters: true },
-  { title: "Restaurant", url: "/restaurant", icon: UtensilsCrossed, departments: ["restaurant"], hideFromWaiters: true },
-  { title: "Waiter", url: "/waiter", icon: ClipboardList, departments: ["restaurant"], waiterOnly: true },
-  { title: "Kitchen", url: "/kitchen", icon: ChefHat, departments: ["kitchen"] },
+  { title: "Combined Dashboard", url: "/combined-dashboard", icon: BarChart3, departments: null, adminOnly: true, hideFromWaiters: true },
+  { title: "Restaurant", url: "/restaurant", icon: UtensilsCrossed, departments: ["restaurant"], permissions: ["restaurant.orders", "restaurant.menu"], hideFromWaiters: true },
+  { title: "Waiter", url: "/waiter", icon: ClipboardList, departments: ["restaurant"], permissions: ["restaurant.orders"], waiterOnly: true },
+  { title: "Kitchen", url: "/kitchen", icon: ChefHat, departments: ["kitchen"], permissions: ["kitchen.orders"] },
+  { title: "Inventory", url: "/inventory", icon: Package, departments: ["kitchen"], permissions: ["kitchen.inventory"], kitchenStaffOnly: true },
+  { title: "Housekeeping", url: "/housekeeping", icon: Sparkles, departments: ["housekeeping"], permissions: ["housekeeping.tasks", "housekeeping.manage"] },
 ];
 
 const accountingItems = [
-  { title: "Sales", url: "/sales", icon: Banknote, departments: ["accountant"] },
-  { title: "Expenses", url: "/expenses", icon: Receipt, departments: ["accountant"] },
+  { title: "Sales", url: "/sales", icon: Banknote, departments: ["accountant"], permissions: ["accounting.sales"] },
+  { title: "Inventory", url: "/inventory", icon: Package, departments: ["accountant"], permissions: ["accounting.inventory"] },
+  { title: "Expenses", url: "/expenses", icon: Receipt, departments: ["accountant"], permissions: ["accounting.expenses"] },
 ];
 
 const managementItems = [
@@ -52,7 +61,7 @@ export function AppSidebar() {
   const { state, setOpenMobile, isMobile } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const { currentCompany, companyRole, staffDepartment, staffRole } = useCompany();
+  const { currentCompany, companyRole, staffDepartment, staffPermissions, staffRole } = useCompany();
   const { user } = useAuth();
   const { isSuperAdmin } = useSuperAdmin();
   const isActive = (path: string) =>
@@ -72,11 +81,24 @@ export function AppSidebar() {
     items.filter((item) => {
       if ("waiterOnly" in item && item.waiterOnly && !isWaiter) return false;
       if ("hideFromWaiters" in item && item.hideFromWaiters && isWaiter) return false;
+      if (item.url === "/dashboard" && !canViewBusinessDashboard(companyRole, staffDepartment, staffRole)) return false;
+      if (
+        "kitchenStaffOnly" in item &&
+        item.kitchenStaffOnly &&
+        (isFullAccess || !staffDepartment?.some((department) => department.toLowerCase() === "kitchen"))
+      ) return false;
       // Admin-only items hidden from staff
       if ("adminOnly" in item && item.adminOnly && !isFullAccess) return false;
       if (isFullAccess || !item.departments) return true;
       if (!staffDepartment || staffDepartment.length === 0) return false;
-      return staffDepartment.some(d => item.departments!.includes(d.toLowerCase()));
+      const hasDepartment = staffDepartment.some((department) =>
+        item.departments!.includes(department.toLowerCase()),
+      );
+      if (!hasDepartment) return false;
+      if ("permissions" in item && item.permissions) {
+        return hasAnyStaffAccess(companyRole, staffDepartment, staffPermissions, item.permissions);
+      }
+      return true;
     });
 
   return (
@@ -237,7 +259,7 @@ export function AppSidebar() {
           <Building2 className="h-3 w-3 text-sidebar-foreground opacity-60" />
           {!collapsed && (
             <span className="text-[10px] text-sidebar-foreground opacity-60">
-              DeepWest Hotels
+              Lktech
             </span>
           )}
         </div>

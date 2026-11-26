@@ -19,6 +19,7 @@ interface CompanyContextType {
   currentCompany: Company | null;
   companyRole: string | null;
   staffDepartment: string[] | null;
+  staffPermissions: string[] | null;
   staffRole: string | null;
   loading: boolean;
   switchCompany: (companyId: string) => Promise<void>;
@@ -30,6 +31,7 @@ const CompanyContext = createContext<CompanyContextType>({
   currentCompany: null,
   companyRole: null,
   staffDepartment: null,
+  staffPermissions: null,
   staffRole: null,
   loading: true,
   switchCompany: async () => {},
@@ -44,6 +46,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
   const [companyRole, setCompanyRole] = useState<string | null>(null);
   const [staffDepartment, setStaffDepartment] = useState<string[] | null>(null);
+  const [staffPermissions, setStaffPermissions] = useState<string[] | null>(null);
   const [staffRole, setStaffRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -64,6 +67,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       setCurrentCompany(demoCompany);
       setCompanyRole("owner");
       setStaffDepartment(null);
+      setStaffPermissions(null);
       setStaffRole(null);
       setLoading(false);
       return;
@@ -74,6 +78,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       setCurrentCompany(null);
       setCompanyRole(null);
       setStaffDepartment(null);
+      setStaffPermissions(null);
       setStaffRole(null);
       setLoading(false);
       return;
@@ -83,6 +88,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     setCurrentCompany(null);
     setCompanyRole(null);
     setStaffDepartment(null);
+    setStaffPermissions(null);
     setStaffRole(null);
 
     const { data: memberships } = await supabase
@@ -138,11 +144,12 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       // Fetch staff department
       const { data: staffRecord } = await supabase
         .from("company_staff")
-        .select("department, role")
+        .select("department, access_permissions, role")
         .eq("company_id", active!.id)
         .eq("user_id", user.id)
         .maybeSingle();
       setStaffDepartment(staffRecord?.department as string[] || null);
+      setStaffPermissions(staffRecord?.access_permissions || null);
       setStaffRole(staffRecord?.role || null);
     }
 
@@ -175,11 +182,12 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     // Fetch staff department on switch
     const { data: staffRecord } = await supabase
       .from("company_staff")
-      .select("department, role")
+      .select("department, access_permissions, role")
       .eq("company_id", companyId)
       .eq("user_id", user.id)
       .maybeSingle();
     setStaffDepartment(staffRecord?.department as string[] || null);
+    setStaffPermissions(staffRecord?.access_permissions || null);
     setStaffRole(staffRecord?.role || null);
   };
 
@@ -190,6 +198,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
         currentCompany,
         companyRole,
         staffDepartment,
+        staffPermissions,
         staffRole,
         loading,
         switchCompany,

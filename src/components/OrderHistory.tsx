@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Clock, Check, X } from "lucide-react";
 import { KshIcon } from "@/components/KshIcon";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface HistoryOrder {
   id: string;
@@ -16,6 +17,7 @@ interface HistoryOrder {
   total: number;
   created_at: string;
   completed_at: string | null;
+  served_by_name: string | null;
   order_items: { id: string; name: string; quantity: number }[];
 }
 
@@ -35,13 +37,19 @@ export function OrderHistory() {
     if (!currentCompany) return;
     const fetchHistory = async () => {
       setLoading(true);
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("orders")
-        .select("id, order_number, table_number, status, payment_status, total, created_at, completed_at, order_items(id, name, quantity)")
+        .select("id, order_number, table_number, status, payment_status, total, created_at, completed_at, served_by_name, order_items(id, name, quantity)")
         .eq("company_id", currentCompany.id)
         .in("status", ["served", "completed", "cancelled"])
         .order("created_at", { ascending: false })
         .limit(50);
+      if (error) {
+        toast.error(`Failed to load order history: ${error.message}`);
+        setOrders([]);
+        setLoading(false);
+        return;
+      }
       setOrders((data || []) as HistoryOrder[]);
       setLoading(false);
     };
@@ -100,6 +108,9 @@ export function OrderHistory() {
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1">
                   {format(new Date(order.created_at), "MMM d, yyyy · h:mm a")}
+                  {order.status === "served" && (
+                    <> · Served by {order.served_by_name || "Not recorded"}</>
+                  )}
                 </p>
               </CardContent>
             </Card>

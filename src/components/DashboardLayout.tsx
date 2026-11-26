@@ -1,6 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Search, LogOut, Building2, Sun, Moon, RefreshCw } from "lucide-react";
+import { Search, LogOut, Sun, Moon, RefreshCw } from "lucide-react";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
 import { SuperAdminApprovals } from "@/components/SuperAdminApprovals";
 
@@ -62,17 +62,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) { // notific
           <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-1 border-b bg-card px-1.5 sm:gap-2 sm:px-4">
             <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-3">
               <SidebarTrigger className="h-8 w-8 shrink-0 sm:h-10 sm:w-10" />
-              {currentCompany?.logo_url ? (
-                <img
-                  src={currentCompany.logo_url}
-                  alt={currentCompany.name}
-                  className="h-8 w-8 rounded-lg object-cover shrink-0 hidden sm:block"
-                />
-              ) : (
-                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0 hidden sm:block">
-                  <Building2 className="h-4 w-4 text-primary-foreground" />
-                </div>
-              )}
+              <img src="/deepwest-app-icon.png" alt="DeepWest" className="h-7 w-7 shrink-0 rounded object-contain" />
               <CompanySwitcher />
               <div className="relative hidden lg:block">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

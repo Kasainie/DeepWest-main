@@ -19,6 +19,17 @@ const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
+function getInitialSidebarOpen(defaultOpen: boolean) {
+  if (typeof document === "undefined") return defaultOpen;
+
+  const cookie = document.cookie
+    .split("; ")
+    .find((item) => item.startsWith(`${SIDEBAR_COOKIE_NAME}=`));
+
+  if (!cookie) return defaultOpen;
+  return cookie.split("=")[1] !== "false";
+}
+
 type SidebarContext = {
   state: "expanded" | "collapsed";
   open: boolean;
@@ -53,7 +64,7 @@ const SidebarProvider = React.forwardRef<
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
-  const [_open, _setOpen] = React.useState(defaultOpen);
+  const [_open, _setOpen] = React.useState(() => getInitialSidebarOpen(defaultOpen));
   const open = openProp ?? _open;
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
@@ -226,6 +237,8 @@ const SidebarTrigger = React.forwardRef<React.ElementRef<typeof Button>, React.C
         data-sidebar="trigger"
         variant="ghost"
         size="icon"
+        aria-label="Toggle Sidebar"
+        title="Toggle Sidebar"
         className={cn("h-7 w-7", className)}
         onClick={(event) => {
           onClick?.(event);
