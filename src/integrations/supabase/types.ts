@@ -789,6 +789,7 @@ export type Database = {
         Row: {
           company_id: string
           id: string
+          initial_quantity: number
           item_name: string
           menu_item_id: string | null
           quantity: number
@@ -797,6 +798,7 @@ export type Database = {
         Insert: {
           company_id: string
           id?: string
+          initial_quantity?: number
           item_name: string
           menu_item_id?: string | null
           quantity?: number
@@ -805,6 +807,7 @@ export type Database = {
         Update: {
           company_id?: string
           id?: string
+          initial_quantity?: number
           item_name?: string
           menu_item_id?: string | null
           quantity?: number
@@ -823,6 +826,47 @@ export type Database = {
             columns: ["menu_item_id"]
             isOneToOne: false
             referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_period_adjustments: {
+        Row: {
+          company_id: string
+          id: string
+          initial_quantity: number
+          item_key: string
+          item_name: string
+          period_end: string
+          period_start: string
+          restocked_adjustment: number
+        }
+        Insert: {
+          company_id: string
+          id?: string
+          initial_quantity: number
+          item_key: string
+          item_name: string
+          period_end: string
+          period_start: string
+          restocked_adjustment?: number
+        }
+        Update: {
+          company_id?: string
+          id?: string
+          initial_quantity?: number
+          item_key?: string
+          item_name?: string
+          period_end?: string
+          period_start?: string
+          restocked_adjustment?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_period_adjustments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]

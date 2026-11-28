@@ -22,8 +22,9 @@ interface ItemInventoryRow {
   menuItemId: string | null;
   balanceId: string | null;
   name: string;
+  initialQuantity: number;
+  actualRestockedQuantity: number;
   restockedQuantity: number;
-  stockQuantity: number;
   soldQuantity: number;
   revenue: number;
 }
@@ -45,7 +46,8 @@ export default function Inventory() {
   const [restocking, setRestocking] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editRow, setEditRow] = useState<ItemInventoryRow | null>(null);
-  const [editQuantity, setEditQuantity] = useState("0");
+  const [editInitialQuantity, setEditInitialQuantity] = useState("0");
+  const [editRestockedQuantity, setEditRestockedQuantity] = useState("0");
   const [savingEdit, setSavingEdit] = useState(false);
   const [rowToDelete, setRowToDelete] = useState<ItemInventoryRow | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -69,7 +71,7 @@ export default function Inventory() {
     const fromDate = getLocalDateString(dateRange.from);
     const toDate = getLocalDateString(dateRange.to);
     const itemFields = "order_items(id, menu_item_id, name, quantity, total_price)";
-    const [restocksRes, balancesRes, paidOrdersRes, menuItemsRes] = await Promise.all([
+    const [restocksRes, balancesRes, paidOrdersRes, menuItemsRes, adjustmentsRes] = await Promise.all([
       supabase
         .from("inventory_restock_entries")
         .select("menu_item_id, item_name, quantity")
@@ -78,7 +80,7 @@ export default function Inventory() {
         .lte("stock_date", toDate),
       supabase
         .from("inventory_stock_balances")
-        .select("id, menu_item_id, item_name, quantity")
+        .select("id, menu_item_id, item_name, initial_quantity")
         .eq("company_id", currentCompany.id),
       supabase
         .from("orders")
@@ -92,14 +94,27 @@ export default function Inventory() {
         .select("id, name")
         .eq("company_id", currentCompany.id)
         .order("name"),
+      supabase
+        .from("inventory_period_adjustments")
+        .select("item_key, initial_quantity, restocked_adjustment")
+        .eq("company_id", currentCompany.id)
+        .eq("period_start", fromDate)
+        .eq("period_end", toDate),
     ]);
 
-    if (restocksRes.error || balancesRes.error || paidOrdersRes.error || menuItemsRes.error) {
+    if (
+      restocksRes.error ||
+      balancesRes.error ||
+      paidOrdersRes.error ||
+      menuItemsRes.error ||
+      adjustmentsRes.error
+    ) {
       toast.error(
         restocksRes.error?.message ||
         balancesRes.error?.message ||
         paidOrdersRes.error?.message ||
         menuItemsRes.error?.message ||
+        adjustmentsRes.error?.message ||
         "Failed to load item inventory",
       );
       setLoading(false);
@@ -120,8 +135,9 @@ export default function Inventory() {
           menuItemId: menuItemId,
           balanceId: null,
           name,
+          initialQuantity: 0,
+          actualRestockedQuantity: 0,
           restockedQuantity: 0,
-          stockQuantity: 0,
           soldQuantity: 0,
           revenue: 0,
         };
@@ -147,10 +163,10 @@ export default function Inventory() {
     for (const balance of balancesRes.data || []) {
       const row = getRow(balance.menu_item_id, balance.item_name);
       row.balanceId = balance.id;
-      row.stockQuantity = balance.quantity;
+      row.initialQuantity = balance.initial_quantity;
     }
     for (const restock of restocksRes.data || []) {
-      getRow(restock.menu_item_id, restock.item_name).restockedQuantity += restock.quantity;
+      getRow(restock.menu_item_id, restock.item_name).actualRestockedQuantity += restock.quantity;
     }
     for (const order of paidOrdersRes.data || []) {
       for (const orderItem of order.order_items) {
@@ -158,6 +174,19 @@ export default function Inventory() {
         row.soldQuantity += orderItem.quantity;
         row.revenue += Number(orderItem.total_price);
       }
+    }
+    for (const row of rowsByItem.values()) {
+      row.restockedQuantity = row.actualRestockedQuantity;
+    }
+    for (const adjustment of adjustmentsRes.data || []) {
+      const row = Array.from(rowsByItem.values()).find((item) =>
+        (item.menuItemId
+          ? `menu:${item.menuItemId}`
+          : `legacy:${item.name.trim().toLowerCase()}`) === adjustment.item_key,
+      );
+      if (!row) continue;
+      row.initialQuantity = adjustment.initial_quantity;
+      row.restockedQuantity += adjustment.restocked_adjustment;
     }
 
     setMenuItems(menuItemsRes.data || []);
@@ -209,7 +238,8 @@ export default function Inventory() {
   const openEdit = (row: ItemInventoryRow) => {
     if (!canManageInventory || (!row.menuItemId && !row.balanceId)) return;
     setEditRow(row);
-    setEditQuantity(String(row.stockQuantity));
+    setEditInitialQuantity(String(row.initialQuantity));
+    setEditRestockedQuantity(String(row.restockedQuantity));
     setEditOpen(true);
   };
 
@@ -217,41 +247,41 @@ export default function Inventory() {
     if (
       !currentCompany ||
       !editRow ||
-      (!editRow.menuItemId && !editRow.balanceId) ||
       !canManageInventory
     ) return;
-    const quantity = Number(editQuantity);
-    if (!Number.isInteger(quantity) || quantity < 0) {
-      toast.error("Enter a whole number of zero or more");
+    const initialQuantity = Number(editInitialQuantity);
+    if (!Number.isInteger(initialQuantity) || initialQuantity < 0) {
+      toast.error("Enter a whole number of zero or more for initial quantity");
+      return;
+    }
+    const restockedQuantity = Number(editRestockedQuantity);
+    if (!Number.isInteger(restockedQuantity) || restockedQuantity < 0) {
+      toast.error("Enter a whole number of zero or more for restocked quantity");
       return;
     }
 
     setSavingEdit(true);
-    const result = editRow.balanceId
-      ? await supabase
-          .from("inventory_stock_balances")
-          .update({ quantity, item_name: editRow.name })
-          .eq("company_id", currentCompany.id)
-          .eq("id", editRow.balanceId)
-          .select("id")
-          .maybeSingle()
-      : await supabase
-          .from("inventory_stock_balances")
-          .insert({
-            company_id: currentCompany.id,
-            menu_item_id: editRow.menuItemId,
-            item_name: editRow.name,
-            quantity,
-          })
-          .select("id")
-          .maybeSingle();
+    const { error } = await supabase
+      .from("inventory_period_adjustments")
+      .upsert(
+        {
+          company_id: currentCompany.id,
+          item_key: editRow.menuItemId
+            ? `menu:${editRow.menuItemId}`
+            : `legacy:${editRow.name.trim().toLowerCase()}`,
+          item_name: editRow.name,
+          period_start: getLocalDateString(dateRange.from),
+          period_end: getLocalDateString(dateRange.to),
+          initial_quantity: initialQuantity,
+          restocked_adjustment: restockedQuantity - editRow.actualRestockedQuantity,
+        },
+        { onConflict: "company_id,item_key,period_start,period_end" },
+      );
 
-    if (result.error) {
-      toast.error(`Could not update stock: ${result.error.message}`);
-    } else if (!result.data) {
-      toast.error("Stock balance was not found");
+    if (error) {
+      toast.error(`Could not update inventory period: ${error.message}`);
     } else {
-      toast.success(`${editRow.name} stock updated`);
+      toast.success(`${editRow.name} period quantities updated`);
       setEditOpen(false);
       setEditRow(null);
       await fetchItemInventory();
@@ -262,6 +292,21 @@ export default function Inventory() {
   const handleDeleteItem = async () => {
     if (!currentCompany || !rowToDelete || !canManageInventory) return;
     setDeleting(true);
+    const itemKey = rowToDelete.menuItemId
+      ? `menu:${rowToDelete.menuItemId}`
+      : `legacy:${rowToDelete.name.trim().toLowerCase()}`;
+    const { error: adjustmentsError } = await supabase
+      .from("inventory_period_adjustments")
+      .delete()
+      .eq("company_id", currentCompany.id)
+      .eq("item_key", itemKey);
+
+    if (adjustmentsError) {
+      toast.error(`Could not remove ${rowToDelete.name} period adjustments: ${adjustmentsError.message}`);
+      setDeleting(false);
+      return;
+    }
+
     if (rowToDelete.menuItemId) {
       const { data, error } = await supabase
         .from("menu_items")
@@ -331,15 +376,17 @@ export default function Inventory() {
   const totals = useMemo(
     () => filteredInventoryRows.reduce(
       (sum, row) => ({
+        initialQuantity: sum.initialQuantity + row.initialQuantity,
         restockedQuantity: sum.restockedQuantity + row.restockedQuantity,
-        stockQuantity: sum.stockQuantity + row.stockQuantity,
         soldQuantity: sum.soldQuantity + row.soldQuantity,
         revenue: sum.revenue + row.revenue,
       }),
-      { restockedQuantity: 0, stockQuantity: 0, soldQuantity: 0, revenue: 0 },
+      { initialQuantity: 0, restockedQuantity: 0, soldQuantity: 0, revenue: 0 },
     ),
     [filteredInventoryRows],
   );
+  const totalAvailableQuantity =
+    totals.initialQuantity + totals.restockedQuantity - totals.soldQuantity;
 
   const renderInventoryActions = (row: ItemInventoryRow) => {
     if (!canManageInventory || (!row.menuItemId && !row.balanceId)) return null;
@@ -376,7 +423,7 @@ export default function Inventory() {
         <div>
           <h1 className="text-2xl font-bold font-display">Inventory</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Current stock carries forward; restocks, paid sales, and revenue are shown for the selected period
+            Edit the opening and restocked quantities for this period. Sold is calculated from paid orders; available is the period closing balance.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -394,7 +441,7 @@ export default function Inventory() {
         <CardHeader>
           <CardTitle className="text-base font-display">Stock & Sales by Item</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Available stock carries forward and is reserved when an order is placed. Add the opening quantity after accounting for existing open orders; new orders are blocked when stock is insufficient.
+            Available for the selected period is calculated as Initial + Restocked − Sold. These report values do not change live stock used by orders.
           </p>
         </CardHeader>
         <CardContent>
@@ -424,9 +471,10 @@ export default function Inventory() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Item</TableHead>
-                    <TableHead className="text-right">Restocked</TableHead>
+                    <TableHead className="text-right">Initial</TableHead>
+                    <TableHead className="text-right">Restocked (period)</TableHead>
                     <TableHead className="text-right">Sold</TableHead>
-                    <TableHead className="text-right">Available now</TableHead>
+                    <TableHead className="text-right">Available (period close)</TableHead>
                     <TableHead className="text-right">Revenue</TableHead>
                     {canManageInventory && (
                       <TableHead className="hidden text-right md:table-cell">Actions</TableHead>
@@ -442,9 +490,12 @@ export default function Inventory() {
                           <div className="md:hidden">{renderInventoryActions(row)}</div>
                         </div>
                       </TableCell>
+                      <TableCell className="text-right">{row.initialQuantity}</TableCell>
                       <TableCell className="text-right">{row.restockedQuantity}</TableCell>
                       <TableCell className="text-right">{row.soldQuantity}</TableCell>
-                      <TableCell className="text-right">{row.stockQuantity}</TableCell>
+                      <TableCell className="text-right">
+                        {row.initialQuantity + row.restockedQuantity - row.soldQuantity}
+                      </TableCell>
                       <TableCell className="text-right">{formatKES(row.revenue)}</TableCell>
                       {canManageInventory && (
                         <TableCell className="hidden text-right md:table-cell">
@@ -455,9 +506,10 @@ export default function Inventory() {
                   ))}
                   <TableRow className="border-t-2 font-semibold">
                     <TableCell>Total</TableCell>
+                    <TableCell className="text-right">{totals.initialQuantity}</TableCell>
                     <TableCell className="text-right">{totals.restockedQuantity}</TableCell>
                     <TableCell className="text-right">{totals.soldQuantity}</TableCell>
-                    <TableCell className="text-right">{totals.stockQuantity}</TableCell>
+                    <TableCell className="text-right">{totalAvailableQuantity}</TableCell>
                     <TableCell className="text-right">{formatKES(totals.revenue)}</TableCell>
                     {canManageInventory && <TableCell className="hidden md:table-cell" />}
                   </TableRow>
@@ -471,18 +523,32 @@ export default function Inventory() {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit {editRow?.name} stock</DialogTitle>
+            <DialogTitle>Edit {editRow?.name} period quantities</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              These values update the selected-period report only. Available is calculated automatically from initial, restocked, and sold quantities.
+            </p>
             <div className="space-y-2">
-              <Label htmlFor="edit-stock-quantity">Available quantity</Label>
+              <Label htmlFor="edit-stock-initial-quantity">Initial quantity</Label>
               <Input
-                id="edit-stock-quantity"
+                id="edit-stock-initial-quantity"
                 type="number"
                 min="0"
                 step="1"
-                value={editQuantity}
-                onChange={(event) => setEditQuantity(event.target.value)}
+                value={editInitialQuantity}
+                onChange={(event) => setEditInitialQuantity(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-stock-restocked-quantity">Restocked quantity for this period</Label>
+              <Input
+                id="edit-stock-restocked-quantity"
+                type="number"
+                min="0"
+                step="1"
+                value={editRestockedQuantity}
+                onChange={(event) => setEditRestockedQuantity(event.target.value)}
               />
             </div>
             <Button
@@ -491,7 +557,7 @@ export default function Inventory() {
               disabled={savingEdit}
             >
               {savingEdit && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save stock
+              Save quantities
             </Button>
           </div>
         </DialogContent>
@@ -531,7 +597,7 @@ export default function Inventory() {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Add the starting quantity or replenish an item. Any available stock carries forward.
+              The quantity entered is added to the item's available stock; it does not replace it.
             </p>
             <div className="space-y-2">
               <Label htmlFor="restock-item">Menu item</Label>
