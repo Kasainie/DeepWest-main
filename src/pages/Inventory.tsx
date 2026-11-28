@@ -341,6 +341,35 @@ export default function Inventory() {
     [filteredInventoryRows],
   );
 
+  const renderInventoryActions = (row: ItemInventoryRow) => {
+    if (!canManageInventory || (!row.menuItemId && !row.balanceId)) return null;
+
+    return (
+      <div className="flex justify-end gap-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => openEdit(row)}
+          aria-label={`Edit ${row.name} stock`}
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-destructive"
+          onClick={() => setRowToDelete(row)}
+          aria-label={`Delete ${row.name}`}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -399,45 +428,27 @@ export default function Inventory() {
                     <TableHead className="text-right">Sold</TableHead>
                     <TableHead className="text-right">Available now</TableHead>
                     <TableHead className="text-right">Revenue</TableHead>
-                    {canManageInventory && <TableHead className="text-right">Actions</TableHead>}
+                    {canManageInventory && (
+                      <TableHead className="hidden text-right md:table-cell">Actions</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredInventoryRows.map((row) => (
                     <TableRow key={row.key}>
-                      <TableCell className="font-medium">{row.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex min-w-[220px] items-center justify-between gap-2">
+                          <span>{row.name}</span>
+                          <div className="md:hidden">{renderInventoryActions(row)}</div>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right">{row.restockedQuantity}</TableCell>
                       <TableCell className="text-right">{row.soldQuantity}</TableCell>
                       <TableCell className="text-right">{row.stockQuantity}</TableCell>
                       <TableCell className="text-right">{formatKES(row.revenue)}</TableCell>
                       {canManageInventory && (
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            {(row.menuItemId || row.balanceId) && (
-                              <>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => openEdit(row)}
-                                  aria-label={`Edit ${row.name} stock`}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-destructive"
-                                  onClick={() => setRowToDelete(row)}
-                                  aria-label={`Delete ${row.name}`}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
+                        <TableCell className="hidden text-right md:table-cell">
+                          {renderInventoryActions(row)}
                         </TableCell>
                       )}
                     </TableRow>
@@ -448,7 +459,7 @@ export default function Inventory() {
                     <TableCell className="text-right">{totals.soldQuantity}</TableCell>
                     <TableCell className="text-right">{totals.stockQuantity}</TableCell>
                     <TableCell className="text-right">{formatKES(totals.revenue)}</TableCell>
-                    {canManageInventory && <TableCell />}
+                    {canManageInventory && <TableCell className="hidden md:table-cell" />}
                   </TableRow>
                 </TableBody>
               </Table>
