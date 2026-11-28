@@ -20,6 +20,7 @@ import { toast } from "sonner";
 interface ItemInventoryRow {
   key: string;
   menuItemId: string | null;
+  balanceId: string | null;
   name: string;
   restockedQuantity: number;
   stockQuantity: number;
@@ -77,7 +78,7 @@ export default function Inventory() {
         .lte("stock_date", toDate),
       supabase
         .from("inventory_stock_balances")
-        .select("menu_item_id, item_name, quantity")
+        .select("id, menu_item_id, item_name, quantity")
         .eq("company_id", currentCompany.id),
       supabase
         .from("orders")
@@ -117,6 +118,7 @@ export default function Inventory() {
         row = {
           key,
           menuItemId: menuItemId,
+          balanceId: null,
           name,
           restockedQuantity: 0,
           stockQuantity: 0,
@@ -143,7 +145,9 @@ export default function Inventory() {
       getRow(menuItem.id, menuItem.name);
     }
     for (const balance of balancesRes.data || []) {
-      getRow(balance.menu_item_id, balance.item_name).stockQuantity = balance.quantity;
+      const row = getRow(balance.menu_item_id, balance.item_name);
+      row.balanceId = balance.id;
+      row.stockQuantity = balance.quantity;
     }
     for (const restock of restocksRes.data || []) {
       getRow(restock.menu_item_id, restock.item_name).restockedQuantity += restock.quantity;
@@ -203,14 +207,19 @@ export default function Inventory() {
   };
 
   const openEdit = (row: ItemInventoryRow) => {
-    if (!canManageInventory || !row.menuItemId) return;
+    if (!canManageInventory || (!row.menuItemId && !row.balanceId)) return;
     setEditRow(row);
     setEditQuantity(String(row.stockQuantity));
     setEditOpen(true);
   };
 
   const handleEditStock = async () => {
-    if (!currentCompany || !editRow?.menuItemId || !canManageInventory) return;
+    if (
+      !currentCompany ||
+      !editRow ||
+      (!editRow.menuItemId && !editRow.balanceId) ||
+      !canManageInventory
+    ) return;
     const quantity = Number(editQuantity);
     if (!Number.isInteger(quantity) || quantity < 0) {
       toast.error("Enter a whole number of zero or more");
@@ -218,17 +227,28 @@ export default function Inventory() {
     }
 
     setSavingEdit(true);
-    const { data, error } = await supabase
-      .from("inventory_stock_balances")
-      .update({ quantity, item_name: editRow.name })
-      .eq("company_id", currentCompany.id)
-      .eq("menu_item_id", editRow.menuItemId)
-      .select("menu_item_id")
-      .maybeSingle();
+    const result = editRow.balanceId
+      ? await supabase
+          .from("inventory_stock_balances")
+          .update({ quantity, item_name: editRow.name })
+          .eq("company_id", currentCompany.id)
+          .eq("id", editRow.balanceId)
+          .select("id")
+          .maybeSingle()
+      : await supabase
+          .from("inventory_stock_balances")
+          .insert({
+            company_id: currentCompany.id,
+            menu_item_id: editRow.menuItemId,
+            item_name: editRow.name,
+            quantity,
+          })
+          .select("id")
+          .maybeSingle();
 
-    if (error) {
-      toast.error(`Could not update stock: ${error.message}`);
-    } else if (!data) {
+    if (result.error) {
+      toast.error(`Could not update stock: ${result.error.message}`);
+    } else if (!result.data) {
       toast.error("Stock balance was not found");
     } else {
       toast.success(`${editRow.name} stock updated`);
@@ -240,24 +260,63 @@ export default function Inventory() {
   };
 
   const handleDeleteItem = async () => {
-    if (!currentCompany || !rowToDelete?.menuItemId || !canManageInventory) return;
+    if (!currentCompany || !rowToDelete || !canManageInventory) return;
     setDeleting(true);
-    const { data, error } = await supabase
-      .from("menu_items")
-      .delete()
-      .eq("company_id", currentCompany.id)
-      .eq("id", rowToDelete.menuItemId)
-      .select("id")
-      .maybeSingle();
+    if (rowToDelete.menuItemId) {
+      const { data, error } = await supabase
+        .from("menu_items")
+        .delete()
+        .eq("company_id", currentCompany.id)
+        .eq("id", rowToDelete.menuItemId)
+        .select("id")
+        .maybeSingle();
 
-    if (error) {
-      toast.error(`Could not delete ${rowToDelete.name}: ${error.message}`);
-    } else if (!data) {
-      toast.error("Item was not deleted. You may not have permission.");
+      if (error) {
+        toast.error(`Could not delete ${rowToDelete.name}: ${error.message}`);
+      } else if (!data) {
+        toast.error("Item was not deleted. You may not have permission.");
+      } else {
+        toast.success(`${rowToDelete.name} deleted from inventory`);
+        setRowToDelete(null);
+        await fetchItemInventory();
+      }
     } else {
-      toast.success(`${rowToDelete.name} deleted from inventory`);
-      setRowToDelete(null);
-      await fetchItemInventory();
+      if (!rowToDelete.balanceId) {
+        toast.error("Inventory balance was not found");
+        setDeleting(false);
+        return;
+      }
+
+      const { error: restocksError } = await supabase
+        .from("inventory_restock_entries")
+        .delete()
+        .eq("company_id", currentCompany.id)
+        .is("menu_item_id", null)
+        .eq("item_name", rowToDelete.name);
+
+      if (restocksError) {
+        toast.error(`Could not delete ${rowToDelete.name} restock records: ${restocksError.message}`);
+        setDeleting(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("inventory_stock_balances")
+        .delete()
+        .eq("company_id", currentCompany.id)
+        .eq("id", rowToDelete.balanceId)
+        .select("id")
+        .maybeSingle();
+
+      if (error) {
+        toast.error(`Could not delete ${rowToDelete.name}: ${error.message}`);
+      } else if (!data) {
+        toast.error("Inventory item was not deleted. You may not have permission.");
+      } else {
+        toast.success(`${rowToDelete.name} inventory records deleted`);
+        setRowToDelete(null);
+        await fetchItemInventory();
+      }
     }
     setDeleting(false);
   };
@@ -354,7 +413,7 @@ export default function Inventory() {
                       {canManageInventory && (
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
-                            {row.menuItemId && (
+                            {(row.menuItemId || row.balanceId) && (
                               <>
                                 <Button
                                   type="button"
@@ -432,7 +491,9 @@ export default function Inventory() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {rowToDelete?.name}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This removes the menu item and its inventory records. Existing order history will be preserved.
+              {rowToDelete?.menuItemId
+                ? "This removes the menu item and its inventory records. Existing order history will be preserved."
+                : "This removes the legacy stock balance and its restock records. Existing order history will be preserved."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
