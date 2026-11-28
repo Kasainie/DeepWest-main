@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useUserRole, AppRole } from "@/hooks/useUserRole";
 import { useCompany } from "@/contexts/CompanyContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,22 +10,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
-import { Shield, ShieldCheck, User, Loader2, Plus, Copy, Trash2, KeyRound, Building2, UtensilsCrossed, Wine, ChefHat, Calculator, RotateCcw, Eye, EyeOff, Sparkles } from "lucide-react";
+import { ShieldCheck, User, Loader2, Plus, Copy, Trash2, KeyRound, Building2, UtensilsCrossed, Wine, ChefHat, Calculator, RotateCcw, Eye, EyeOff, Sparkles, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { InviteStaffDialog } from "@/components/InviteStaffDialog";
 import { PendingInvitations } from "@/components/PendingInvitations";
 import { DEPARTMENT_ACCESS_OPTIONS } from "@/lib/staffAccess";
+import { OwnerStaffOperations, StaffSelfService } from "@/components/StaffOperations";
 
 interface StaffRecord {
   id: string;
   full_name: string;
   staff_code: string;
   department: string[];
+  access_permissions: string[] | null;
   role: string;
   phone: string | null;
   is_active: boolean;
   created_at: string;
+  user_id: string | null;
 }
 
 const departments = [
@@ -107,17 +109,44 @@ function generateStaffCode() {
   return code;
 }
 
+function toggleDepartmentAccess(
+  selectedDepartments: string[],
+  selectedPermissions: string[],
+  department: string,
+) {
+  const isSelected = selectedDepartments.includes(department);
+  const departmentPermissions = (DEPARTMENT_ACCESS_OPTIONS[department] || []).map(
+    (option) => option.permission,
+  );
+  return isSelected
+    ? {
+        departments: selectedDepartments.filter((value) => value !== department),
+        accessPermissions: selectedPermissions.filter(
+          (permission) => !departmentPermissions.includes(permission),
+        ),
+      }
+    : {
+        departments: [...selectedDepartments, department],
+        accessPermissions: [
+          ...new Set([
+            ...selectedPermissions,
+            ...(department === "housekeeping" ? ["housekeeping.tasks"] : departmentPermissions),
+          ]),
+        ],
+      };
+}
+
 export default function StaffManagement() {
-  const { isAdmin, role: currentUserRole } = useUserRole();
   const { currentCompany, companyRole } = useCompany();
   const [staffList, setStaffList] = useState<StaffRecord[]>([]);
+  const [staffListCompanyId, setStaffListCompanyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [inviteRefreshKey, setInviteRefreshKey] = useState(0);
   const [resetting, setResetting] = useState<string | null>(null);
-  const canManage = companyRole === "owner" || companyRole === "admin";
+  const canManage = companyRole === "owner";
 
   const [form, setForm] = useState({
     full_name: "",
@@ -131,23 +160,43 @@ export default function StaffManagement() {
   const [pwdTarget, setPwdTarget] = useState<StaffRecord | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [savingPwd, setSavingPwd] = useState(false);
+  const [editTarget, setEditTarget] = useState<StaffRecord | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editForm, setEditForm] = useState({
+    full_name: "",
+    staff_code: "",
+    departments: [] as string[],
+    accessPermissions: [] as string[],
+    role: "staff",
+    phone: "",
+    is_active: true,
+  });
 
-  useEffect(() => {
-    if (currentCompany) fetchStaff();
-  }, [currentCompany?.id]);
-
-  const fetchStaff = async () => {
+  const fetchStaff = useCallback(async () => {
     if (!currentCompany) return;
     setLoading(true);
     const { data, error } = await supabase
       .from("company_staff")
-      .select("*")
+      .select("id, full_name, staff_code, department, access_permissions, role, phone, is_active, created_at, user_id")
       .eq("company_id", currentCompany.id)
       .order("department", { ascending: true });
 
-    if (!error) setStaffList((data || []) as StaffRecord[]);
+    if (error) {
+      toast.error(`Couldn't load staff members: ${error.message}`);
+      setStaffList([]);
+    } else {
+      setStaffList((data || []) as StaffRecord[]);
+    }
+    setStaffListCompanyId(currentCompany.id);
     setLoading(false);
-  };
+  }, [currentCompany]);
+
+  useEffect(() => {
+    if (currentCompany && companyRole === "owner") void fetchStaff();
+  }, [currentCompany, companyRole, fetchStaff]);
+
+  const visibleStaffList =
+    currentCompany && staffListCompanyId === currentCompany.id ? staffList : [];
 
   const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -233,33 +282,76 @@ export default function StaffManagement() {
     toast.success("Staff code copied!");
   };
 
-  const toggleDepartment = (department: string) => {
-    setForm((current) => {
-      const selected = current.departments.includes(department);
-      const departmentPermissions = (DEPARTMENT_ACCESS_OPTIONS[department] || []).map(
-        (option) => option.permission,
-      );
-      return selected
-        ? {
-            ...current,
-            departments: current.departments.filter((value) => value !== department),
-            accessPermissions: current.accessPermissions.filter(
-              (permission) => !departmentPermissions.includes(permission),
-            ),
-          }
-        : {
-            ...current,
-            departments: [...current.departments, department],
-            accessPermissions: [
-              ...new Set([
-                ...current.accessPermissions,
-                ...(department === "housekeeping"
-                  ? ["housekeeping.tasks"]
-                  : departmentPermissions),
-              ]),
-            ],
-          };
+  const openEditStaff = (member: StaffRecord) => {
+    setEditTarget(member);
+    setEditForm({
+      full_name: member.full_name,
+      staff_code: member.staff_code,
+      departments: [...member.department],
+      accessPermissions: member.access_permissions ?? member.department.flatMap(
+        (department) => (DEPARTMENT_ACCESS_OPTIONS[department] ?? []).map((option) => option.permission),
+      ),
+      role: member.role,
+      phone: member.phone ?? "",
+      is_active: member.is_active,
     });
+  };
+
+  const handleSaveStaffEdit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!currentCompany || !editTarget) return;
+    if (!editForm.full_name.trim() || !editForm.staff_code.trim()) {
+      toast.error("Enter a name and access code");
+      return;
+    }
+    if (editForm.departments.length === 0) {
+      toast.error("Please select at least one department");
+      return;
+    }
+    if (editForm.role === "waiter" && (editForm.departments.length !== 1 || editForm.departments[0] !== "restaurant")) {
+      toast.error("Waiters must be assigned to the Restaurant department");
+      return;
+    }
+
+    setSavingEdit(true);
+    const { data, error } = await supabase
+      .from("company_staff")
+      .update({
+        full_name: editForm.full_name.trim(),
+        staff_code: editForm.staff_code.trim().toUpperCase(),
+        department: editForm.departments,
+        access_permissions: editForm.accessPermissions,
+        role: editForm.role,
+        phone: editForm.phone.trim() || null,
+        is_active: editForm.is_active,
+      })
+      .eq("company_id", currentCompany.id)
+      .eq("id", editTarget.id)
+      .select("id, full_name, staff_code, department, access_permissions, role, phone, is_active, created_at, user_id")
+      .single();
+
+    if (error) {
+      toast.error(error.code === "23505" ? "That access code is already used in this hotel" : `Couldn't save staff details: ${error.message}`);
+    } else {
+      setStaffList((previous) => previous.map((member) => member.id === data.id ? data : member));
+      toast.success(`Updated ${data.full_name}'s staff details`);
+      setEditTarget(null);
+    }
+    setSavingEdit(false);
+  };
+
+  const toggleDepartment = (department: string) => {
+    setForm((current) => ({
+      ...current,
+      ...toggleDepartmentAccess(current.departments, current.accessPermissions, department),
+    }));
+  };
+
+  const toggleEditDepartment = (department: string) => {
+    setEditForm((current) => ({
+      ...current,
+      ...toggleDepartmentAccess(current.departments, current.accessPermissions, department),
+    }));
   };
 
   const toggleAccessPermission = (permission: string) => {
@@ -313,26 +405,14 @@ export default function StaffManagement() {
         description: `New code: ${data.new_staff_code}`,
         duration: 8000,
       });
-    } catch (err: any) {
-      toast.error(err.message || "Failed to reset access");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to reset access");
     }
     setResetting(null);
   };
 
-  if (!isAdmin && currentUserRole !== "manager" && companyRole !== "owner") {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Card className="shadow-card border-0 max-w-md w-full text-center">
-          <CardContent className="p-8">
-            <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-xl font-bold font-display mb-2">Access Restricted</h2>
-            <p className="text-sm text-muted-foreground">
-              You need admin or manager permissions to view staff management.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  if (companyRole !== "owner" && currentCompany) {
+    return <StaffSelfService key={currentCompany.id} companyId={currentCompany.id} />;
   }
 
   return (
@@ -341,7 +421,7 @@ export default function StaffManagement() {
         <div>
           <h1 className="text-2xl font-bold font-display">Staff Management</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage staff members, departments & access codes
+            Manage staff records, payroll, leave, attendance, shifts, advances, and documents
           </p>
         </div>
         <div className="flex gap-2">
@@ -545,10 +625,125 @@ export default function StaffManagement() {
         <PendingInvitations refreshKey={inviteRefreshKey} />
       </motion.div>
 
+      <Dialog open={!!editTarget} onOpenChange={(open) => { if (!open) setEditTarget(null); }}>
+        <DialogContent className="flex max-h-[90dvh] flex-col overflow-hidden sm:max-w-lg">
+          <DialogHeader className="shrink-0">
+            <DialogTitle className="font-display">Edit Staff Member</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveStaffEdit} className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-2">
+            <div className="space-y-2">
+              <Label>Full Name</Label>
+              <Input value={editForm.full_name} onChange={(event) => setEditForm((current) => ({ ...current, full_name: event.target.value }))} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Staff Access Code</Label>
+              <Input
+                value={editForm.staff_code}
+                onChange={(event) => setEditForm((current) => ({ ...current, staff_code: event.target.value.toUpperCase() }))}
+                className="font-mono tracking-widest"
+                required
+              />
+              <p className="text-xs text-muted-foreground">Changing the code invalidates the previous code.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Phone</Label>
+              <Input value={editForm.phone} onChange={(event) => setEditForm((current) => ({ ...current, phone: event.target.value }))} placeholder="Phone number" />
+            </div>
+            <div className="space-y-2">
+              <Label>Departments</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {departments.map((department) => {
+                  const selected = editForm.departments.includes(department.value);
+                  return (
+                    <label
+                      key={department.value}
+                      className={`flex items-center gap-2 rounded-lg border p-2 text-sm transition-colors ${
+                        selected ? "border-primary bg-primary/10" : "border-border hover:bg-secondary/50"
+                      } ${editForm.role === "waiter" ? "cursor-not-allowed opacity-75" : "cursor-pointer"}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        disabled={editForm.role === "waiter"}
+                        onChange={() => toggleEditDepartment(department.value)}
+                        className="sr-only"
+                      />
+                      <department.icon className="h-3.5 w-3.5 shrink-0" />
+                      {department.label}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Department Access</Label>
+              {editForm.departments.map((department) => {
+                const departmentInfo = departments.find((entry) => entry.value === department);
+                const accessOptions = (DEPARTMENT_ACCESS_OPTIONS[department] || []).filter(
+                  (option) => editForm.role !== "waiter" || option.permission === "restaurant.orders",
+                );
+                return (
+                  <fieldset key={department} className="space-y-2 rounded-lg border p-3">
+                    <legend className="px-1 text-sm font-medium">{departmentInfo?.label || department}</legend>
+                    {accessOptions.map((option) => (
+                      <label key={option.permission} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={editForm.accessPermissions.includes(option.permission)}
+                          disabled={editForm.role === "waiter"}
+                          onChange={() => setEditForm((current) => ({
+                            ...current,
+                            accessPermissions: current.accessPermissions.includes(option.permission)
+                              ? current.accessPermissions.filter((permission) => permission !== option.permission)
+                              : [...current.accessPermissions, option.permission],
+                          }))}
+                          className="h-4 w-4 rounded border-border accent-primary"
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                  </fieldset>
+                );
+              })}
+            </div>
+            <div className="space-y-2">
+              <Label>Job Role</Label>
+              <Select
+                value={editForm.role}
+                onValueChange={(role) => setEditForm((current) => ({
+                  ...current,
+                  role,
+                  departments: role === "waiter" ? ["restaurant"] : current.departments,
+                  accessPermissions: role === "waiter" ? ["restaurant.orders"] : current.accessPermissions,
+                }))}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {roles.map((role) => <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Job title doesn’t change company-level permissions.</p>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <Label>Active staff account</Label>
+                <p className="text-xs text-muted-foreground">Inactive accounts cannot sign in.</p>
+              </div>
+              <Switch checked={editForm.is_active} onCheckedChange={(is_active) => setEditForm((current) => ({ ...current, is_active }))} />
+            </div>
+            <p className="text-xs text-muted-foreground">Use the key button on the staff list to change the login password.</p>
+            <Button type="submit" className="w-full" disabled={savingEdit}>
+              {savingEdit && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Staff Details
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Department summary cards */}
       <motion.div variants={item} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {departments.map((dept) => {
-          const count = staffList.filter((s) => s.department.includes(dept.value)).length;
+          const count = visibleStaffList.filter((s) => s.department.includes(dept.value)).length;
           const DeptIcon = dept.icon;
           return (
             <Card key={dept.value} className="shadow-card border-0">
@@ -566,6 +761,10 @@ export default function StaffManagement() {
         })}
       </motion.div>
 
+      <motion.div variants={item}>
+        {currentCompany && <OwnerStaffOperations key={currentCompany.id} companyId={currentCompany.id} staffList={visibleStaffList} />}
+      </motion.div>
+
       {/* Staff list */}
       <motion.div variants={item}>
         <Card className="shadow-card border-0">
@@ -577,14 +776,14 @@ export default function StaffManagement() {
               <div className="flex justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
-            ) : staffList.length === 0 ? (
+            ) : visibleStaffList.length === 0 ? (
               <div className="text-center py-8">
                 <User className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
                 <p className="text-sm text-muted-foreground">No staff members yet. Add your first staff member above.</p>
               </div>
             ) : (
               <div className="space-y-1">
-                {staffList.map((member) => {
+                {visibleStaffList.map((member) => {
                   const primaryDept = member.department[0] || "restaurant";
                   const DeptIcon = deptIcons[primaryDept] || User;
                   return (
@@ -621,6 +820,15 @@ export default function StaffManagement() {
                         <StaffCodeCell code={member.staff_code} onCopy={handleCopyCode} />
                         {canManage && (
                           <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-primary"
+                              onClick={() => openEditStaff(member)}
+                              title="Edit staff details"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"

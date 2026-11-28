@@ -1,6 +1,10 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { SESSION_INACTIVITY_TIMEOUT_MS } from "@/lib/sessionInactivity";
+import { toast } from "sonner";
+
+const LAST_ACTIVITY_STORAGE_PREFIX = "lktech_last_activity:";
 
 interface AuthContextType {
   session: Session | null;
@@ -49,7 +53,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        if (event === "SIGNED_IN" && session?.user.id) {
+          localStorage.setItem(
+            `${LAST_ACTIVITY_STORAGE_PREFIX}${session.user.id}`,
+            String(Date.now()),
+          );
+        }
         setSession(session);
         setLoading(false);
       }
@@ -62,6 +72,107 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, [isDemo]);
+
+  useEffect(() => {
+    const userId = session?.user.id;
+    if (!userId || isDemo) return;
+
+    const activityKey = `${LAST_ACTIVITY_STORAGE_PREFIX}${userId}`;
+    const storedActivity = Number(localStorage.getItem(activityKey));
+    let lastActivityAt = Number.isFinite(storedActivity) && storedActivity > 0
+      ? storedActivity
+      : Date.now();
+    let lastPersistedActivityAt = lastActivityAt;
+    let timeoutId: number | undefined;
+    let isLocking = false;
+
+    if (!storedActivity) {
+      localStorage.setItem(activityKey, String(lastActivityAt));
+    }
+
+    const lockSession = () => {
+      if (isLocking) return;
+      isLocking = true;
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+      void supabase.auth.signOut({ scope: "local" }).then(({ error }) => {
+        if (error) {
+          toast.error("Automatic lock failed", { description: error.message });
+        }
+      }).catch((error: unknown) => {
+        toast.error("Automatic lock failed", {
+          description: error instanceof Error ? error.message : "Please sign in again.",
+        });
+      });
+    };
+
+    const syncActivityFromStorage = () => {
+      const timestamp = Number(localStorage.getItem(activityKey));
+      if (Number.isFinite(timestamp) && timestamp > lastActivityAt) {
+        lastActivityAt = timestamp;
+        lastPersistedActivityAt = timestamp;
+      }
+    };
+
+    const scheduleLockCheck = () => {
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+      const remaining = SESSION_INACTIVITY_TIMEOUT_MS - (Date.now() - lastActivityAt);
+      if (remaining <= 0) {
+        lockSession();
+      } else {
+        timeoutId = window.setTimeout(scheduleLockCheck, remaining);
+      }
+    };
+
+    const checkForInactivity = () => {
+      syncActivityFromStorage();
+      scheduleLockCheck();
+    };
+
+    const recordActivity = () => {
+      syncActivityFromStorage();
+      const now = Date.now();
+      if (now - lastActivityAt >= SESSION_INACTIVITY_TIMEOUT_MS) {
+        lockSession();
+        return;
+      }
+
+      lastActivityAt = now;
+      if (now - lastPersistedActivityAt >= 1000) {
+        localStorage.setItem(activityKey, String(now));
+        lastPersistedActivityAt = now;
+      }
+      scheduleLockCheck();
+    };
+
+    const syncActivityEvent = (event: StorageEvent) => {
+      if (event.key !== activityKey || !event.newValue) return;
+      const timestamp = Number(event.newValue);
+      if (Number.isFinite(timestamp) && timestamp > lastActivityAt) {
+        lastActivityAt = timestamp;
+        lastPersistedActivityAt = timestamp;
+        scheduleLockCheck();
+      }
+    };
+
+    const activityEvents = ["pointerdown", "pointermove", "keydown", "touchstart", "wheel", "scroll"];
+    activityEvents.forEach((eventName) => {
+      window.addEventListener(eventName, recordActivity, { passive: true });
+    });
+    window.addEventListener("focus", checkForInactivity);
+    window.addEventListener("storage", syncActivityEvent);
+    document.addEventListener("visibilitychange", checkForInactivity);
+    scheduleLockCheck();
+
+    return () => {
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+      activityEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, recordActivity);
+      });
+      window.removeEventListener("focus", checkForInactivity);
+      window.removeEventListener("storage", syncActivityEvent);
+      document.removeEventListener("visibilitychange", checkForInactivity);
+    };
+  }, [session?.user.id, isDemo]);
 
   const signOut = async () => {
     if (isDemo) {

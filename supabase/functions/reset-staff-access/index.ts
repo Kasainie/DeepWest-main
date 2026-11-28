@@ -64,13 +64,13 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Verify caller has admin/owner role in the same company
+    // Staff access codes are managed by the company owner only.
     const { data: callerRole } = await supabaseAdmin.rpc("get_company_role", {
       _user_id: caller.id,
       _company_id: staffRecord.company_id,
     });
 
-    if (!callerRole || !["owner", "admin"].includes(callerRole)) {
+    if (callerRole !== "owner") {
       return new Response(
         JSON.stringify({ error: "Insufficient permissions" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }

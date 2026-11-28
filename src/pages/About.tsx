@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompany } from "@/contexts/CompanyContext";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Building2, Phone, Mail, Send, Loader2, MessageSquarePlus, Clock } from "lucide-react";
+import { Building2, Phone, Mail, Send, Loader2, MessageSquarePlus, Clock, Inbox } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -51,40 +52,77 @@ const STATUS_COLORS: Record<string, "default" | "secondary" | "destructive"> = {
 
 interface Ticket {
   id: string;
+  company_id: string;
+  user_id: string;
   subject: string;
   category: string;
   message: string;
   status: string;
   created_at: string;
+  companyName: string;
 }
 
 export default function About() {
   const { user } = useAuth();
   const { currentCompany } = useCompany();
+  const { isSuperAdmin, loading: checkingSuperAdmin } = useSuperAdmin();
   const [submitting, setSubmitting] = useState(false);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(true);
+  const [ticketError, setTicketError] = useState<string | null>(null);
+  const [updatingTicketId, setUpdatingTicketId] = useState<string | null>(null);
   const [form, setForm] = useState({
     subject: "",
     category: "",
     message: "",
   });
 
-  useEffect(() => {
-    fetchTickets();
-  }, [currentCompany?.id]);
-
-  const fetchTickets = async () => {
-    if (!user) return;
+  const fetchTickets = useCallback(async () => {
+    if (!user || checkingSuperAdmin) return;
     setLoadingTickets(true);
-    const { data } = await supabase
-      .from("support_tickets" as any)
-      .select("*")
-      .eq("user_id", user.id)
+    setTicketError(null);
+    let query = supabase
+      .from("support_tickets")
+      .select("id, company_id, user_id, subject, category, message, status, created_at, updated_at, companies(name)")
       .order("created_at", { ascending: false })
-      .limit(10);
-    setTickets((data as unknown as Ticket[]) || []);
+      .limit(isSuperAdmin ? 100 : 10);
+    if (!isSuperAdmin) query = query.eq("user_id", user.id);
+
+    const { data, error } = await query;
+    if (error) {
+      setTickets([]);
+      setTicketError(error.message);
+      toast.error(`Couldn't load support tickets: ${error.message}`);
+    } else {
+      setTickets((data ?? []).map(({ companies, ...ticket }) => ({
+        ...ticket,
+        companyName: companies?.name ?? "Unknown hotel",
+      })));
+    }
     setLoadingTickets(false);
+  }, [checkingSuperAdmin, isSuperAdmin, user]);
+
+  useEffect(() => {
+    void fetchTickets();
+  }, [currentCompany?.id, fetchTickets]);
+
+  const updateTicketStatus = async (ticket: Ticket, status: string) => {
+    setUpdatingTicketId(ticket.id);
+    const { data, error } = await supabase
+      .from("support_tickets")
+      .update({ status })
+      .eq("id", ticket.id)
+      .select("id, status")
+      .single();
+    if (error) {
+      toast.error(`Couldn't update ticket: ${error.message}`);
+    } else {
+      setTickets((current) => current.map((entry) =>
+        entry.id === ticket.id ? { ...entry, status: data.status } : entry,
+      ));
+      toast.success(`Ticket marked ${data.status.replace("_", " ")}`);
+    }
+    setUpdatingTicketId(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,24 +133,24 @@ export default function About() {
       const parsed = ticketSchema.parse(form);
       setSubmitting(true);
 
-      const { error } = await supabase.from("support_tickets" as any).insert({
+      const { error } = await supabase.from("support_tickets").insert({
         company_id: currentCompany.id,
         user_id: user.id,
         subject: parsed.subject,
         category: parsed.category,
         message: parsed.message,
-      } as any);
+      });
 
       if (error) throw error;
 
       toast.success("Support ticket submitted successfully!");
       setForm({ subject: "", category: "", message: "" });
-      fetchTickets();
-    } catch (err: any) {
+      await fetchTickets();
+    } catch (err: unknown) {
       if (err instanceof z.ZodError) {
         toast.error(err.issues[0]?.message ?? "Invalid form details");
       } else {
-        toast.error(err.message || "Failed to submit ticket");
+        toast.error(err instanceof Error ? err.message : "Failed to submit ticket");
       }
     } finally {
       setSubmitting(false);
@@ -142,7 +180,9 @@ export default function About() {
           </CardHeader>
           <CardContent className="space-y-5">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              For support, inquiries, or feature requests, please use the form below or contact us directly.
+              {isSuperAdmin
+                ? "Review and manage recent support requests from staff across DeepWest hotels below."
+                : "For support, inquiries, or feature requests, please use the form below or contact us directly."}
             </p>
 
             <div className="space-y-3">
@@ -187,7 +227,7 @@ export default function About() {
       </motion.div>
 
       {/* Support Ticket Form */}
-      <motion.div variants={item}>
+      {!checkingSuperAdmin && !isSuperAdmin && <motion.div variants={item}>
         <Card className="shadow-card border-0">
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -262,10 +302,105 @@ export default function About() {
             </form>
           </CardContent>
         </Card>
-      </motion.div>
+      </motion.div>}
+
+      {checkingSuperAdmin && (
+        <motion.div variants={item}>
+          <Card className="shadow-card border-0">
+            <CardContent className="flex justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {isSuperAdmin && (
+        <motion.div variants={item}>
+          <Card className="shadow-card border-0">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                  <Inbox className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-display">Lktech Support Inbox</CardTitle>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Recent requests submitted across DeepWest hotels
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!loadingTickets && !ticketError && (
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    ["Open", "open"],
+                    ["In progress", "in_progress"],
+                    ["Resolved", "resolved"],
+                  ].map(([label, status]) => (
+                    <div key={status} className="rounded-lg bg-muted/40 p-3 text-center">
+                      <p className="text-lg font-semibold">
+                        {tickets.filter((ticket) => ticket.status === status).length}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{label}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {ticketError && <p role="alert" className="text-sm text-destructive">{ticketError}</p>}
+              {loadingTickets ? (
+                <div className="flex justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                </div>
+              ) : ticketError ? null : tickets.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">No support requests have been submitted.</p>
+              ) : (
+                <div className="space-y-3">
+                  {tickets.map((ticket) => (
+                    <article key={ticket.id} className="space-y-3 rounded-lg border p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0 space-y-1">
+                          <h2 className="font-semibold">{ticket.subject}</h2>
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            <Badge variant="outline">{ticket.companyName}</Badge>
+                            <Badge variant="secondary">
+                              {CATEGORIES.find((category) => category.value === ticket.category)?.label ?? ticket.category}
+                            </Badge>
+                            <span>{format(new Date(ticket.created_at), "MMM d, yyyy")}</span>
+                            <span>Account {ticket.user_id.slice(0, 8)}</span>
+                          </div>
+                        </div>
+                        <div className="w-full sm:w-44">
+                          <Select
+                            value={ticket.status}
+                            onValueChange={(status) => void updateTicketStatus(ticket, status)}
+                            disabled={updatingTicketId === ticket.id}
+                          >
+                            <SelectTrigger aria-label={`Update status for ${ticket.subject}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="open">Open</SelectItem>
+                              <SelectItem value="in_progress">In progress</SelectItem>
+                              <SelectItem value="resolved">Resolved</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <p className="whitespace-pre-wrap break-words rounded-md bg-muted/30 p-3 text-sm">
+                        {ticket.message}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Previous Tickets */}
-      <motion.div variants={item}>
+      {!checkingSuperAdmin && !isSuperAdmin && <motion.div variants={item}>
         <Card className="shadow-card border-0">
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -317,7 +452,7 @@ export default function About() {
             )}
           </CardContent>
         </Card>
-      </motion.div>
+      </motion.div>}
     </motion.div>
   );
 }

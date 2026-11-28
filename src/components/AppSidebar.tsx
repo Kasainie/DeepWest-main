@@ -52,14 +52,14 @@ const accountingItems = [
 ];
 
 const managementItems = [
-  { title: "Staff", url: "/staff", icon: ShieldCheck, departments: null, adminOnly: true },
+  { title: "Staff", url: "/staff", icon: ShieldCheck, departments: null, adminOnly: false },
   { title: "Settings", url: "/settings", icon: Settings, departments: null, adminOnly: true },
   { title: "About", url: "/about", icon: Info, departments: null, adminOnly: false },
 ];
 
 export function AppSidebar() {
   const { state, setOpenMobile, isMobile } = useSidebar();
-  const collapsed = state === "collapsed";
+  const collapsed = state === "collapsed" && !isMobile;
   const location = useLocation();
   const { currentCompany, companyRole, staffDepartment, staffPermissions, staffRole } = useCompany();
   const { user } = useAuth();

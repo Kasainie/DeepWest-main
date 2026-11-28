@@ -93,7 +93,10 @@ Deno.serve(async (req: Request) => {
     }
 
     const staff = staffData[0];
-    const companyMembershipRole = staff.role === "waiter" ? "staff" : staff.role;
+    const normalizedStaffRole = staff.role.toLowerCase();
+    const companyMembershipRole = ["owner", "admin", "manager"].includes(normalizedStaffRole)
+      ? normalizedStaffRole
+      : "staff";
 
     // Password check — required whenever a password has been set for this staff member
     const { data: hasPassword } = await supabaseAdmin.rpc("staff_has_password", {

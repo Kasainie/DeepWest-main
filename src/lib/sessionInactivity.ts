@@ -1,0 +1,1 @@
+export const SESSION_INACTIVITY_TIMEOUT_MS = 20 * 60 * 1000;

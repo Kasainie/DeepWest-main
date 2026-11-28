@@ -241,6 +241,389 @@ export type Database = {
           },
         ]
       }
+      staff_management_settings: {
+        Row: {
+          company_id: string
+          enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_management_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_profiles: {
+        Row: {
+          address: string | null
+          company_id: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          staff_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          company_id: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          staff_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          company_id?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          staff_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_profiles_company_id_staff_id_fkey"
+            columns: ["company_id", "staff_id"]
+            isOneToOne: true
+            referencedRelation: "company_staff"
+            referencedColumns: ["company_id", "id"]
+          },
+        ]
+      }
+      staff_payments: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          pay_period_end: string
+          pay_period_start: string
+          payment_date: string
+          payment_method: string
+          recorded_by: string | null
+          reference: string | null
+          staff_id: string
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          pay_period_end: string
+          pay_period_start: string
+          payment_date?: string
+          payment_method?: string
+          recorded_by?: string | null
+          reference?: string | null
+          staff_id: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          pay_period_end?: string
+          pay_period_start?: string
+          payment_date?: string
+          payment_method?: string
+          recorded_by?: string | null
+          reference?: string | null
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_payments_company_id_staff_id_fkey"
+            columns: ["company_id", "staff_id"]
+            isOneToOne: false
+            referencedRelation: "company_staff"
+            referencedColumns: ["company_id", "id"]
+          },
+        ]
+      }
+      staff_leave_requests: {
+        Row: {
+          company_id: string
+          created_at: string
+          end_date: string
+          id: string
+          leave_type: string
+          reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          review_note: string | null
+          staff_id: string
+          start_date: string
+          status: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          end_date: string
+          id?: string
+          leave_type: string
+          reason: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          review_note?: string | null
+          staff_id: string
+          start_date: string
+          status?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          leave_type?: string
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          review_note?: string | null
+          staff_id?: string
+          start_date?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_leave_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_leave_requests_company_id_staff_id_fkey"
+            columns: ["company_id", "staff_id"]
+            isOneToOne: false
+            referencedRelation: "company_staff"
+            referencedColumns: ["company_id", "id"]
+          },
+        ]
+      }
+      staff_attendance: {
+        Row: {
+          clocked_in_at: string
+          clocked_out_at: string | null
+          company_id: string
+          id: string
+          notes: string | null
+          staff_id: string
+        }
+        Insert: {
+          clocked_in_at?: string
+          clocked_out_at?: string | null
+          company_id: string
+          id?: string
+          notes?: string | null
+          staff_id: string
+        }
+        Update: {
+          clocked_in_at?: string
+          clocked_out_at?: string | null
+          company_id?: string
+          id?: string
+          notes?: string | null
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_attendance_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_attendance_company_id_staff_id_fkey"
+            columns: ["company_id", "staff_id"]
+            isOneToOne: false
+            referencedRelation: "company_staff"
+            referencedColumns: ["company_id", "id"]
+          },
+        ]
+      }
+      staff_shifts: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          ends_at: string
+          id: string
+          notes: string | null
+          staff_id: string
+          starts_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          ends_at: string
+          id?: string
+          notes?: string | null
+          staff_id: string
+          starts_at: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string
+          id?: string
+          notes?: string | null
+          staff_id?: string
+          starts_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_shifts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_shifts_company_id_staff_id_fkey"
+            columns: ["company_id", "staff_id"]
+            isOneToOne: false
+            referencedRelation: "company_staff"
+            referencedColumns: ["company_id", "id"]
+          },
+        ]
+      }
+      staff_adjustments: {
+        Row: {
+          adjustment_type: string
+          amount: number
+          company_id: string
+          created_at: string
+          effective_date: string
+          id: string
+          reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          staff_id: string
+          status: string
+        }
+        Insert: {
+          adjustment_type: string
+          amount: number
+          company_id: string
+          created_at?: string
+          effective_date?: string
+          id?: string
+          reason: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          staff_id: string
+          status?: string
+        }
+        Update: {
+          adjustment_type?: string
+          amount?: number
+          company_id?: string
+          created_at?: string
+          effective_date?: string
+          id?: string
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          staff_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_adjustments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_adjustments_company_id_staff_id_fkey"
+            columns: ["company_id", "staff_id"]
+            isOneToOne: false
+            referencedRelation: "company_staff"
+            referencedColumns: ["company_id", "id"]
+          },
+        ]
+      }
+      staff_documents: {
+        Row: {
+          company_id: string
+          created_at: string
+          document_type: string
+          file_name: string
+          id: string
+          staff_id: string
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          document_type?: string
+          file_name: string
+          id?: string
+          staff_id: string
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          document_type?: string
+          file_name?: string
+          id?: string
+          staff_id?: string
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_documents_company_id_staff_id_fkey"
+            columns: ["company_id", "staff_id"]
+            isOneToOne: false
+            referencedRelation: "company_staff"
+            referencedColumns: ["company_id", "id"]
+          },
+        ]
+      }
       expense_categories: {
         Row: {
           budget_monthly: number | null
@@ -885,6 +1268,8 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { _token: string }; Returns: string }
+      staff_clock_in: { Args: { _staff_id: string }; Returns: string }
+      staff_clock_out: { Args: { _attendance_id: string }; Returns: string }
       create_restaurant_order: {
         Args: {
           _company_id: string

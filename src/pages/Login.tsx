@@ -236,7 +236,7 @@ export default function Login() {
       </main>
       <footer className="flex justify-center pt-4">
         <Button asChild variant="outline">
-          <a href="/deepwest-app.apk" download="deepwest-app.apk">
+          <a href="/deepwest-app-20261126.apk" download="deepwest-app-20261126.apk">
             <Download aria-hidden="true" />
             Download DeepWest App
           </a>

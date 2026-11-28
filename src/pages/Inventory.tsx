@@ -9,15 +9,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { getLocalDateString, getLocalDayBoundsUTC } from "@/lib/dateUtils";
 import { formatKES } from "@/lib/currency";
 import { useAuth } from "@/contexts/AuthContext";
 import { hasStaffAccess } from "@/lib/staffAccess";
-import { Loader2, PackagePlus } from "lucide-react";
+import { Loader2, PackagePlus, Pencil, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface ItemInventoryRow {
   key: string;
+  menuItemId: string | null;
   name: string;
   restockedQuantity: number;
   stockQuantity: number;
@@ -40,7 +42,17 @@ export default function Inventory() {
   const [selectedMenuItemId, setSelectedMenuItemId] = useState("");
   const [restockQuantity, setRestockQuantity] = useState("1");
   const [restocking, setRestocking] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editRow, setEditRow] = useState<ItemInventoryRow | null>(null);
+  const [editQuantity, setEditQuantity] = useState("0");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [rowToDelete, setRowToDelete] = useState<ItemInventoryRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState<DateRange>({ from: new Date(), to: new Date() });
+  const canManageInventory = ["owner", "admin", "manager"].includes(
+    companyRole?.toLowerCase() || "",
+  );
   const canRestock = hasStaffAccess(
     companyRole,
     staffDepartment,
@@ -78,7 +90,6 @@ export default function Inventory() {
         .from("menu_items")
         .select("id, name")
         .eq("company_id", currentCompany.id)
-        .eq("is_available", true)
         .order("name"),
     ]);
 
@@ -96,11 +107,16 @@ export default function Inventory() {
 
     const rowsByItem = new Map<string, ItemInventoryRow>();
     const getRow = (menuItemId: string | null, name: string) => {
-      const key = menuItemId || name.trim().toLowerCase();
-      let row = rowsByItem.get(key);
+      const normalizedName = name.trim().toLowerCase();
+      const existingByName = Array.from(rowsByItem.values()).find(
+        (row) => row.name.trim().toLowerCase() === normalizedName,
+      );
+      const key = menuItemId || existingByName?.key || normalizedName;
+      let row = menuItemId ? (rowsByItem.get(menuItemId) || existingByName) : rowsByItem.get(key);
       if (!row) {
         row = {
           key,
+          menuItemId: menuItemId,
           name,
           restockedQuantity: 0,
           stockQuantity: 0,
@@ -108,6 +124,17 @@ export default function Inventory() {
           revenue: 0,
         };
         rowsByItem.set(key, row);
+      }
+      if (!row.menuItemId && menuItemId) {
+        row.menuItemId = menuItemId;
+      }
+      if (menuItemId && row.key !== menuItemId) {
+        for (const [existingKey, existingRow] of rowsByItem.entries()) {
+          if (existingRow === row) rowsByItem.delete(existingKey);
+        }
+        row.key = menuItemId;
+        row.menuItemId = menuItemId;
+        rowsByItem.set(menuItemId, row);
       }
       return row;
     };
@@ -175,8 +202,75 @@ export default function Inventory() {
     setRestocking(false);
   };
 
+  const openEdit = (row: ItemInventoryRow) => {
+    if (!canManageInventory || !row.menuItemId) return;
+    setEditRow(row);
+    setEditQuantity(String(row.stockQuantity));
+    setEditOpen(true);
+  };
+
+  const handleEditStock = async () => {
+    if (!currentCompany || !editRow?.menuItemId || !canManageInventory) return;
+    const quantity = Number(editQuantity);
+    if (!Number.isInteger(quantity) || quantity < 0) {
+      toast.error("Enter a whole number of zero or more");
+      return;
+    }
+
+    setSavingEdit(true);
+    const { data, error } = await supabase
+      .from("inventory_stock_balances")
+      .update({ quantity, item_name: editRow.name })
+      .eq("company_id", currentCompany.id)
+      .eq("menu_item_id", editRow.menuItemId)
+      .select("menu_item_id")
+      .maybeSingle();
+
+    if (error) {
+      toast.error(`Could not update stock: ${error.message}`);
+    } else if (!data) {
+      toast.error("Stock balance was not found");
+    } else {
+      toast.success(`${editRow.name} stock updated`);
+      setEditOpen(false);
+      setEditRow(null);
+      await fetchItemInventory();
+    }
+    setSavingEdit(false);
+  };
+
+  const handleDeleteItem = async () => {
+    if (!currentCompany || !rowToDelete?.menuItemId || !canManageInventory) return;
+    setDeleting(true);
+    const { data, error } = await supabase
+      .from("menu_items")
+      .delete()
+      .eq("company_id", currentCompany.id)
+      .eq("id", rowToDelete.menuItemId)
+      .select("id")
+      .maybeSingle();
+
+    if (error) {
+      toast.error(`Could not delete ${rowToDelete.name}: ${error.message}`);
+    } else if (!data) {
+      toast.error("Item was not deleted. You may not have permission.");
+    } else {
+      toast.success(`${rowToDelete.name} deleted from inventory`);
+      setRowToDelete(null);
+      await fetchItemInventory();
+    }
+    setDeleting(false);
+  };
+
+  const filteredInventoryRows = useMemo(
+    () => inventoryRows.filter((row) =>
+      row.name.toLowerCase().includes(searchQuery.trim().toLowerCase()),
+    ),
+    [inventoryRows, searchQuery],
+  );
+
   const totals = useMemo(
-    () => inventoryRows.reduce(
+    () => filteredInventoryRows.reduce(
       (sum, row) => ({
         restockedQuantity: sum.restockedQuantity + row.restockedQuantity,
         stockQuantity: sum.stockQuantity + row.stockQuantity,
@@ -185,7 +279,7 @@ export default function Inventory() {
       }),
       { restockedQuantity: 0, stockQuantity: 0, soldQuantity: 0, revenue: 0 },
     ),
-    [inventoryRows],
+    [filteredInventoryRows],
   );
 
   return (
@@ -216,13 +310,25 @@ export default function Inventory() {
           </p>
         </CardHeader>
         <CardContent>
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search inventory items..."
+              className="pl-9"
+              aria-label="Search inventory items"
+            />
+          </div>
           {loading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
-          ) : inventoryRows.length === 0 ? (
+          ) : filteredInventoryRows.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
-              No stock, restocks, or paid sales in this period
+              {inventoryRows.length === 0
+                ? "No stock, restocks, or paid sales in this period"
+                : "No inventory items match your search"}
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -234,16 +340,47 @@ export default function Inventory() {
                     <TableHead className="text-right">Sold</TableHead>
                     <TableHead className="text-right">Available now</TableHead>
                     <TableHead className="text-right">Revenue</TableHead>
+                    {canManageInventory && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {inventoryRows.map((row) => (
+                  {filteredInventoryRows.map((row) => (
                     <TableRow key={row.key}>
                       <TableCell className="font-medium">{row.name}</TableCell>
                       <TableCell className="text-right">{row.restockedQuantity}</TableCell>
                       <TableCell className="text-right">{row.soldQuantity}</TableCell>
                       <TableCell className="text-right">{row.stockQuantity}</TableCell>
                       <TableCell className="text-right">{formatKES(row.revenue)}</TableCell>
+                      {canManageInventory && (
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            {row.menuItemId && (
+                              <>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => openEdit(row)}
+                                  aria-label={`Edit ${row.name} stock`}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive"
+                                  onClick={() => setRowToDelete(row)}
+                                  aria-label={`Delete ${row.name}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                   <TableRow className="border-t-2 font-semibold">
@@ -252,6 +389,7 @@ export default function Inventory() {
                     <TableCell className="text-right">{totals.soldQuantity}</TableCell>
                     <TableCell className="text-right">{totals.stockQuantity}</TableCell>
                     <TableCell className="text-right">{formatKES(totals.revenue)}</TableCell>
+                    {canManageInventory && <TableCell />}
                   </TableRow>
                 </TableBody>
               </Table>
@@ -259,6 +397,60 @@ export default function Inventory() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit {editRow?.name} stock</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-stock-quantity">Available quantity</Label>
+              <Input
+                id="edit-stock-quantity"
+                type="number"
+                min="0"
+                step="1"
+                value={editQuantity}
+                onChange={(event) => setEditQuantity(event.target.value)}
+              />
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleEditStock}
+              disabled={savingEdit}
+            >
+              {savingEdit && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save stock
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!rowToDelete} onOpenChange={(open) => !open && setRowToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {rowToDelete?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the menu item and its inventory records. Existing order history will be preserved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(event) => {
+                event.preventDefault();
+                void handleDeleteItem();
+              }}
+              disabled={deleting}
+            >
+              {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete item
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={restockOpen} onOpenChange={setRestockOpen}>
         <DialogContent>

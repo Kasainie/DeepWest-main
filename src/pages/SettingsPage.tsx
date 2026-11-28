@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompany } from "@/contexts/CompanyContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,6 +37,7 @@ export default function SettingsPage() {
   const { currentCompany, companyRole, refreshCompanies } = useCompany();
   const { user } = useAuth();
   const canEdit = companyRole === "owner" || companyRole === "admin";
+  const canManageStaffCredentials = companyRole === "owner";
   const { isSuperAdmin } = useSuperAdmin();
 
   const [saving, setSaving] = useState(false);
@@ -55,6 +56,21 @@ export default function SettingsPage() {
     description: "",
   });
 
+  const fetchStaffCode = useCallback(async () => {
+    if (!currentCompany || !user) return;
+    const { data, error } = await supabase
+      .from("company_staff")
+      .select("staff_code")
+      .eq("company_id", currentCompany.id)
+      .eq("user_id", user.id)
+      .single();
+    if (error && error.code !== "PGRST116") {
+      toast.error(`Couldn't load staff access code: ${error.message}`);
+      return;
+    }
+    setStaffCode(data?.staff_code || null);
+  }, [currentCompany, user]);
+
   useEffect(() => {
     if (currentCompany) {
       setForm({
@@ -68,20 +84,9 @@ export default function SettingsPage() {
       setLogoPreview(currentCompany.logo_url);
       setRemoveLogo(false);
       setLogoFile(null);
-      fetchStaffCode();
+      void fetchStaffCode();
     }
-  }, [currentCompany?.id]);
-
-  const fetchStaffCode = async () => {
-    if (!currentCompany || !user) return;
-    const { data } = await supabase
-      .from("company_staff")
-      .select("staff_code")
-      .eq("company_id", currentCompany.id)
-      .eq("user_id", user.id)
-      .single();
-    setStaffCode(data?.staff_code || null);
-  };
+  }, [currentCompany, fetchStaffCode]);
 
   const createAdminCode = async () => {
     if (!currentCompany || !user) return;
@@ -377,7 +382,7 @@ export default function SettingsPage() {
       </motion.div>
 
       {/* Admin Access Code */}
-      {canEdit && (
+      {canManageStaffCredentials && (
         <motion.div variants={item}>
           <Card className="shadow-card border-0">
             <CardHeader>
